@@ -18,7 +18,7 @@ func TestWriteVersion(t *testing.T) {
 	}{
 		{
 			name:        "Valid/Default",
-			wantVersion: "Version:\tv0.0.0-unknown\n Go Version:\tgo1.22.7\n Git Commit:\t\n Build Date:\t\n",
+			wantVersion: "Version:\tv0.0.0-unknown\nGo Version:\tgo1.22.7\nGit Commit:\t\nBuild Date:\t\nPlatform:\tlinux/amd64\n",
 		},
 		{
 			name:        "Valid/VariablesSet",
@@ -26,7 +26,7 @@ func TestWriteVersion(t *testing.T) {
 			testCommit:  "commit",
 			testDate:    "today",
 			testState:   "clean",
-			wantVersion: "Version:\tv0.0.1+clean\n Go Version:\tgo1.22.7\n Git Commit:\tcommit\n Build Date:\ttoday\n",
+			wantVersion: "Version:\tv0.0.1+clean\nGo Version:\tgo1.22.7\nGit Commit:\tcommit\nBuild Date:\ttoday\nPlatform:\tlinux/amd64\n",
 		},
 	}
 

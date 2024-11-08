@@ -28,9 +28,10 @@ type clientVersion struct {
 }
 
 var versionTemplate = `Version:	{{ .Version }}
- Go Version:	{{ .GoVersion }}
- Git Commit:	{{ .GitCommit }}
- Build Date:	{{ .BuildDate }}
+Go Version:	{{ .GoVersion }}
+Git Commit:	{{ .GitCommit }}
+Build Date:	{{ .BuildDate }}
+Platform:	{{ .Platform }}
 `
 
 // WriteVersion will output the templated version message.
