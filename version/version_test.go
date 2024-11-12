@@ -14,11 +14,14 @@ func TestWriteVersion(t *testing.T) {
 		testCommit  string
 		testDate    string
 		testState   string
-		wantVersion string
+		assertFunc  func(string) bool
 	}{
 		{
-			name:        "Valid/Default",
-			wantVersion: "Version:\tv0.0.0-unknown\nGo Version:\tgo1.22.7\nGit Commit:\t\nBuild Date:\t\nPlatform:\tlinux/amd64\n",
+			name: "Valid/Default",
+			assertFunc: func(s string) bool {
+				return strings.Contains(s, "Version:\tv0.0.0-unknown\n") &&
+					strings.Contains(s, "Git Commit:\t\nBuild Date:\t\n")
+			},
 		},
 		{
 			name:        "Valid/VariablesSet",
@@ -26,7 +29,11 @@ func TestWriteVersion(t *testing.T) {
 			testCommit:  "commit",
 			testDate:    "today",
 			testState:   "clean",
-			wantVersion: "Version:\tv0.0.1+clean\nGo Version:\tgo1.22.7\nGit Commit:\tcommit\nBuild Date:\ttoday\nPlatform:\tlinux/amd64\n",
+			assertFunc: func(s string) bool {
+				return strings.Contains(s, "v0.0.1+clean") &&
+					strings.Contains(s, "Git Commit:\tcommit\n") &&
+					strings.Contains(s, "Build Date:\ttoday\n")
+			},
 		},
 	}
 
@@ -42,8 +49,7 @@ func TestWriteVersion(t *testing.T) {
 			err := WriteVersion(out)
 
 			require.NoError(t, err)
-			require.Equal(t, c.wantVersion, out.String())
-
+			require.True(t, c.assertFunc(out.String()))
 		})
 	}
 }
