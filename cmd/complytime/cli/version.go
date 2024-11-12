@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/complytime/complytime/cmd/complytime/option"
 	"github.com/spf13/cobra"
+
+	"github.com/complytime/complytime/cmd/complytime/option"
 
 	"github.com/complytime/complytime/version"
 )

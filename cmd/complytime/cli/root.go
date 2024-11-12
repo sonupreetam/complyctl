@@ -1,9 +1,11 @@
 package cli
 
 import (
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/complytime/complytime/cmd/complytime/option"
 )
 
 // New creates a new cobra.Command root for ComplyTime

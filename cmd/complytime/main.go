@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/complytime/complytime/cmd/complytime/cli"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
+
+	"github.com/spf13/cobra"
+
+	"github.com/complytime/complytime/cmd/complytime/cli"
 )
 
 func main() {
