@@ -1,0 +1,13 @@
+# The team members will be the default owners for everything in the repo.
+# Unless a later match takes precedence, the team will be requested for review
+# when someone opens a pull request.
+*       @complytime/complytime-dev
+
+# Order is important; the last matching pattern takes the most precedence.
+# Team complytime-approvers will be requested for approvers when someone
+# opens a pull request for any change inside `/cmd/complytime` directory
+/cmd/complytime/ @complytime/complytime-approvers
+
+# Team openscap-plugin-approvers will be requested for approvers when someone
+# opens a pull request for any change inside `/cmd/openscap-plugin` directory
+/cmd/openscap-plugin/ @complytime/openscap-plugin-approvers
