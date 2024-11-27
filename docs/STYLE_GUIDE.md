@@ -10,6 +10,14 @@ This style guide outlines the best practices to ensure consistency and readabili
 - **Testing**: Write tests for your code. Use descriptive names for test functions and include edge cases.
 - **Line Length**: Limit lines to 99 characters when reasonable to improve readability.
 
+## Licensing and File Headers
+
+To maintain consistency and compliance with the project’s licensing policy, all source files must include an SPDX license identifier.
+
+```go
+// SPDX-License-Identifier: Apache-2.0
+```
+
 ## Code Formatting
 
 - **Imports**: Use [`goimports`](https://pkg.go.dev/golang.org/x/tools/cmd/goimports) to format and organize imports. Separate standard library, third-party, and project-specific imports with blank lines. Also ensure only necessary imports.
