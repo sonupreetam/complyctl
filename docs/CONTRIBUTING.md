@@ -12,6 +12,14 @@ Thank you for your interest in contributing to ComplyTime! We welcome contributi
 
 Before you start, please make sure to check our [STYLE_GUIDE.md](STYLE_GUIDE.md) to follow the project's coding standards.
 
+## Pull Request Guidelines
+
+All pull requests (PRs) must meet the following requirements before being merged:
+
+1. Follow the project's coding standards outlined in [`STYLE_GUIDE.md`](STYLE_GUIDE.md).
+2. Ensure all required tests pass.
+3. Receive **at least two approvals** from project maintainers or reviewers.
+
 ## Code of Conduct
 
 Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
