@@ -8,6 +8,13 @@ GO_LD_EXTRAFLAGS :=-X github.com/complytime/complytime/version.version="$(GIT_TA
 				   -X github.com/complytime/complytime/version.commit="$(GIT_COMMIT)" \
 				   -X github.com/complytime/complytime/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
+dev-setup: dev-setup-commit-hooks
+.PHONY: dev-setup
+
+dev-setup-commit-hooks:
+	pre-commit install --hook-type pre-commit --hook-type pre-push
+.PHONY: dev-setup-commit-hooks
+
 build: prep-build-dir
 	go build -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
 .PHONY: build

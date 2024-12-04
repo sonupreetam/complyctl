@@ -28,3 +28,4 @@ To maintain consistency and compliance with the project’s licensing policy, al
 
 - **Empty Line at End of File**: Ensure that all files include an empty line at the end. This helps with version control diffs and adheres to POSIX standards.
 - Other [Go checks](https://github.com/complytime/complytime/blob/main/.golangci.yml) are present in CI/CD and therefore it may be useful to also run them locally before submitting a PR.
+- The pre-commit and pre-push hooks can be configured by installing [pre-commit](https://pre-commit.com/) and running `make dev-setup`
