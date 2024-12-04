@@ -19,7 +19,7 @@ jobs:
     steps:
 
       # Prepare token
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 #v1
         id: app-token
         with:
           # required
@@ -35,7 +35,7 @@ jobs:
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
 
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4
         with:
           fetch-depth: 0 # fetch all commits and tags
 
@@ -56,7 +56,7 @@ jobs:
           git push origin "$new_tag"
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed #v5
         with:
           go-version: '1.22' # Update to the desired Go version, or "stable"
 
@@ -71,7 +71,7 @@ jobs:
           cat /tmp/.goreleaser.yaml
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf #v6
         with:
           version: '~> v2.4.8'
           args: --verbose release --skip=announce,validate --clean --config /tmp/.goreleaser.yaml
