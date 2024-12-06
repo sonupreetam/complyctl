@@ -5,16 +5,14 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  # packages: write
-  # issues: write
-  # id-token: write
+permissions: {}
 
 jobs:
   release:
     name: Create Pre-release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
 
