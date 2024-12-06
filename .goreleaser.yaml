@@ -3,6 +3,8 @@
 
 version: 2
 
+project_name: complytime
+
 before:
   hooks:
     - go mod tidy
