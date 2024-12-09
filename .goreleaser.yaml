@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+project_name: complytime
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod vendor
+    #- go generate ./...
+
+builds:
+  - #
+    id: linux
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    ldflags:
+      - "-X github.com/complytime/complytime/version.version={{ .Version }}"
+      - "-X github.com/complytime/complytime/version.gitTreeState={{ .GitTreeState }}"
+      - "-X github.com/complytime/complytime/version.commit={{ .Commit }}"
+      - "-X github.com/complytime/complytime/version.buildDate={{ .Date }}"
+    main: ./cmd/complytime/
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
