@@ -7,11 +7,15 @@ import (
 	"time"
 )
 
-var out io.Writer = os.Stdout
-
 // ShowSpinner synchronously shows a spinner in the terminal until a stop signal is received.
 // The spinner is cleared before returning.
 func ShowSpinner(stop chan int) {
+	ShowSpinnerOut(os.Stdout, stop)
+}
+
+// ShowSpinnerOut synchronously shows a spinner in the terminal until a stop signal is received.
+// The spinner is cleared before returning.
+func ShowSpinnerOut(out io.Writer, stop chan int) {
 	spinStates := []string{"|", "/", "-", "\\", "|", "/", "-", "\\"}
 	i := 0
 	for {

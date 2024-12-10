@@ -31,13 +31,13 @@ func TestSpin(t *testing.T) {
 	}
 
 	for _, test := range testData {
-		out = bytes.NewBuffer(nil)
+		out := bytes.NewBuffer(nil)
 		stop := make(chan int)
 		// Kick off fake long-running task
 		go time.AfterFunc(test.Sleep, func() { stop <- 1 })
 		// Show the spinner while we wait
-		ShowSpinner(stop)
-		if actual := out.(*bytes.Buffer).String(); actual != test.Output {
+		ShowSpinnerOut(out, stop)
+		if actual := out.String(); actual != test.Output {
 			escapedActual := ansiEscape(actual)
 			escapedOutput := ansiEscape(test.Output)
 			t.Errorf("\nExpected: %s\nActual: %s", escapedOutput, escapedActual)
