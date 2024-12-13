@@ -1,0 +1,44 @@
+name: Full Release
+
+on:
+  workflow_dispatch:
+  #push:
+  #  tags:
+  #    - 'v[0-9]+.[0-9]+.[0-9]+' # Matches SemVer tags like v1.2.3
+
+permissions: {}
+
+jobs:
+  release:
+    name: Full Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate Tag
+        run: |
+          if [[ "${GITHUB_REF:0:10}" != refs/tags/ ]]; then
+            echo 'Full Release workflow must be run with a tag, not a branch.'
+            exit 1
+          fi
+          tag="${GITHUB_REF:10}"
+          if ! grep -E '^v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' <<<"$tag"; then
+            echo 'Invalid tag format. Must be semver with only major, minor, and patch, e.g. v1.2.3'
+            exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4
+
+      - name: Setup Go
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed #v5
+        with:
+          go-version: '1.22'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf #v6
+        with:
+          version: '~> v2.4.8'
+          args: --verbose release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.event.inputs.tag }}
