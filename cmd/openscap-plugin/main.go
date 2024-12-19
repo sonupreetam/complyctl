@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complytime/cmd/openscap-plugin/scan"
 )
 
 func parseFlags() (string, error) {
@@ -44,5 +45,12 @@ func main() {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 
-	fmt.Print(config)
+	output, err := scan.ScanSystem(config, "cis")
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	if output != nil {
+		fmt.Printf("Scan command output:\n%s", output)
+	}
 }
