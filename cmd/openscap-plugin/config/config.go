@@ -81,7 +81,12 @@ func EnsureDirectory(path string) error {
 func EnsureWorkspace(cfg *Config) (map[string]string, error) {
 	workspace, err := SanitizeAndValidatePath(cfg.Files.Workspace, true)
 	if err != nil {
-		return nil, err
+		if workspace == "" {
+			log.Printf("Informed workspace is not present. It will be created")
+			workspace = SanitizePath(cfg.Files.Workspace)
+		} else {
+			return nil, err
+		}
 	}
 
 	directories := map[string]string{
