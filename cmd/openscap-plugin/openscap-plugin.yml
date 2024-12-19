@@ -1,0 +1,10 @@
+server:
+  # For tests it is currently created in the homeDir
+  socket: server_socket.sock
+files:
+  datastream: /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+  workspace: /tmp/comply/user_workspace
+  plugindir: openscap
+  policy: tailoring_policy.xml
+  results: results.xml
+  arf: arf.xml
