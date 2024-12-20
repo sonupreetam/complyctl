@@ -36,7 +36,7 @@ func constructScanCommand(openscapFiles map[string]string, profile string) ([]st
 func OscapScan(openscapFiles map[string]string, profile string) ([]byte, error) {
 	command, err := constructScanCommand(openscapFiles, profile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to construct command %s: %w", command, err)
 	}
 
 	cmdPath, err := exec.LookPath(command[0])

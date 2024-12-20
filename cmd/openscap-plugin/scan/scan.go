@@ -52,15 +52,15 @@ func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {
 func ScanSystem(cfg *config.Config, profile string) ([]byte, error) {
 	openscapFiles, err := validateOpenSCAPFiles(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid openscap files: %w", err)
 	}
 
 	output, err := oscap.OscapScan(openscapFiles, profile)
 	if err != nil {
 		if output == nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to start scan: %w", err)
 		} else {
-			return output, err
+			return output, fmt.Errorf("failed during scan: %w", err)
 		}
 	}
 
