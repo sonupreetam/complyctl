@@ -6,16 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 )
 
 func constructScanCommand(openscapFiles map[string]string, profile string) ([]string, error) {
-	profileName, err := config.SanitizeInput(profile)
-	if err != nil {
-		return nil, err
-	}
-
 	datastream := openscapFiles["datastream"]
 	tailoringFile := openscapFiles["policy"]
 	resultsFile := openscapFiles["results"]
@@ -26,7 +19,7 @@ func constructScanCommand(openscapFiles map[string]string, profile string) ([]st
 		"xccdf",
 		"eval",
 		"--profile",
-		profileName,
+		profile,
 		"--results",
 		resultsFile,
 		"--results-arf",

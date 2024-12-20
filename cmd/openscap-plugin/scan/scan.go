@@ -4,9 +4,7 @@ package scan
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
@@ -27,56 +25,34 @@ func isXMLFile(filePath string) (bool, error) {
 			if err.Error() == "EOF" {
 				return true, nil
 			}
-			return false, fmt.Errorf("invalid XML: %w", err)
+			return false, fmt.Errorf("invalid XML file %s: %w", filePath, err)
 		}
 	}
 }
 
-func validateDataStream(path string) (string, error) {
-	datastream, err := config.ValidatePath(path, false)
-	if err != nil {
-		return "", err
+func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {
+	if _, err := isXMLFile(cfg.Files.Datastream); err != nil {
+		return nil, err
 	}
 
-	if _, err := isXMLFile(datastream); err != nil {
-		return "", err
-	}
-	return datastream, nil
-}
-
-func validateTailoringFile(path string) (string, error) {
-	tailoringFile, err := config.ValidatePath(path, false)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return "", nil
-		} else {
-			return "", err
+	if cfg.Files.Policy != "" {
+		if _, err := isXMLFile(cfg.Files.Policy); err != nil {
+			return nil, err
 		}
 	}
 
-	if _, err := isXMLFile(tailoringFile); err != nil {
-		return "", err
-	}
-	return tailoringFile, nil
+	return map[string]string{
+		"datastream": cfg.Files.Datastream,
+		"policy":     cfg.Files.Policy,
+		"results":    cfg.Files.Results,
+		"arf":        cfg.Files.ARF,
+	}, nil
 }
 
 func ScanSystem(cfg *config.Config, profile string) ([]byte, error) {
-	openscapFiles, err := config.DefineFilesPaths(cfg)
+	openscapFiles, err := validateOpenSCAPFiles(cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	_, err = validateDataStream(openscapFiles["datastream"])
-	if err != nil {
-		return nil, err
-	}
-
-	policy, err := validateTailoringFile(openscapFiles["policy"])
-	if err != nil {
-		return nil, err
-	}
-	if policy == "" {
-		openscapFiles["policy"] = ""
 	}
 
 	output, err := oscap.OscapScan(openscapFiles, profile)

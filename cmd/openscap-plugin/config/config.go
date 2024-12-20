@@ -8,8 +8,10 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -39,14 +41,23 @@ func SanitizeInput(input string) (string, error) {
 	return input, nil
 }
 
-func SanitizePath(path string) string {
-	return filepath.Clean(path)
+func expandPath(path string) (string, error) {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		usr, err := user.Current()
+		if err != nil {
+			return "", fmt.Errorf("failed to identify current user: %w", err)
+		}
+		homeDir := usr.HomeDir
+		// Replace "~" with the home directory
+		return filepath.Join(homeDir, path[1:]), nil
+	}
+	return path, nil
 }
 
-func ValidatePath(path string, shouldBeDir bool) (string, error) {
+func validatePath(path string, shouldBeDir bool) (string, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to confirm path existence: %w", err)
 	}
 
 	if shouldBeDir && !stat.IsDir() {
@@ -59,16 +70,28 @@ func ValidatePath(path string, shouldBeDir bool) (string, error) {
 	return path, nil
 }
 
+func SanitizePath(path string) (string, error) {
+	cleanPath := filepath.Clean(path)
+	expandedPath, err := expandPath(cleanPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to expand path: %v", err)
+	}
+	return expandedPath, nil
+}
+
 func SanitizeAndValidatePath(path string, shouldBeDir bool) (string, error) {
-	cleanPath := SanitizePath(path)
-	validPath, err := ValidatePath(cleanPath, shouldBeDir)
+	cleanPath, err := SanitizePath(path)
+	if err != nil {
+		return "", err
+	}
+	validPath, err := validatePath(cleanPath, shouldBeDir)
 	if err != nil {
 		return "", err
 	}
 	return validPath, nil
 }
 
-func EnsureDirectory(path string) error {
+func ensureDirectory(path string) error {
 	_, err := os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		err := os.MkdirAll(path, 0750)
@@ -83,26 +106,27 @@ func EnsureDirectory(path string) error {
 	return nil
 }
 
-func EnsureWorkspace(cfg *Config) (map[string]string, error) {
-	workspace, err := SanitizeAndValidatePath(cfg.Files.Workspace, true)
+func ensureWorkspace(cfg *Config) (map[string]string, error) {
+	workspacePath, err := SanitizePath(cfg.Files.Workspace)
 	if err != nil {
-		if workspace == "" {
-			log.Printf("Informed workspace is not present. It will be created")
-			workspace = SanitizePath(cfg.Files.Workspace)
-		} else {
-			return nil, err
-		}
+		return nil, fmt.Errorf("failed to sanitize workspace path %s: %w", cfg.Files.Workspace, err)
+	}
+
+	workspace, err := validatePath(workspacePath, true)
+	if err != nil {
+		log.Printf("Informed workspace was not found. It will be created.")
+		workspace = workspacePath
 	}
 
 	directories := map[string]string{
 		"workspace":  workspace,
-		"pluginDir":  SanitizePath(workspace + "/" + cfg.Files.PluginDir),
-		"policyDir":  SanitizePath(workspace + "/" + cfg.Files.PluginDir + "/policy"),
-		"resultsDir": SanitizePath(workspace + "/" + cfg.Files.PluginDir + "/results"),
+		"pluginDir":  (workspace + "/" + cfg.Files.PluginDir),
+		"policyDir":  (workspace + "/" + cfg.Files.PluginDir + "/policy"),
+		"resultsDir": (workspace + "/" + cfg.Files.PluginDir + "/results"),
 	}
 
 	for key, dir := range directories {
-		if err := EnsureDirectory(dir); err != nil {
+		if err := ensureDirectory(dir); err != nil {
 			return nil, fmt.Errorf("failed to ensure directory %s (%s): %w", dir, key, err)
 		}
 	}
@@ -110,20 +134,26 @@ func EnsureWorkspace(cfg *Config) (map[string]string, error) {
 	return directories, nil
 }
 
-func DefineFilesPaths(cfg *Config) (map[string]string, error) {
-	directories, err := EnsureWorkspace(cfg)
+func defineFilesPaths(cfg *Config) (*Config, error) {
+	directories, err := ensureWorkspace(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	files := map[string]string{
-		"datastream": SanitizePath(cfg.Files.Datastream),
-		"policy":     SanitizePath(directories["policyDir"] + "/" + cfg.Files.Policy),
-		"results":    SanitizePath(directories["resultsDir"] + "/" + cfg.Files.Results),
-		"arf":        SanitizePath(directories["resultsDir"] + "/" + cfg.Files.ARF),
+	cfg.Files.Policy = (directories["policyDir"] + "/" + cfg.Files.Policy)
+	cfg.Files.Results = (directories["resultsDir"] + "/" + cfg.Files.Results)
+	cfg.Files.ARF = (directories["resultsDir"] + "/" + cfg.Files.ARF)
+
+	_, err = validatePath(cfg.Files.Policy, false)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			cfg.Files.Policy = ""
+		} else {
+			return nil, err
+		}
 	}
 
-	return files, nil
+	return cfg, nil
 }
 
 func ReadConfig(configFile string) (*Config, error) {
@@ -157,5 +187,16 @@ func ReadConfig(configFile string) (*Config, error) {
 		*inputValue = sanitized
 	}
 
+	_, err = SanitizeAndValidatePath(config.Files.Datastream, false)
+	if err != nil {
+		return nil, fmt.Errorf("invalid datastream path: %s: %w", config.Files.Datastream, err)
+	}
+
+	config, err = defineFilesPaths(config)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Print(config.Files.Policy)
 	return config, nil
 }
