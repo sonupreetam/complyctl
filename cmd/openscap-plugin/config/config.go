@@ -26,6 +26,9 @@ type Config struct {
 		ARF        string `yaml:"arf"`
 		Policy     string `yaml:"policy"`
 	} `yaml:"files"`
+	Parameters struct {
+		Profile string `yaml:"profile"`
+	} `yaml:"parameters"`
 }
 
 func SanitizeInput(input string) (string, error) {
@@ -137,20 +140,21 @@ func ReadConfig(configFile string) (*Config, error) {
 		return nil, err
 	}
 
-	// String fields to sanitize
-	paths := []*string{
+	// String values to sanitize
+	inputValues := []*string{
 		&config.Files.PluginDir,
 		&config.Files.Policy,
 		&config.Files.Results,
 		&config.Files.ARF,
+		&config.Parameters.Profile,
 	}
 
-	for _, path := range paths {
-		sanitized, err := SanitizeInput(*path)
+	for _, inputValue := range inputValues {
+		sanitized, err := SanitizeInput(*inputValue)
 		if err != nil {
 			return nil, err
 		}
-		*path = sanitized
+		*inputValue = sanitized
 	}
 
 	return config, nil

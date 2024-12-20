@@ -46,10 +46,16 @@ make build
 ```
 
 ## Running
-Scan the current system using pci-dss profile:
-
+Install the plugin
 ```bash
-./bin/openscap-plugin -config cmd/openscap-plugin/openscap-plugin.yml
+mkdir -p ~/.config/complytime/plugins
+cp -rp bin/openscap-plugin ~/.config/complytime/plugins
+cp -rp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
+```
+
+Scan the current system using pci-dss profile:
+```bash
+~/.config/complytime/plugins/openscap-plugin
 ```
 
 After the scan, check the files in "user_workspace" directory.
