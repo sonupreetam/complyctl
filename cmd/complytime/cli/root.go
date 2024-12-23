@@ -3,8 +3,6 @@
 package cli
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
@@ -12,24 +10,24 @@ import (
 
 // New creates a new cobra.Command root for ComplyTime
 func New() *cobra.Command {
-	o := option.Common{}
-
-	o.IOStreams = option.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
 	cmd := &cobra.Command{
 		Use:           "complytime [command]",
-		SilenceErrors: false,
+		SilenceErrors: true,
 		SilenceUsage:  false,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return cmd.Help()
-		},
 	}
 
-	o.BindFlags(cmd.PersistentFlags())
-	cmd.AddCommand(versionCmd(&o))
+	opts := option.Common{
+		Output: option.Output{
+			Out:    cmd.OutOrStdout(),
+			ErrOut: cmd.ErrOrStderr(),
+		},
+	}
+	opts.BindFlags(cmd.PersistentFlags())
+
+	cmd.AddCommand(
+		versionCmd(&opts),
+		scanCmd(&opts),
+	)
 
 	return cmd
 }

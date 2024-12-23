@@ -7,7 +7,7 @@ import (
 
 	"github.com/complytime/complytime/cmd/complytime/option"
 
-	"github.com/complytime/complytime/version"
+	"github.com/complytime/complytime/internal/version"
 )
 
 // versionCmd creates a new cobra.Command for the version subcommand.
@@ -17,7 +17,7 @@ func versionCmd(common *option.Common) *cobra.Command {
 		Short: "Print the version",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return version.WriteVersion(common.IOStreams.Out)
+			return version.WriteVersion(common.Output.Out)
 		},
 	}
 }

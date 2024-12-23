@@ -19,10 +19,10 @@ builds:
     goos:
       - linux
     ldflags:
-      - "-X github.com/complytime/complytime/version.version={{ .Version }}"
-      - "-X github.com/complytime/complytime/version.gitTreeState={{ .GitTreeState }}"
-      - "-X github.com/complytime/complytime/version.commit={{ .Commit }}"
-      - "-X github.com/complytime/complytime/version.buildDate={{ .Date }}"
+      - "-X github.com/complytime/complytime/internal/version.version={{ .Version }}"
+      - "-X github.com/complytime/complytime/internal/version.gitTreeState={{ .GitTreeState }}"
+      - "-X github.com/complytime/complytime/internal/version.commit={{ .Commit }}"
+      - "-X github.com/complytime/complytime/internal/version.buildDate={{ .Date }}"
     main: ./cmd/complytime/
 
 archives:

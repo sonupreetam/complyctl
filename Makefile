@@ -3,10 +3,10 @@ GO_BUILD_BINDIR :=./bin
 GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
 GIT_TAG :="$(shell git tag | sort -V | tail -1)"
 
-GO_LD_EXTRAFLAGS :=-X github.com/complytime/complytime/version.version="$(GIT_TAG)" \
-				   -X github.com/complytime/complytime/version.gitTreeState=$(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean") \
-				   -X github.com/complytime/complytime/version.commit="$(GIT_COMMIT)" \
-				   -X github.com/complytime/complytime/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
+GO_LD_EXTRAFLAGS :=-X github.com/complytime/complytime/internal/version.version="$(GIT_TAG)" \
+				   -X github.com/complytime/complytime/internal/version.gitTreeState=$(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean") \
+				   -X github.com/complytime/complytime/internal/version.commit="$(GIT_COMMIT)" \
+				   -X github.com/complytime/complytime/internal/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
 dev-setup: dev-setup-commit-hooks
 .PHONY: dev-setup

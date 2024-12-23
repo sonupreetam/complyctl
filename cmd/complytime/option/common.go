@@ -8,20 +8,21 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// Common options for the ComplyTime CLI.
 type Common struct {
-	Verbose bool
-	IOStreams
+	Debug bool
+	Output
 }
 
-type IOStreams struct {
-	// In think, os.Stdin
-	In io.Reader
+// Output options for
+type Output struct {
 	// Out think, os.Stdout
 	Out io.Writer
 	// ErrOut think, os.Stderr
 	ErrOut io.Writer
 }
 
+// BindFlags populate Common options from user-specified flags.
 func (o *Common) BindFlags(fs *pflag.FlagSet) {
-	fs.BoolVarP(&o.Verbose, "verbose", "v", false, "verbose output")
+	fs.BoolVarP(&o.Debug, "debug", "d", false, "output debug logs")
 }
