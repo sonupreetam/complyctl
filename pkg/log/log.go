@@ -21,6 +21,10 @@ func init() {
 	zap.ReplaceGlobals(zap.Must(zap.NewProduction()))
 }
 
+func Wrap(zap *zap.SugaredLogger) hclog.Logger {
+	return ZapHclog{zap}
+}
+
 // Adapt zap to hclog
 type ZapHclog struct {
 	logger *zap.SugaredLogger
