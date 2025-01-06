@@ -134,8 +134,7 @@ func (z ZapHclog) GetLevel() hclog.Level {
 }
 
 func (z ZapHclog) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
-	//TODO decide action
-	panic("not implemented")
+	return zap.NewStdLog(z.logger.Desugar())
 }
 
 func (z ZapHclog) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
