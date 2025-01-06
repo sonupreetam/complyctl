@@ -36,13 +36,13 @@ var _ hclog.Logger = (*ZapHclog)(nil)
 var hclogZapLevels = map[hclog.Level]zapcore.Level{
 	// NoLevel is a special level used to indicate that no level has been
 	// set and allow for a default to be used.
-	//hclog.NoLevel
-	hclog.Trace: zapcore.DebugLevel, // No "Trace" equivalent
-	hclog.Debug: zapcore.DebugLevel,
-	hclog.Info:  zapcore.InfoLevel,
-	hclog.Warn:  zapcore.WarnLevel,
-	hclog.Error: zapcore.ErrorLevel,
-	hclog.Off:   zapcore.FatalLevel, // No "Off" equivalent
+	hclog.NoLevel: zapcore.InfoLevel,  // No "NoLevel" equivalent, hardcode Info as default
+	hclog.Trace:   zapcore.DebugLevel, // No "Trace" equivalent
+	hclog.Debug:   zapcore.DebugLevel,
+	hclog.Info:    zapcore.InfoLevel,
+	hclog.Warn:    zapcore.WarnLevel,
+	hclog.Error:   zapcore.ErrorLevel,
+	hclog.Off:     zapcore.FatalLevel, // No "Off" equivalent
 }
 
 var zapHclogLevels = map[zapcore.Level]hclog.Level{
