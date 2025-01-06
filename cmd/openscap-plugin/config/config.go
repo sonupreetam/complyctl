@@ -120,9 +120,9 @@ func ensureWorkspace(cfg *Config) (map[string]string, error) {
 
 	directories := map[string]string{
 		"workspace":  workspace,
-		"pluginDir":  (workspace + "/" + cfg.Files.PluginDir),
-		"policyDir":  (workspace + "/" + cfg.Files.PluginDir + "/policy"),
-		"resultsDir": (workspace + "/" + cfg.Files.PluginDir + "/results"),
+		"pluginDir":  filepath.Join(workspace, cfg.Files.PluginDir),
+		"policyDir":  filepath.Join(workspace, cfg.Files.PluginDir, "policy"),
+		"resultsDir": filepath.Join(workspace, cfg.Files.PluginDir, "results"),
 	}
 
 	for key, dir := range directories {
@@ -140,9 +140,9 @@ func defineFilesPaths(cfg *Config) (*Config, error) {
 		return nil, err
 	}
 
-	cfg.Files.Policy = (directories["policyDir"] + "/" + cfg.Files.Policy)
-	cfg.Files.Results = (directories["resultsDir"] + "/" + cfg.Files.Results)
-	cfg.Files.ARF = (directories["resultsDir"] + "/" + cfg.Files.ARF)
+	cfg.Files.Policy = filepath.Join(directories["policyDir"], cfg.Files.Policy)
+	cfg.Files.Results = filepath.Join(directories["resultsDir"], cfg.Files.Results)
+	cfg.Files.ARF = filepath.Join(directories["resultsDir"], cfg.Files.ARF)
 
 	_, err = validatePath(cfg.Files.Policy, false)
 	if err != nil {

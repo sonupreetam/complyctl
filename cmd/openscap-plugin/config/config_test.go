@@ -64,7 +64,7 @@ func TestSanitizePath(t *testing.T) {
 		{"./../foo", "../foo", false},
 
 		// Expanding paths
-		{"~/foo/bar", filepath.Join(homeDir, "foo/bar"), false},
+		{"~/foo/bar", filepath.Join(homeDir, "foo", "bar"), false},
 		{"~", homeDir, false},
 
 		// Weird but valid cases
@@ -87,8 +87,8 @@ func TestSanitizePath(t *testing.T) {
 // TestSanitizeAndValidatePath tests the SanitizeAndValidatePath function with various
 // valid and invalid paths.
 func TestSanitizeAndValidatePath(t *testing.T) {
-	tempDir := os.TempDir() + "/test_sanitize_and_validate_path"
-	tempFile := tempDir + "/testfile"
+	tempDir := filepath.Join(os.TempDir(), "test_sanitize_and_validate_path")
+	tempFile := filepath.Join(tempDir, "testfile")
 
 	// Setup: create temporary directory and file
 	if err := os.MkdirAll(tempDir, 0750); err != nil {
@@ -136,15 +136,15 @@ func TestSanitizeAndValidatePath(t *testing.T) {
 
 // TestEnsureDirectory tests the ensureDirectory function with various cases.
 func TestEnsureDirectory(t *testing.T) {
-	tempDir := os.TempDir() + "/test_ensure_directory"
+	tempDir := filepath.Join(os.TempDir(), "test_ensure_directory")
 
 	tests := []struct {
 		path        string
 		expectError bool
 	}{
 		// Valid cases
-		{tempDir + "/existing_dir", false}, // directory does not exist, should be created
-		{tempDir + "/existing_dir", false}, // directory already exists
+		{filepath.Join(tempDir, "absent_dir"), false},   // directory does not exist, should be created
+		{filepath.Join(tempDir, "existing_dir"), false}, // directory already exists
 
 		// Invalid cases
 		{tempDir + "/invalid\000dir", true}, // invalid directory name
@@ -154,6 +154,13 @@ func TestEnsureDirectory(t *testing.T) {
 		t.Run(tt.path, func(t *testing.T) {
 			// Cleanup before test
 			os.RemoveAll(tt.path)
+
+			if tt.path == filepath.Join(tempDir, "existing_dir") {
+				// Create directory for existing_dir test
+				if err := os.MkdirAll(tt.path, 0750); err != nil {
+					t.Fatalf("Failed to create directory: %v", err)
+				}
+			}
 
 			err := ensureDirectory(tt.path)
 			if (err != nil) != tt.expectError {
@@ -175,7 +182,7 @@ func TestEnsureDirectory(t *testing.T) {
 
 // TestEnsureWorkspace tests the ensureWorkspace function with various cases.
 func TestEnsureWorkspace(t *testing.T) {
-	tempDir := os.TempDir() + "/test_ensure_workspace"
+	tempDir := filepath.Join(os.TempDir(), "test_ensure_workspace")
 
 	tests := []struct {
 		cfg         Config
@@ -192,7 +199,7 @@ func TestEnsureWorkspace(t *testing.T) {
 					Policy     string "yaml:\"policy\""
 				}{
 					PluginDir: "plugins",
-					Workspace: tempDir + "/workspace",
+					Workspace: filepath.Join(tempDir, "workspace"),
 					Policy:    "policy.yaml",
 					Results:   "results.xml",
 					ARF:       "arf.xml",
@@ -211,7 +218,7 @@ func TestEnsureWorkspace(t *testing.T) {
 					Policy     string "yaml:\"policy\""
 				}{
 					PluginDir: "plugins",
-					Workspace: tempDir + "/invalid\000workspace",
+					Workspace: filepath.Join(tempDir, "invalid\000workspace"),
 					Policy:    "policy.yaml",
 					Results:   "results.xml",
 					ARF:       "arf.xml",
@@ -247,7 +254,7 @@ func TestEnsureWorkspace(t *testing.T) {
 
 // TestDefineFilesPaths tests the defineFilesPaths function with various cases.
 func TestDefineFilesPaths(t *testing.T) {
-	tempDir := os.TempDir() + "/test_define_files_paths"
+	tempDir := filepath.Join(os.TempDir(), "test_define_files_paths")
 
 	tests := []struct {
 		cfg         Config
@@ -264,7 +271,7 @@ func TestDefineFilesPaths(t *testing.T) {
 					Policy     string "yaml:\"policy\""
 				}{
 					PluginDir: "plugins",
-					Workspace: tempDir + "/workspace",
+					Workspace: filepath.Join(tempDir, "workspace"),
 					Policy:    "absent_policy.yaml",
 					Results:   "results.xml",
 					ARF:       "arf.xml",
@@ -287,8 +294,8 @@ func TestDefineFilesPaths(t *testing.T) {
 			if !tt.expectError {
 				// Check if the paths are correctly set
 				expectedPolicyPath := ""
-				expectedResultsPath := tempDir + "/workspace/plugins/results/results.xml"
-				expectedARFPath := tempDir + "/workspace/plugins/results/arf.xml"
+				expectedResultsPath := filepath.Join(tempDir, "workspace", "plugins", "results", "results.xml")
+				expectedARFPath := filepath.Join(tempDir, "workspace", "plugins", "results", "arf.xml")
 
 				if tt.cfg.Files.Policy != expectedPolicyPath {
 					t.Errorf("Expected policy path: %s, got: %s", expectedPolicyPath, tt.cfg.Files.Policy)
