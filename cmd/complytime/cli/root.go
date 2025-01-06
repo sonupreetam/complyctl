@@ -27,6 +27,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(
 		versionCmd(&opts),
 		scanCmd(&opts),
+		generateCmd(&opts),
 	)
 
 	return cmd
