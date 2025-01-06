@@ -22,7 +22,7 @@ func init() {
 }
 
 func Wrap(zap *zap.SugaredLogger) hclog.Logger {
-	return ZapHclog{zap}
+	return &ZapHclog{zap}
 }
 
 // Adapt zap to hclog
@@ -31,7 +31,7 @@ type ZapHclog struct {
 }
 
 // Ensure ZapHclog implements hclog.Logger
-var _ hclog.Logger = (*ZapHclog)(nil)
+var _ hclog.Logger = &ZapHclog{}
 
 var hclogZapLevels = map[hclog.Level]zapcore.Level{
 	// NoLevel is a special level used to indicate that no level has been
@@ -55,68 +55,68 @@ var zapHclogLevels = map[zapcore.Level]hclog.Level{
 	zapcore.InvalidLevel: hclog.Error, // No "Invalid" equivalent
 }
 
-func (z ZapHclog) Log(level hclog.Level, msg string, args ...interface{}) {
+func (z *ZapHclog) Log(level hclog.Level, msg string, args ...interface{}) {
 	z.logger.Logw(hclogZapLevels[level], fmt.Sprintf(msg, args...))
 }
 
-func (z ZapHclog) Trace(msg string, args ...interface{}) {
+func (z *ZapHclog) Trace(msg string, args ...interface{}) {
 	z.logger.Debugw(msg, args...)
 }
 
-func (z ZapHclog) Debug(msg string, args ...interface{}) {
+func (z *ZapHclog) Debug(msg string, args ...interface{}) {
 	z.logger.Debugw(msg, args...)
 }
 
-func (z ZapHclog) Info(msg string, args ...interface{}) {
+func (z *ZapHclog) Info(msg string, args ...interface{}) {
 	z.logger.Infow(msg, args...)
 }
 
-func (z ZapHclog) Warn(msg string, args ...interface{}) {
+func (z *ZapHclog) Warn(msg string, args ...interface{}) {
 	z.logger.Warnw(msg, args...)
 }
 
-func (z ZapHclog) Error(msg string, args ...interface{}) {
+func (z *ZapHclog) Error(msg string, args ...interface{}) {
 	z.logger.Errorw(msg, args...)
 }
 
-func (z ZapHclog) IsTrace() bool {
+func (z *ZapHclog) IsTrace() bool {
 	return false
 }
 
-func (z ZapHclog) IsDebug() bool {
+func (z *ZapHclog) IsDebug() bool {
 	return false
 }
 
-func (z ZapHclog) IsInfo() bool {
+func (z *ZapHclog) IsInfo() bool {
 	return false
 }
 
-func (z ZapHclog) IsWarn() bool {
+func (z *ZapHclog) IsWarn() bool {
 	return false
 }
 
-func (z ZapHclog) IsError() bool {
+func (z *ZapHclog) IsError() bool {
 	return false
 }
 
-func (z ZapHclog) ImpliedArgs() []interface{} {
+func (z *ZapHclog) ImpliedArgs() []interface{} {
 	//do nothing
 	return nil
 }
 
-func (z ZapHclog) With(args ...interface{}) hclog.Logger {
+func (z *ZapHclog) With(args ...interface{}) hclog.Logger {
 	return &ZapHclog{z.logger.With(args...)}
 }
 
-func (z ZapHclog) Name() string {
+func (z *ZapHclog) Name() string {
 	return z.logger.Desugar().Name()
 }
 
-func (z ZapHclog) Named(name string) hclog.Logger {
+func (z *ZapHclog) Named(name string) hclog.Logger {
 	return &ZapHclog{z.logger.Named(name)}
 }
 
-func (z ZapHclog) ResetNamed(name string) hclog.Logger {
+func (z *ZapHclog) ResetNamed(name string) hclog.Logger {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		// TODO decide what to do
@@ -125,19 +125,19 @@ func (z ZapHclog) ResetNamed(name string) hclog.Logger {
 	return &ZapHclog{logger.Sugar().Named(name)}
 }
 
-func (z ZapHclog) SetLevel(level hclog.Level) {
+func (z *ZapHclog) SetLevel(level hclog.Level) {
 	atom.SetLevel(hclogZapLevels[level])
 }
 
-func (z ZapHclog) GetLevel() hclog.Level {
+func (z *ZapHclog) GetLevel() hclog.Level {
 	return zapHclogLevels[atom.Level()]
 }
 
-func (z ZapHclog) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
+func (z *ZapHclog) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	return zap.NewStdLog(z.logger.Desugar())
 }
 
-func (z ZapHclog) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
+func (z *ZapHclog) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
 	return os.Stdout
 }
 
