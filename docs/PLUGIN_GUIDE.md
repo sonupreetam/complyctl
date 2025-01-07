@@ -51,10 +51,10 @@ type PluginServer struct {}
 
 func (s PluginServer) Generate(p policy.Policy) error {
 
-	// PluginServer should implement the Generate() method to provide logic for 
+	// PluginServer should implement the Generate() method to provide logic for
 	// translating OSCAL to the PVPs expected input format.  Note: this may not be
 	// applicable to all PVPs.
-	
+
 }
 
 func (s PluginServer) GetResults(p policy.Policy) (policy.PVPResult, error) {
@@ -62,7 +62,6 @@ func (s PluginServer) GetResults(p policy.Policy) (policy.PVPResult, error) {
 	// PluginServer should implement the GetResults() method to provide logic to
 	// collect results from the PVP for a given policy.  Note: if the PVP requires input
 	// from Generate() then the policy input here may be ignored.
-	
+
 }
 ```
-
