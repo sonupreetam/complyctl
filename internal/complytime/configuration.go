@@ -143,8 +143,9 @@ func Config(a ApplicationDirectory) (*config.C2PConfig, error) {
 	cfg := config.DefaultConfig()
 	logger, err := zap.NewProduction()
 	if err != nil {
-		cfg.Logger = log.Wrap(logger.Sugar())
+		return cfg, fmt.Errorf("unable to create logger: %w", err)
 	}
+	cfg.Logger = log.Wrap(logger.Sugar())
 	cfg.PluginDir = a.PluginDir()
 	compDefBundles, err := FindComponentDefinitions(a.BundleDir())
 	if err != nil {
