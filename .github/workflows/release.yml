@@ -13,6 +13,9 @@ jobs:
     name: Full Release
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Validate Tag
         run: |
