@@ -197,6 +197,5 @@ func ReadConfig(configFile string) (*Config, error) {
 		return nil, err
 	}
 
-	fmt.Print(config.Files.Policy)
 	return config, nil
 }

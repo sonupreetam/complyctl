@@ -50,11 +50,13 @@ func OscapScan(openscapFiles map[string]string, profile string) ([]byte, error) 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if err.Error() == "exit status 1" {
-			return output, fmt.Errorf("%s: error during evaluation", err)
+			return output, fmt.Errorf("%s: oscap error during evaluation", err)
 		} else if err.Error() == "exit status 2" {
-			return output, fmt.Errorf("%s: at least one rule resulted in fail or unknown", err)
+			log.Printf("%s: at least one rule resulted in fail or unknown", err)
+			return output, nil
 		} else {
-			return output, fmt.Errorf("all rules passed")
+			log.Printf("%s", err)
+			return output, nil
 		}
 	}
 

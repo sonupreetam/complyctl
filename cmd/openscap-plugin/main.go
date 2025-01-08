@@ -9,7 +9,10 @@ import (
 	"path/filepath"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
-	"github.com/complytime/complytime/cmd/openscap-plugin/scan"
+	"github.com/complytime/complytime/cmd/openscap-plugin/server"
+
+	hplugin "github.com/hashicorp/go-plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
 func getConfigFile() (string, error) {
@@ -51,12 +54,9 @@ func main() {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 
-	output, err := scan.ScanSystem(config, config.Parameters.Profile)
-	if err != nil {
-		log.Printf("%v", err)
+	openSCAPPlugin := server.New(config)
+	pluginByType := map[string]hplugin.Plugin{
+		plugin.PVPPluginName: &plugin.PVPPlugin{Impl: openSCAPPlugin},
 	}
-
-	if output != nil {
-		fmt.Printf("Scan command output:\n%s", output)
-	}
+	plugin.Register(pluginByType)
 }

@@ -19,6 +19,9 @@ openscap-plugin/
 ├── scan/               # Package to process system scan instructions
 │ ├── scan_test.go      # Tests for functions in scan.go
 │ └── scan.go           # Main code used to process scan instructions
+├── server/             # Package to process server functions. Here is where the plugin communicates with ComplyTime CLI
+│ ├── server_test.go    # Tests for functions in server.go
+│ └── server.go         # Main code used to process server functions
 ├── openscap-config.yml # Example of plugin configuration file (still in development)
 └── README.md           # This file
 ```
@@ -53,9 +56,26 @@ cp -rp bin/openscap-plugin ~/.config/complytime/plugins
 cp -rp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
 ```
 
-Scan the current system using pci-dss profile:
+Create the manifest
 ```bash
-~/.config/complytime/plugins/openscap-plugin
+checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
+cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
+{
+  "metadata": {
+    "id": "openscap",
+    "description": "My openscap plugin",
+    "version": "0.0.1",
+    "types": ["pvp"]
+  },
+  "executablePath": "openscap-plugin",
+  "sha256": "$checksum"
+}
+EOF
+```
+
+Run with the plugin
+```bash
+bin/complytime scan
 ```
 
 After the scan, check the files in "user_workspace" directory.
