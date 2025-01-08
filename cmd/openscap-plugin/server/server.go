@@ -223,7 +223,8 @@ func newHashTableFromRootAndQuery(dsDom *xmlquery.Node, root, query string) Node
 }
 
 type NodeByIdHashTable map[string]*xmlquery.Node
-type nodeByIdHashVariablesTable map[string][]string
+
+//type nodeByIdHashVariablesTable map[string][]string
 
 func newByIdHashTable(nodes []*xmlquery.Node) NodeByIdHashTable {
 	table := make(NodeByIdHashTable)
