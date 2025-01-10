@@ -57,11 +57,7 @@ func ScanSystem(cfg *config.Config, profile string) ([]byte, error) {
 
 	output, err := oscap.OscapScan(openscapFiles, profile)
 	if err != nil {
-		if output == nil {
-			return nil, fmt.Errorf("failed to start scan: %w", err)
-		} else {
-			return output, fmt.Errorf("failed during scan: %w", err)
-		}
+		return output, fmt.Errorf("failed during scan: %w", err)
 	}
 
 	return output, nil
