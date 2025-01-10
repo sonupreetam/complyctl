@@ -4,6 +4,8 @@ package config
 
 import (
 	"os"
+	"os/user"
+	"path/filepath"
 	"testing"
 )
 
@@ -43,24 +45,38 @@ func TestSanitizeInput(t *testing.T) {
 
 // TestSanitizePath tests the SanitizePath function with various inputs.
 func TestSanitizePath(t *testing.T) {
+	usr, _ := user.Current()
+	homeDir := usr.HomeDir
+
 	tests := []struct {
-		input    string
-		expected string
+		input       string
+		expected    string
+		expectError bool
 	}{
 		// Normalizing paths
-		{"/foo/bar/../baz", "/foo/baz"},
-		{"./foo/bar", "foo/bar"},
-		{"foo/./bar", "foo/bar"},
-		{"foo/bar/..", "foo"},
-		{"/foo//bar", "/foo/bar"},
-		{"foo//bar//baz", "foo/bar/baz"},
-		{"foo/bar/../../baz", "baz"},
-		{"./../foo", "../foo"},
+		{"/foo/bar/../baz", "/foo/baz", false},
+		{"./foo/bar", "foo/bar", false},
+		{"foo/./bar", "foo/bar", false},
+		{"foo/bar/..", "foo", false},
+		{"/foo//bar", "/foo/bar", false},
+		{"foo//bar//baz", "foo/bar/baz", false},
+		{"foo/bar/../../baz", "baz", false},
+		{"./../foo", "../foo", false},
+
+		// Expanding paths
+		{"~/foo/bar", filepath.Join(homeDir, "foo", "bar"), false},
+		{"~", homeDir, false},
+
+		// Weird but valid cases
+		{"~weird", "~weird", false}, // not common but possible
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := SanitizePath(tt.input)
+			result, err := SanitizePath(tt.input)
+			if (err != nil) != tt.expectError {
+				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
+			}
 			if result != tt.expected {
 				t.Errorf("Expected result: %s, got: %s", tt.expected, result)
 			}
@@ -71,19 +87,15 @@ func TestSanitizePath(t *testing.T) {
 // TestSanitizeAndValidatePath tests the SanitizeAndValidatePath function with various
 // valid and invalid paths.
 func TestSanitizeAndValidatePath(t *testing.T) {
-	tempDir := os.TempDir() + "/test_sanitize_and_validate_path"
-	tempFile := tempDir + "/testfile"
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "testfile")
 
-	// Setup: create temporary directory and file
-	if err := os.MkdirAll(tempDir, 0750); err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", err)
-	}
 	file, err := os.Create(tempFile)
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
 	file.Close()
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempFile)
 
 	tests := []struct {
 		path        string
@@ -102,6 +114,7 @@ func TestSanitizeAndValidatePath(t *testing.T) {
 		{tempDir, false, true, ""},          // expected file but found directory
 		{"/foo/bar/../baz", true, true, ""}, // normalized path does not exist
 		{"./foo/bar", true, true, ""},       // relative path does not exist
+		{"./foo/bar", true, true, ""},       // relative path does not exist
 	}
 
 	for _, tt := range tests {
@@ -117,26 +130,168 @@ func TestSanitizeAndValidatePath(t *testing.T) {
 	}
 }
 
-// TestEnsureDirectory tests that EnsureDirectory creates a directory if it doesn't exist
-// and handles errors correctly.
+// TestEnsureDirectory tests the ensureDirectory function with various cases.
 func TestEnsureDirectory(t *testing.T) {
-	tempDir := os.TempDir() + "/test_ensure_directory"
+	tempDir := t.TempDir()
 
-	if _, err := os.Stat(tempDir); err == nil {
-		os.RemoveAll(tempDir)
+	tests := []struct {
+		path        string
+		expectError bool
+	}{
+		// Valid cases
+		{filepath.Join(tempDir, "absent_dir"), false},   // directory does not exist, should be created
+		{filepath.Join(tempDir, "existing_dir"), false}, // directory already exists
+
+		// Invalid cases
+		{tempDir + "/invalid\000dir", true}, // invalid directory name
 	}
 
-	err := EnsureDirectory(tempDir)
-	if err != nil {
-		t.Fatalf("Expected no error, but got: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			if tt.path == filepath.Join(tempDir, "existing_dir") {
+				// Create directory for existing_dir test
+				if err := os.MkdirAll(tt.path, 0750); err != nil {
+					t.Fatalf("Failed to create directory: %v", err)
+				}
+			}
 
-	if _, err := os.Stat(tempDir); err != nil {
-		t.Errorf("Expected directory to exist, but got error: %v", err)
-	}
+			err := ensureDirectory(tt.path)
+			if (err != nil) != tt.expectError {
+				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
+			}
 
-	defer os.RemoveAll(tempDir)
+			// Check if directory was created
+			if !tt.expectError {
+				if _, err := os.Stat(tt.path); os.IsNotExist(err) {
+					t.Errorf("Expected directory to be created: %s", tt.path)
+				}
+			}
+		})
+	}
 }
 
-// Tests for ReadConfig, EnsureWorkspace, DefineFilesPaths and ReadConfig functions
-// must be created once the configuration file definition is stable.
+// TestEnsureWorkspace tests the ensureWorkspace function with various cases.
+func TestEnsureWorkspace(t *testing.T) {
+	tempDir := t.TempDir()
+
+	tests := []struct {
+		cfg         Config
+		expectError bool
+	}{
+		{
+			cfg: Config{
+				Files: struct {
+					PluginDir  string "yaml:\"plugindir\""
+					Workspace  string "yaml:\"workspace\""
+					Datastream string "yaml:\"datastream\""
+					Results    string "yaml:\"results\""
+					ARF        string "yaml:\"arf\""
+					Policy     string "yaml:\"policy\""
+				}{
+					PluginDir: "plugins",
+					Workspace: filepath.Join(tempDir, "workspace"),
+					Policy:    "policy.yaml",
+					Results:   "results.xml",
+					ARF:       "arf.xml",
+				},
+			},
+			expectError: false,
+		},
+		{
+			cfg: Config{
+				Files: struct {
+					PluginDir  string "yaml:\"plugindir\""
+					Workspace  string "yaml:\"workspace\""
+					Datastream string "yaml:\"datastream\""
+					Results    string "yaml:\"results\""
+					ARF        string "yaml:\"arf\""
+					Policy     string "yaml:\"policy\""
+				}{
+					PluginDir: "plugins",
+					Workspace: filepath.Join(tempDir, "invalid\000workspace"),
+					Policy:    "policy.yaml",
+					Results:   "results.xml",
+					ARF:       "arf.xml",
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
+			directories, err := ensureWorkspace(&tt.cfg)
+			if (err != nil) != tt.expectError {
+				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
+			}
+
+			if !tt.expectError {
+				for _, dir := range directories {
+					if _, err := os.Stat(dir); os.IsNotExist(err) {
+						t.Errorf("Expected directory to be created: %s", dir)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestDefineFilesPaths tests the defineFilesPaths function with various cases.
+func TestDefineFilesPaths(t *testing.T) {
+	tempDir := t.TempDir()
+
+	tests := []struct {
+		cfg         Config
+		expectError bool
+	}{
+		{
+			cfg: Config{
+				Files: struct {
+					PluginDir  string "yaml:\"plugindir\""
+					Workspace  string "yaml:\"workspace\""
+					Datastream string "yaml:\"datastream\""
+					Results    string "yaml:\"results\""
+					ARF        string "yaml:\"arf\""
+					Policy     string "yaml:\"policy\""
+				}{
+					PluginDir:  "plugins",
+					Workspace:  filepath.Join(tempDir, "workspace"),
+					Datastream: filepath.Join(tempDir, "datastream.xml"),
+					Results:    "results.xml",
+					ARF:        "arf.xml",
+					Policy:     "absent_policy.yaml",
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
+			_, err := defineFilesPaths(&tt.cfg)
+			if (err != nil) != tt.expectError {
+				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
+			}
+
+			if !tt.expectError {
+				// Check if the paths are correctly set
+				expectedPolicyPath := ""
+				expectedResultsPath := filepath.Join(tempDir, "workspace", "plugins", "results", "results.xml")
+				expectedARFPath := filepath.Join(tempDir, "workspace", "plugins", "results", "arf.xml")
+
+				if tt.cfg.Files.Policy != expectedPolicyPath {
+					t.Errorf("Expected policy path: %s, got: %s", expectedPolicyPath, tt.cfg.Files.Policy)
+				}
+				if tt.cfg.Files.Results != expectedResultsPath {
+					t.Errorf("Expected results path: %s, got: %s", expectedResultsPath, tt.cfg.Files.Results)
+				}
+				if tt.cfg.Files.ARF != expectedARFPath {
+					t.Errorf("Expected ARF path: %s, got: %s", expectedARFPath, tt.cfg.Files.ARF)
+				}
+			}
+		})
+	}
+}
+
+// Tests for ReadConfig are not included because the function relies on other functions
+// already tested.

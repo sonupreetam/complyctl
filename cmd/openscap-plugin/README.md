@@ -2,6 +2,8 @@
 
 ## Overview
 
+NOTE: The development of this plugin is in progress and therefore it should only be used for testing purposes at this point.
+
 **openscap-plugin** is a plugin which extends the **ComplyTime** capabilities to use OpenSCAP. The plugin communicates with **ComplyTime** via gRPC (not yet implemented), providing a standard and consistent communication mechanism that gives independence for plugins developers to choose their preferred languages. This plugin is structured to allow modular development, ease of packaging, and maintainability.
 
 For now, this plugin is developed together with ComplyTime for better collaboration during this phase of the project. In the future, this plugin will likely be decoupled into its own repository.
@@ -19,6 +21,9 @@ openscap-plugin/
 ├── scan/               # Package to process system scan instructions
 │ ├── scan_test.go      # Tests for functions in scan.go
 │ └── scan.go           # Main code used to process scan instructions
+├── server/             # Package to process server functions. Here is where the plugin communicates with ComplyTime CLI
+│ ├── server_test.go    # Tests for functions in server.go
+│ └── server.go         # Main code used to process server functions
 ├── openscap-config.yml # Example of plugin configuration file (still in development)
 └── README.md           # This file
 ```
@@ -46,10 +51,33 @@ make build
 ```
 
 ## Running
-Scan the current system using pci-dss profile:
-
+Install the plugin
 ```bash
-./bin/openscap-plugin -config cmd/openscap-plugin/openscap-plugin.yml
+mkdir -p ~/.config/complytime/plugins
+cp -rp bin/openscap-plugin ~/.config/complytime/plugins
+cp -rp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
+```
+
+Create the manifest
+```bash
+checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
+cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
+{
+  "metadata": {
+    "id": "openscap",
+    "description": "My openscap plugin",
+    "version": "0.0.1",
+    "types": ["pvp"]
+  },
+  "executablePath": "openscap-plugin",
+  "sha256": "$checksum"
+}
+EOF
+```
+
+Run with the plugin
+```bash
+bin/complytime scan
 ```
 
 After the scan, check the files in "user_workspace" directory.

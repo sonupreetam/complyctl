@@ -3,32 +3,41 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
-	"github.com/complytime/complytime/cmd/openscap-plugin/scan"
+	"github.com/complytime/complytime/cmd/openscap-plugin/server"
+
+	hplugin "github.com/hashicorp/go-plugin"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-func parseFlags() (string, error) {
-	var configPath string
+func getConfigFile() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %v", err)
+	}
 
-	flag.StringVar(&configPath, "config", "./openscap-plugin.yml", "Path to config file")
-	flag.Parse()
+	// Get the directory of the executable
+	exeDir := filepath.Dir(exePath)
+	configPath := filepath.Join(exeDir, "openscap-plugin.yml")
 
+	// Construct the full path to the file
 	configFile, err := config.SanitizeAndValidatePath(configPath, false)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to sanitize or validate config file: %w", err)
 	}
 
 	return configFile, nil
 }
 
 func initializeConfig() (*config.Config, error) {
-	configFile, err := parseFlags()
+	configFile, err := getConfigFile()
 	if err != nil {
-		return nil, fmt.Errorf("error parsing flags: %w", err)
+		return nil, fmt.Errorf("error locating config file: %w", err)
 	}
 
 	config, err := config.ReadConfig(configFile)
@@ -45,12 +54,9 @@ func main() {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 
-	output, err := scan.ScanSystem(config, "cis")
-	if err != nil {
-		log.Printf("%v", err)
+	openSCAPPlugin := server.New(config)
+	pluginByType := map[string]hplugin.Plugin{
+		plugin.PVPPluginName: &plugin.PVPPlugin{Impl: openSCAPPlugin},
 	}
-
-	if output != nil {
-		fmt.Printf("Scan command output:\n%s", output)
-	}
+	plugin.Register(pluginByType)
 }

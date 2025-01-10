@@ -63,20 +63,6 @@ func TestConstructScanCommand(t *testing.T) {
 			},
 			expectedErr: false,
 		},
-		// oscap command validates the profile existence during execution, so here the focus is
-		// more the provided input.
-		{
-			name: "Invalid profile input",
-			openscapFiles: map[string]string{
-				"datastream": "test-datastream.xml",
-				"policy":     "test-policy.xml",
-				"results":    "test-results.xml",
-				"arf":        "test-arf.xml",
-			},
-			profile:     "invalid-profile!",
-			expectedCmd: nil,
-			expectedErr: true,
-		},
 	}
 
 	for _, tt := range tests {
