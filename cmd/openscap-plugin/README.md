@@ -2,6 +2,8 @@
 
 ## Overview
 
+NOTE: The development of this plugin is in progress and therefore it should only be used for testing purposes at this point.
+
 **openscap-plugin** is a plugin which extends the **ComplyTime** capabilities to use OpenSCAP. The plugin communicates with **ComplyTime** via gRPC (not yet implemented), providing a standard and consistent communication mechanism that gives independence for plugins developers to choose their preferred languages. This plugin is structured to allow modular development, ease of packaging, and maintainability.
 
 For now, this plugin is developed together with ComplyTime for better collaboration during this phase of the project. In the future, this plugin will likely be decoupled into its own repository.
