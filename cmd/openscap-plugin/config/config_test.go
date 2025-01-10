@@ -87,19 +87,15 @@ func TestSanitizePath(t *testing.T) {
 // TestSanitizeAndValidatePath tests the SanitizeAndValidatePath function with various
 // valid and invalid paths.
 func TestSanitizeAndValidatePath(t *testing.T) {
-	tempDir := filepath.Join(os.TempDir(), "test_sanitize_and_validate_path")
+	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "testfile")
 
-	// Setup: create temporary directory and file
-	if err := os.MkdirAll(tempDir, 0750); err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", err)
-	}
 	file, err := os.Create(tempFile)
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
 	file.Close()
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempFile)
 
 	tests := []struct {
 		path        string
@@ -136,7 +132,7 @@ func TestSanitizeAndValidatePath(t *testing.T) {
 
 // TestEnsureDirectory tests the ensureDirectory function with various cases.
 func TestEnsureDirectory(t *testing.T) {
-	tempDir := filepath.Join(os.TempDir(), "test_ensure_directory")
+	tempDir := t.TempDir()
 
 	tests := []struct {
 		path        string
@@ -152,9 +148,6 @@ func TestEnsureDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			// Cleanup before test
-			os.RemoveAll(tt.path)
-
 			if tt.path == filepath.Join(tempDir, "existing_dir") {
 				// Create directory for existing_dir test
 				if err := os.MkdirAll(tt.path, 0750); err != nil {
@@ -173,16 +166,13 @@ func TestEnsureDirectory(t *testing.T) {
 					t.Errorf("Expected directory to be created: %s", tt.path)
 				}
 			}
-
-			// Cleanup after test
-			os.RemoveAll(tt.path)
 		})
 	}
 }
 
 // TestEnsureWorkspace tests the ensureWorkspace function with various cases.
 func TestEnsureWorkspace(t *testing.T) {
-	tempDir := filepath.Join(os.TempDir(), "test_ensure_workspace")
+	tempDir := t.TempDir()
 
 	tests := []struct {
 		cfg         Config
@@ -230,9 +220,6 @@ func TestEnsureWorkspace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
-			// Cleanup before test
-			os.RemoveAll(tt.cfg.Files.Workspace)
-
 			directories, err := ensureWorkspace(&tt.cfg)
 			if (err != nil) != tt.expectError {
 				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
@@ -245,16 +232,13 @@ func TestEnsureWorkspace(t *testing.T) {
 					}
 				}
 			}
-
-			// Cleanup after test
-			os.RemoveAll(tt.cfg.Files.Workspace)
 		})
 	}
 }
 
 // TestDefineFilesPaths tests the defineFilesPaths function with various cases.
 func TestDefineFilesPaths(t *testing.T) {
-	tempDir := filepath.Join(os.TempDir(), "test_define_files_paths")
+	tempDir := t.TempDir()
 
 	tests := []struct {
 		cfg         Config
@@ -270,11 +254,12 @@ func TestDefineFilesPaths(t *testing.T) {
 					ARF        string "yaml:\"arf\""
 					Policy     string "yaml:\"policy\""
 				}{
-					PluginDir: "plugins",
-					Workspace: filepath.Join(tempDir, "workspace"),
-					Policy:    "absent_policy.yaml",
-					Results:   "results.xml",
-					ARF:       "arf.xml",
+					PluginDir:  "plugins",
+					Workspace:  filepath.Join(tempDir, "workspace"),
+					Datastream: filepath.Join(tempDir, "datastream.xml"),
+					Results:    "results.xml",
+					ARF:        "arf.xml",
+					Policy:     "absent_policy.yaml",
 				},
 			},
 			expectError: false,
@@ -283,9 +268,6 @@ func TestDefineFilesPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
-			// Cleanup before test
-			os.RemoveAll(tt.cfg.Files.Workspace)
-
 			_, err := defineFilesPaths(&tt.cfg)
 			if (err != nil) != tt.expectError {
 				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
@@ -307,9 +289,6 @@ func TestDefineFilesPaths(t *testing.T) {
 					t.Errorf("Expected ARF path: %s, got: %s", expectedARFPath, tt.cfg.Files.ARF)
 				}
 			}
-
-			// Cleanup after test
-			os.RemoveAll(tt.cfg.Files.Workspace)
 		})
 	}
 }
