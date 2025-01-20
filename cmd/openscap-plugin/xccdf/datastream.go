@@ -14,6 +14,7 @@ func getDsProfileID(profileId string) string {
 }
 
 func getDsElement(dsDom *xmlquery.Node, dsElement string) (*xmlquery.Node, error) {
+	// Returns nil if the element is not found
 	return xmlquery.Query(dsDom, dsElement)
 }
 
@@ -32,7 +33,7 @@ func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	return dsDom, nil
 }
 
-func getDsProfileTitle(profileId string, dsPath string) (string, error) {
+func GetDsProfileTitle(profileId string, dsPath string) (string, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
 		return "", fmt.Errorf("error loading datastream: %s", err)
@@ -41,9 +42,17 @@ func getDsProfileTitle(profileId string, dsPath string) (string, error) {
 	dsProfileID := getDsProfileID(profileId)
 	profile, err := getDsElement(dsDom, fmt.Sprintf("//xccdf-1.2:Profile[@id='%s']", dsProfileID))
 	if err != nil {
-		return "", fmt.Errorf("error finding profile %s in datastream: %s", dsProfileID, err)
+		return "", fmt.Errorf("error processing profile %s in datastream: %s", dsProfileID, err)
 	}
-	profileTitle := profile.SelectElement("xccdf-1.2:title")
+
+	if profile == nil {
+		return "", fmt.Errorf("profile not found: %s", dsProfileID)
+	}
+
+	profileTitle, err := xmlquery.Query(profile, "xccdf-1.2:title")
+	if err != nil || profileTitle == nil {
+		return "", fmt.Errorf("error finding title element in profile %s: %s", dsProfileID, err)
+	}
 	return profileTitle.InnerText(), nil
 }
 

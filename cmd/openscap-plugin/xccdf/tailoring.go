@@ -19,20 +19,21 @@ const (
 )
 
 func getTailoringID() string {
-	return fmt.Sprintf("xccdf_%s_tailoring_%s", xccdf.XCCDFNamespace, XCCDFTailoringSuffix)
+	return fmt.Sprintf("xccdf_%s_tailoring_%s", XCCDFNamespace, XCCDFTailoringSuffix)
 }
 
 func getTailoringProfileID(profileId string) string {
 	return fmt.Sprintf(
-		"xccdf_%s_profile_%s_%s", xccdf.XCCDFNamespace, profileId, XCCDFTailoringSuffix)
+		"xccdf_%s_profile_%s_%s", XCCDFNamespace, profileId, XCCDFTailoringSuffix)
 }
 
 func getTailoringProfileTitle(profileId string, dsPath string) string {
-	dsProfileTitle, err := getDsProfileTitle(profileId, dsPath)
+	dsProfileTitle, err := GetDsProfileTitle(profileId, dsPath)
 	if err != nil {
-		return fmt.Sprintf("Complytime Tailoring Profile based on %s", profileId)
+		// log error
+		dsProfileTitle = profileId
 	}
-	return fmt.Sprintf("ComplyTime Tailoring - %s", dsProfileTitle)
+	return fmt.Sprintf("ComplyTime Tailoring Profile - %s", dsProfileTitle)
 }
 
 func getTailoringVersion() xccdf.VersionElement {
