@@ -27,11 +27,12 @@ func getTailoringProfileID(profileId string) string {
 		"xccdf_%s_profile_%s_%s", xccdf.XCCDFNamespace, profileId, XCCDFTailoringSuffix)
 }
 
-func getTailoringProfileTitle(profileId string) string {
-	// TODO: Read the Datastream file to collect the title of the profile
-	// Include a prefix to the original title
-	// This field is expected to be read by humans, so the title here is better than the ID
-	return fmt.Sprintf("Complytime Tailoring Profile based on %s", profileId)
+func getTailoringProfileTitle(profileId string, dsPath string) string {
+	dsProfileTitle, err := getDsProfileTitle(profileId, dsPath)
+	if err != nil {
+		return fmt.Sprintf("Complytime Tailoring Profile based on %s", profileId)
+	}
+	return fmt.Sprintf("ComplyTime Tailoring - %s", dsProfileTitle)
 }
 
 func getTailoringVersion() xccdf.VersionElement {
@@ -47,11 +48,12 @@ func getTailoringBenchmarkHref(datastreamPath string) xccdf.BenchmarkElement {
 	}
 }
 
-func getTailoringProfile(profileId string, tailoringPolicy policy.Policy) xccdf.ProfileElement {
+func getTailoringProfile(
+	profileId string, tailoringPolicy policy.Policy, dsPath string) xccdf.ProfileElement {
 	return xccdf.ProfileElement{
 		ID: getTailoringProfileID(profileId),
 		Title: &xccdf.TitleOrDescriptionElement{
-			Value: getTailoringProfileTitle(profileId),
+			Value: getTailoringProfileTitle(profileId, dsPath),
 		},
 		// TODO: Should include only the diff from the original profile in Datastream
 		Selections: getPolicySelections(tailoringPolicy),
@@ -98,7 +100,7 @@ func PolicyToXML(tailoringPolicy policy.Policy, config *config.Config) (string, 
 		ID:              getTailoringID(),
 		Version:         getTailoringVersion(),
 		Benchmark:       getTailoringBenchmarkHref(datastreamPath),
-		Profile:         getTailoringProfile(profileId, tailoringPolicy),
+		Profile:         getTailoringProfile(profileId, tailoringPolicy, datastreamPath),
 	}
 
 	output, err := xml.MarshalIndent(tailoring, "", "  ")
