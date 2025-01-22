@@ -258,7 +258,6 @@ func TestGetValuesFromPolicyVariables(t *testing.T) {
 
 // TestPolicyToXML tests the PolicyToXML function.
 func TestPolicyToXML(t *testing.T) {
-	tempDir := t.TempDir()
 	dsPath := filepath.Join("..", "..", "..", "internal", "complytime", "testdata", "openscap", "ssg-rhel-ds.xml")
 	profileId := "test_profile"
 
@@ -276,28 +275,9 @@ func TestPolicyToXML(t *testing.T) {
 		},
 	}
 
-	cfg := &config.Config{
-		Files: struct {
-			PluginDir  string "yaml:\"plugindir\""
-			Workspace  string "yaml:\"workspace\""
-			Datastream string "yaml:\"datastream\""
-			Results    string "yaml:\"results\""
-			ARF        string "yaml:\"arf\""
-			Policy     string "yaml:\"policy\""
-		}{
-			PluginDir:  "plugins",
-			Workspace:  filepath.Join(tempDir, "workspace"),
-			Datastream: dsPath,
-			Results:    "results.xml",
-			ARF:        "arf.xml",
-			Policy:     "absent_policy.yaml",
-		},
-		Parameters: struct {
-			Profile string `yaml:"profile"`
-		}{
-			Profile: profileId,
-		},
-	}
+	cfg := new(config.Config)
+	cfg.Files.Datastream = dsPath
+	cfg.Parameters.Profile = profileId
 
 	expectedXML := `<?xml version="1.0" encoding="UTF-8"?>
 <xccdf-1.2:Tailoring xmlns:xccdf-1.2="http://checklists.nist.gov/xccdf/1.2" id="xccdf_complytime.openscapplugin_tailoring_complytime-tailoring-profile">
