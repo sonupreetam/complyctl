@@ -9,6 +9,7 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
+        exclude: "^internal/complytime/testdata/openscap/ssg-rhel-ds.xml$"
 -   repo: https://github.com/dnephin/pre-commit-golang
     rev: fb24a639f7c938759fe56eeebbb7713b69d60494 #v0.5.1
     hooks:
