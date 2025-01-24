@@ -10,15 +10,6 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
-func getDsProfileID(profileId string) string {
-	return fmt.Sprintf("xccdf_org.ssgproject.content_profile_%s", profileId)
-}
-
-func getDsElement(dsDom *xmlquery.Node, dsElement string) (*xmlquery.Node, error) {
-	// Returns nil if the element is not found
-	return xmlquery.Query(dsDom, dsElement)
-}
-
 func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	file, err := os.Open(dsPath)
 	if err != nil {
@@ -32,6 +23,15 @@ func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	}
 
 	return dsDom, nil
+}
+
+func getDsProfileID(profileId string) string {
+	return fmt.Sprintf("xccdf_org.ssgproject.content_profile_%s", profileId)
+}
+
+func getDsElement(dsDom *xmlquery.Node, dsElement string) (*xmlquery.Node, error) {
+	// Returns nil if the element is not found
+	return xmlquery.Query(dsDom, dsElement)
 }
 
 func getDsProfile(dsDom *xmlquery.Node, dsProfileID string) (*xmlquery.Node, error) {
@@ -103,15 +103,6 @@ func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileEl
 	return parsedProfile, nil
 }
 
-func GetDsProfileTitle(profileId string, dsPath string) (string, error) {
-	profile, err := GetDsProfile(profileId, dsPath)
-	if err != nil {
-		return "", fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
-	}
-
-	return profile.Title.Value, nil
-}
-
 func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
@@ -134,6 +125,17 @@ func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error
 	}
 
 	return parsedProfile, nil
+}
+
+func GetDsProfileTitle(profileId string, dsPath string) (string, error) {
+	// TODO: This function can likely be removed with the introduction of the GetDsProfile function.
+	// Keeping it for now to avoid out of scope changes.
+	profile, err := GetDsProfile(profileId, dsPath)
+	if err != nil {
+		return "", fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
+	}
+
+	return profile.Title.Value, nil
 }
 
 // Getting rule information
