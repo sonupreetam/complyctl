@@ -108,7 +108,7 @@ func TestGetDsProfileTitle(t *testing.T) {
 		wantErr   bool
 	}{
 		{"test_profile", filepath.Join(testDataDir, "ssg-rhel-ds.xml"), "Test Profile", false},
-		{"test_profile_no_title", filepath.Join(testDataDir, "ssg-rhel-ds.xml"), "", true},
+		{"test_profile_no_title", filepath.Join(testDataDir, "ssg-rhel-ds.xml"), "", false},
 		{"nonexistent_profile", filepath.Join(testDataDir, "ssg-rhel-ds.xml"), "", true},
 		{"invalid_profile", filepath.Join(testDataDir, "nonexistent.xml"), "", true},
 	}

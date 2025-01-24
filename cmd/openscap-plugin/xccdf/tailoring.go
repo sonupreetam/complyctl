@@ -29,8 +29,8 @@ func getTailoringProfileID(profileId string) string {
 
 func getTailoringProfileTitle(profileId string, dsPath string) string {
 	dsProfileTitle, err := GetDsProfileTitle(profileId, dsPath)
-	if err != nil {
-		// log error
+	if err != nil || dsProfileTitle == "" {
+		// log that the profile title was not found or is empty in Datastream
 		dsProfileTitle = profileId
 	}
 	return fmt.Sprintf("ComplyTime Tailoring Profile - %s", dsProfileTitle)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
 	"github.com/antchfx/xmlquery"
 )
 
@@ -33,27 +34,106 @@ func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	return dsDom, nil
 }
 
+func getDsProfile(dsDom *xmlquery.Node, dsProfileID string) (*xmlquery.Node, error) {
+	return getDsElement(dsDom, fmt.Sprintf("//xccdf-1.2:Profile[@id='%s']", dsProfileID))
+}
+
+func getDsProfileTitle(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
+	profileTitle, err := getDsElement(dsProfile, "xccdf-1.2:title")
+	if err != nil {
+		return nil, fmt.Errorf("error finding title element in profile: %s", err)
+	}
+	return profileTitle, nil
+}
+
+func getDsProfileDescription(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
+	profileDescription, err := getDsElement(dsProfile, "xccdf-1.2:description")
+	if err != nil || profileDescription == nil {
+		return nil, fmt.Errorf("error finding description element in profile: %s", err)
+	}
+	return profileDescription, nil
+}
+
+func populateProfileInfo(dsProfile *xmlquery.Node, parsedProfile *xccdf.ProfileElement) (*xccdf.ProfileElement, error) {
+	profileTitle, err := getDsProfileTitle(dsProfile)
+	if err != nil {
+		return parsedProfile, fmt.Errorf("error populating profile title: %s", err)
+	}
+	if parsedProfile.Title == nil {
+		parsedProfile.Title = &xccdf.TitleOrDescriptionElement{}
+	}
+	if profileTitle == nil {
+		// log that profile title was not found.
+		// It is a valid case therefore but better to log it.
+		parsedProfile.Title.Override = false
+		parsedProfile.Title.Value = ""
+	} else {
+		parsedProfile.Title.Override = true
+		parsedProfile.Title.Value = profileTitle.InnerText()
+	}
+
+	profileDescription, err := getDsProfileDescription(dsProfile)
+	if err != nil {
+		return parsedProfile, fmt.Errorf("error populating profile description: %s", err)
+	}
+	if parsedProfile.Description == nil {
+		parsedProfile.Description = &xccdf.TitleOrDescriptionElement{}
+	}
+	if profileDescription == nil {
+		// log that profile description was not found.
+		parsedProfile.Description.Override = false
+		parsedProfile.Description.Value = ""
+	} else {
+		parsedProfile.Description.Override = true
+		parsedProfile.Description.Value = profileDescription.InnerText()
+	}
+
+	return parsedProfile, nil
+}
+
+func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileElement, error) {
+	parsedProfile := new(xccdf.ProfileElement)
+	parsedProfile.ID = dsProfileId
+
+	parsedProfile, err := populateProfileInfo(dsProfile, parsedProfile)
+	if err != nil {
+		return parsedProfile, fmt.Errorf("error populating profile title and description: %s", err)
+	}
+
+	return parsedProfile, nil
+}
+
 func GetDsProfileTitle(profileId string, dsPath string) (string, error) {
+	profile, err := GetDsProfile(profileId, dsPath)
+	if err != nil {
+		return "", fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
+	}
+
+	return profile.Title.Value, nil
+}
+
+func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
-		return "", fmt.Errorf("error loading datastream: %s", err)
+		return nil, fmt.Errorf("error loading datastream: %s", err)
 	}
 
 	dsProfileID := getDsProfileID(profileId)
-	profile, err := getDsElement(dsDom, fmt.Sprintf("//xccdf-1.2:Profile[@id='%s']", dsProfileID))
+	dsProfile, err := getDsProfile(dsDom, dsProfileID)
 	if err != nil {
-		return "", fmt.Errorf("error processing profile %s in datastream: %s", dsProfileID, err)
+		return nil, fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
 	}
 
-	if profile == nil {
-		return "", fmt.Errorf("profile not found: %s", dsProfileID)
+	if dsProfile == nil {
+		return nil, fmt.Errorf("profile not found: %s", dsProfileID)
 	}
 
-	profileTitle, err := xmlquery.Query(profile, "xccdf-1.2:title")
-	if err != nil || profileTitle == nil {
-		return "", fmt.Errorf("error finding title element in profile %s: %s", dsProfileID, err)
+	parsedProfile, err := initProfile(dsProfile, dsProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing profile %s in datastream: %s", profileId, err)
 	}
-	return profileTitle.InnerText(), nil
+
+	return parsedProfile, nil
 }
 
 // Getting rule information
