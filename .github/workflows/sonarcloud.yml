@@ -13,6 +13,7 @@ permissions: read-all
 
 jobs:
   generate-coverage:
+    name: Generate Coverage Report
     runs-on: ubuntu-latest
     steps:
       - name: Check out
@@ -26,6 +27,7 @@ jobs:
           path: coverage.out
   sonarcloud:
     if: ${{ github.event.pull_request.base.repo.url == github.event.pull_request.head.repo.url }}
+    needs: generate-coverage
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +39,7 @@ jobs:
         with:
           name: coverage
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@02ef91109b2d589e757aefcfb2854c2783fd7b19 # pin@02ef91109b2d589e757aefcfb2854c2783fd7b19
+        uses: SonarSource/sonarcloud-github-action@02ef91109b2d589e757aefcfb2854c2783fd7b19 # pin@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
