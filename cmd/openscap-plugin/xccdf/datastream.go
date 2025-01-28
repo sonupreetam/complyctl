@@ -3,9 +3,9 @@
 package xccdf
 
 import (
-	"encoding/xml"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
 	"github.com/antchfx/xmlquery"
@@ -22,12 +22,6 @@ type DsVariables struct {
 	Title       string `xml:",chardata"`
 	Description string `xml:",chardata"`
 	Options     []DsVariableOptions
-}
-
-type SelectElement struct {
-	XMLName  xml.Name `xml:"xccdf-1.2:select"`
-	IDRef    string   `xml:"idref,attr"`
-	Selected bool     `xml:"selected,attr"`
 }
 
 func loadDataStream(dsPath string) (*xmlquery.Node, error) {
@@ -171,28 +165,34 @@ func populateProfileRules(dsProfile *xmlquery.Node, parsedProfile *xccdf.Profile
 	if parsedProfile.Selections == nil {
 		parsedProfile.Selections = []xccdf.SelectElement{}
 	}
+
 	profileRules, err := getDsElements(dsProfile, "xccdf-1.2:select")
 	if err != nil {
 		return parsedProfile, fmt.Errorf("error finding 'select' elements in profile: %s", err)
 	}
+
 	for _, rule := range profileRules {
 		ruleIdRef, err := getDsElementAttrValue(rule, "idref")
 		if err != nil {
 			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %s", err)
 		}
-		// change occurrences of ruleSelector to ruleSelected for alignment with selected attribute
 		ruleSelected, err := getDsElementAttrValue(rule, "selected")
 		if err != nil {
-			return parsedProfile, fmt.Errorf("error getting value of 'selected' attribute: %s", err)
+			return nil, fmt.Errorf("error getting value of 'selected' attribute: %s", err)
+		}
+		selectedBoolean, err := strconv.ParseBool(ruleSelected)
+		if err != nil {
+			return nil, fmt.Errorf("error converting the 'selected' attribute from string to boolean: %s", err)
 		}
 
 		parsedProfile.Selections = append(parsedProfile.Selections, xccdf.SelectElement{
 			IDRef:    ruleIdRef,
-			Selected: ruleSelected,
+			Selected: selectedBoolean,
 		})
 	}
 	return parsedProfile, nil
 }
+
 func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileElement, error) {
 	parsedProfile := new(xccdf.ProfileElement)
 	parsedProfile.ID = dsProfileId
@@ -201,9 +201,6 @@ func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileEl
 	if err != nil {
 		return parsedProfile, fmt.Errorf("error populating profile title and description: %s", err)
 	}
-
-	// Here we can add the logic to populate profile rules in a separate PR
-	// TODO: Implement the profile rules logic - to extract the Selected
 
 	parsedProfile, err = populateProfileRules(dsProfile, parsedProfile)
 	if err != nil {
@@ -335,38 +332,6 @@ func ResolveDsVariableOptions(profile *xccdf.ProfileElement, variables []DsVaria
 
 // Getting rule information
 // Copied from https://github.com/ComplianceAsCode/compliance-operator/blob/fed54b4b761374578016d79d97bcb7636bf9d920/pkg/utils/parse_arf_result.go#L170
-func GetDsProfileRules(dsPath string) ([]SelectElement, error) {
-	dsDom, err := loadDataStream(dsPath)
-	if err != nil {
-		return nil, fmt.Errorf("error loading datastream: %s", err)
-	}
-	// TODO: Check if rule or selected (only will need idref and select boolean)
-	dsRules, err := getDsElements(dsDom, "//xccdf-1.2:Rule")
-	if err != nil {
-		return nil, fmt.Errorf("error getting selected rules from datastream: %s", err)
-	}
-
-	dsSelectedValues := []SelectElement{}
-	for _, rule := range dsRules {
-		ruleId, err := getDsElementAttrValue(rule, "id")
-		if err != nil {
-			return nil, fmt.Errorf("error getting value of 'id' attribute: %s", err)
-		}
-
-		ruleSelected, err := getDsElementAttrValue(rule, "xccdf-1.2:select")
-		if err != nil {
-			return nil, fmt.Errorf("error getting selected rule from datastream: %s", err)
-		}
-
-		dsSelectedValues = append(dsSelectedValues, SelectElement{
-			IDRef:    ruleId,
-			Selected: ruleSelected.InnerText(),
-		})
-	}
-	return dsSelectedValues, nil
-}
-
-// TODO: Fill in above to utilize the same information for just id and select
 func NewRuleHashTable(dsDom *xmlquery.Node) NodeByIdHashTable {
 	return newHashTableFromRootAndQuery(dsDom, "//ds:component/xccdf-1.2:Benchmark", "//xccdf-1.2:Rule")
 }

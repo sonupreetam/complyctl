@@ -400,6 +400,37 @@ func TestPopulateProfileVariables(t *testing.T) {
 	}
 }
 
+// TestPopulateProfileRules tests the populateProfileVariables function.
+func TestPopulateProfileRules(t *testing.T) {
+	doc, _ := LoadDsTest(t, "ssg-rhel-ds.xml")
+	tests := []struct {
+		dsProfileID string
+		wantErr     bool
+	}{
+		{"xccdf_org.ssgproject.content_profile_test_profile", false},
+		{"xccdf_org.ssgproject.content_profile_absent", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.dsProfileID, func(t *testing.T) {
+			dsProfile, err := getDsProfile(doc, tt.dsProfileID)
+			if err != nil {
+				t.Fatalf("failed to get profile: %v", err)
+			}
+
+			parsedProfile := &xccdf.ProfileElement{}
+			result, err := populateProfileRules(dsProfile, parsedProfile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("populateProfileRules() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if result != nil && result.Selections == nil {
+				t.Errorf("got nil rules, want non-nil")
+			}
+		})
+	}
+}
+
 // TestInitProfile tests the initProfile function.
 func TestInitProfile(t *testing.T) {
 	doc, _ := LoadDsTest(t, "ssg-rhel-ds.xml")
