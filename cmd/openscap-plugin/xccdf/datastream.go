@@ -11,6 +11,12 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
+const (
+	profileIDPrefix string = "xccdf_org.ssgproject.content_profile_"
+	ruleIDPrefix    string = "xccdf_org.ssgproject.content_rule_"
+	varIDPrefix     string = "xccdf_org.ssgproject.content_value_"
+)
+
 // The following structs can later be proposed to compliance-operator/pkg/xccdf
 type DsVariableOptions struct {
 	Selector string `xml:"selector,attr"`
@@ -47,11 +53,15 @@ func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 }
 
 func getDsProfileID(profileId string) string {
-	return fmt.Sprintf("xccdf_org.ssgproject.content_profile_%s", profileId)
+	return profileIDPrefix + profileId
 }
 
 func getDsRuleID(ruleId string) string {
-	return fmt.Sprintf("xccdf_org.ssgproject.content_rule_%s", ruleId)
+	return ruleIDPrefix + ruleId
+}
+
+func getDsVarID(varId string) string {
+	return varIDPrefix + varId
 }
 
 func getDsElement(dsDom *xmlquery.Node, dsElement string) (*xmlquery.Node, error) {

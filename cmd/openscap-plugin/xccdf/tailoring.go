@@ -5,6 +5,7 @@ package xccdf
 import (
 	"encoding/xml"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
@@ -17,6 +18,10 @@ const (
 	XCCDFNamespace       string = "complytime.openscapplugin"
 	XCCDFTailoringSuffix string = "complytime-tailoring-profile"
 )
+
+func removePrefix(str, prefix string) string {
+	return strings.TrimPrefix(str, prefix)
+}
 
 func getTailoringID() string {
 	return fmt.Sprintf("xccdf_%s_tailoring_%s", XCCDFNamespace, XCCDFTailoringSuffix)
@@ -46,8 +51,18 @@ func getTailoringBenchmarkHref(datastreamPath string) xccdf.BenchmarkElement {
 
 func validateRuleExistence(policyRuleID string, dsRules []DsRules) bool {
 	for _, dsRule := range dsRules {
-		ruleID := xccdf.GetRuleNameFromID(dsRule.ID)
+		ruleID := removePrefix(dsRule.ID, ruleIDPrefix)
 		if policyRuleID == ruleID {
+			return true
+		}
+	}
+	return false
+}
+
+func validateVariableExistence(policyVariableID string, dsVariables []DsVariables) bool {
+	for _, dsVariable := range dsVariables {
+		varID := removePrefix(dsVariable.ID, varIDPrefix)
+		if policyVariableID == varID {
 			return true
 		}
 	}
@@ -57,7 +72,7 @@ func validateRuleExistence(policyRuleID string, dsRules []DsRules) bool {
 func unselectAbsentRules(tailoringSelections, dsProfileSelections []xccdf.SelectElement, oscalPolicy policy.Policy) []xccdf.SelectElement {
 	for _, dsRule := range dsProfileSelections {
 		dsRuleAlsoInPolicy := false
-		ruleID := xccdf.GetRuleNameFromID(dsRule.IDRef)
+		ruleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
 		for _, rule := range oscalPolicy {
 			if ruleID == rule.Rule.ID {
 				dsRuleAlsoInPolicy = true
@@ -78,7 +93,7 @@ func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.Sele
 	for _, rule := range oscalPolicy {
 		ruleAlreadyInDsProfile := false
 		for _, dsRule := range dsProfileSelections {
-			ruleID := xccdf.GetRuleNameFromID(dsRule.IDRef)
+			ruleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
 			if rule.Rule.ID == ruleID {
 				// Not a common case, but a rule be be unselected in Datastream Profile
 				if dsRule.Selected {
@@ -99,10 +114,6 @@ func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.Sele
 }
 
 func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileElement, dsPath string) ([]xccdf.SelectElement, error) {
-	if oscalPolicy == nil {
-		return nil, fmt.Errorf("OSCAL policy is empty")
-	}
-
 	dsRules, err := GetDsRules(dsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rules from datastream: %w", err)
@@ -121,6 +132,53 @@ func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileE
 	tailoringSelections = selectAdditionalRules(tailoringSelections, dsProfile.Selections, oscalPolicy)
 
 	return tailoringSelections, nil
+}
+
+func updateTailoringValues(tailoringValues, dsProfileValues []xccdf.SetValueElement, oscalPolicy policy.Policy) []xccdf.SetValueElement {
+	for _, rule := range oscalPolicy {
+		varAlreadyInDsProfile := false
+		for _, dsVar := range dsProfileValues {
+			varID := removePrefix(dsVar.IDRef, varIDPrefix)
+			if rule.Rule.Parameter.ID == varID {
+				if rule.Rule.Parameter.Value == dsVar.Value {
+					varAlreadyInDsProfile = true
+				}
+				break
+			}
+		}
+
+		if !varAlreadyInDsProfile {
+			tailoringValues = append(tailoringValues, xccdf.SetValueElement{
+				IDRef: getDsVarID(rule.Rule.Parameter.ID),
+				Value: rule.Rule.Parameter.Value,
+			})
+		}
+	}
+	return tailoringValues
+}
+
+func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileElement, dsPath string) ([]xccdf.SetValueElement, error) {
+	dsVariables, err := GetDsVariablesValues(dsPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get variables from datastream: %w", err)
+	}
+
+	// All policy variables should be present in the Datastream
+	for _, rule := range oscalPolicy {
+		if !validateVariableExistence(rule.Rule.Parameter.ID, dsVariables) {
+			return nil, fmt.Errorf("variable not found in datastream: %s", rule.Rule.Parameter.ID)
+		}
+	}
+
+	dsProfile, err = ResolveDsVariableOptions(dsProfile, dsVariables)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve variable options: %w", err)
+	}
+
+	var tailoringValues []xccdf.SetValueElement
+	tailoringValues = updateTailoringValues(tailoringValues, dsProfile.Values, oscalPolicy)
+
+	return tailoringValues, nil
 }
 
 func getTailoringProfile(profileId string, dsPath string, oscalPolicy policy.Policy) (*xccdf.ProfileElement, error) {
@@ -142,13 +200,20 @@ func getTailoringProfile(profileId string, dsPath string, oscalPolicy policy.Pol
 		return tailoringProfile, fmt.Errorf("failed to get selections for tailoring profile: %w", err)
 	}
 
-	//	tailoringProfile.Values = getTailoringValues(oscalPolicy, dsProfile, dsPath)
+	tailoringProfile.Values, err = getTailoringValues(oscalPolicy, dsProfile, dsPath)
+	if err != nil {
+		return tailoringProfile, fmt.Errorf("failed to get values for tailoring profile: %w", err)
+	}
 	return tailoringProfile, nil
 }
 
 func PolicyToXML(oscalPolicy policy.Policy, config *config.Config) (string, error) {
 	datastreamPath := config.Files.Datastream
 	profileId := config.Parameters.Profile
+
+	if oscalPolicy == nil {
+		return "", fmt.Errorf("OSCAL policy is empty")
+	}
 
 	tailoringProfile, err := getTailoringProfile(profileId, datastreamPath, oscalPolicy)
 	if err != nil {
@@ -169,24 +234,3 @@ func PolicyToXML(oscalPolicy policy.Policy, config *config.Config) (string, erro
 	}
 	return xccdf.XMLHeader + "\n" + string(output), nil
 }
-
-/*
-func getValuesFromPolicyVariables(tp policy.Policy) []xccdf.SetValueElement {
-	var values []xccdf.SetValueElement
-	if len(tp) != 0 {
-		for _, rule := range tp {
-			if rule.Rule.Parameter == nil {
-				continue
-			}
-
-			values = append(values, xccdf.SetValueElement{
-				IDRef: rule.Rule.Parameter.ID,
-				Value: rule.Rule.Parameter.Value,
-			})
-		}
-		return values
-	}
-
-	return nil
-}
-*/
