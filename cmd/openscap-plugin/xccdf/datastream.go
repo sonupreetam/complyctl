@@ -24,6 +24,13 @@ type DsVariables struct {
 	Options     []DsVariableOptions
 }
 
+type DsRules struct {
+	ID          string `xml:"idref,attr"`
+	Title       string `xml:",chardata"`
+	Description string `xml:",chardata"`
+	Selected    bool   `xml:"selected,attr"`
+}
+
 func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	file, err := os.Open(dsPath)
 	if err != nil {
@@ -41,6 +48,10 @@ func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 
 func getDsProfileID(profileId string) string {
 	return fmt.Sprintf("xccdf_org.ssgproject.content_profile_%s", profileId)
+}
+
+func getDsRuleID(ruleId string) string {
+	return fmt.Sprintf("xccdf_org.ssgproject.content_rule_%s", ruleId)
 }
 
 func getDsElement(dsDom *xmlquery.Node, dsElement string) (*xmlquery.Node, error) {
@@ -304,6 +315,53 @@ func GetDsVariablesValues(dsPath string) ([]DsVariables, error) {
 		})
 	}
 	return dsVariablesValues, nil
+}
+
+func GetDsRules(dsPath string) ([]DsRules, error) {
+	dsDom, err := loadDataStream(dsPath)
+	if err != nil {
+		return nil, fmt.Errorf("error loading datastream: %w", err)
+	}
+
+	dsRules, err := getDsElements(dsDom, "//xccdf-1.2:Rule")
+	if err != nil {
+		return nil, fmt.Errorf("error getting rules from datastream: %w", err)
+	}
+
+	dsRulesInfo := []DsRules{}
+	for _, rule := range dsRules {
+		ruleId, err := getDsElementAttrValue(rule, "id")
+		if err != nil {
+			return nil, fmt.Errorf("error getting value of 'id' attribute: %w", err)
+		}
+
+		ruleTitle, err := getDsElementTitle(rule)
+		if err != nil {
+			return nil, fmt.Errorf("error getting rule title: %w", err)
+		}
+
+		ruleDescription, err := getDsElementDescription(rule)
+		if err != nil {
+			return nil, fmt.Errorf("error getting rule description: %w", err)
+		}
+
+		dsRuleSelected, err := getDsElementAttrValue(rule, "selected")
+		if err != nil {
+			return nil, fmt.Errorf("error getting value of 'selected' attribute: %w", err)
+		}
+		selectedBoolean, err := strconv.ParseBool(dsRuleSelected)
+		if err != nil {
+			return nil, fmt.Errorf("error converting 'selected' attribute from string to boolean: %w", err)
+		}
+
+		dsRulesInfo = append(dsRulesInfo, DsRules{
+			ID:          ruleId,
+			Title:       ruleTitle.InnerText(),
+			Description: ruleDescription.InnerText(),
+			Selected:    selectedBoolean,
+		})
+	}
+	return dsRulesInfo, nil
 }
 
 func getValueFromOption(variables []DsVariables, variableId string, selector string) (string, error) {

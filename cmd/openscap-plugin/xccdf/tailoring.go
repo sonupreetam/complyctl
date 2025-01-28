@@ -27,12 +27,7 @@ func getTailoringProfileID(profileId string) string {
 		"xccdf_%s_profile_%s_%s", XCCDFNamespace, profileId, XCCDFTailoringSuffix)
 }
 
-func getTailoringProfileTitle(profileId string, dsPath string) string {
-	dsProfileTitle, err := GetDsProfileTitle(profileId, dsPath)
-	if err != nil || dsProfileTitle == "" {
-		// log that the profile title was not found or is empty in Datastream
-		dsProfileTitle = profileId
-	}
+func getTailoringProfileTitle(dsProfileTitle string) string {
 	return fmt.Sprintf("ComplyTime Tailoring Profile - %s", dsProfileTitle)
 }
 
@@ -49,30 +44,133 @@ func getTailoringBenchmarkHref(datastreamPath string) xccdf.BenchmarkElement {
 	}
 }
 
-func getTailoringProfile(
-	profileId string, tailoringPolicy policy.Policy, dsPath string) xccdf.ProfileElement {
-	return xccdf.ProfileElement{
-		ID: getTailoringProfileID(profileId),
-		Title: &xccdf.TitleOrDescriptionElement{
-			Value: getTailoringProfileTitle(profileId, dsPath),
-		},
-		// TODO: Should include only the diff from the original profile in Datastream
-		Selections: getPolicySelections(tailoringPolicy),
-		Values:     getValuesFromPolicyVariables(tailoringPolicy),
+func validateRuleExistence(policyRuleID string, dsRules []DsRules) bool {
+	for _, dsRule := range dsRules {
+		ruleID := xccdf.GetRuleNameFromID(dsRule.ID)
+		if policyRuleID == ruleID {
+			return true
+		}
 	}
+	return false
 }
 
-func getPolicySelections(tailoringPolicy policy.Policy) []xccdf.SelectElement {
-	var selections []xccdf.SelectElement
-	for _, rule := range tailoringPolicy {
-		selections = append(selections, xccdf.SelectElement{
-			IDRef:    rule.Rule.ID,
-			Selected: true,
-		})
+func unselectAbsentRules(tailoringSelections, dsProfileSelections []xccdf.SelectElement, oscalPolicy policy.Policy) []xccdf.SelectElement {
+	for _, dsRule := range dsProfileSelections {
+		dsRuleAlsoInPolicy := false
+		ruleID := xccdf.GetRuleNameFromID(dsRule.IDRef)
+		for _, rule := range oscalPolicy {
+			if ruleID == rule.Rule.ID {
+				dsRuleAlsoInPolicy = true
+				break
+			}
+		}
+		if !dsRuleAlsoInPolicy {
+			tailoringSelections = append(tailoringSelections, xccdf.SelectElement{
+				IDRef:    dsRule.IDRef,
+				Selected: false,
+			})
+		}
 	}
-	return selections
+	return tailoringSelections
 }
 
+func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.SelectElement, oscalPolicy policy.Policy) []xccdf.SelectElement {
+	for _, rule := range oscalPolicy {
+		ruleAlreadyInDsProfile := false
+		for _, dsRule := range dsProfileSelections {
+			ruleID := xccdf.GetRuleNameFromID(dsRule.IDRef)
+			if rule.Rule.ID == ruleID {
+				// Not a common case, but a rule be be unselected in Datastream Profile
+				if dsRule.Selected {
+					ruleAlreadyInDsProfile = true
+				}
+				break
+			}
+		}
+
+		if !ruleAlreadyInDsProfile {
+			tailoringSelections = append(tailoringSelections, xccdf.SelectElement{
+				IDRef:    getDsRuleID(rule.Rule.ID),
+				Selected: true,
+			})
+		}
+	}
+	return tailoringSelections
+}
+
+func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileElement, dsPath string) ([]xccdf.SelectElement, error) {
+	if oscalPolicy == nil {
+		return nil, fmt.Errorf("OSCAL policy is empty")
+	}
+
+	dsRules, err := GetDsRules(dsPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rules from datastream: %w", err)
+	}
+
+	// All policy rules should be present in the Datastream
+	for _, rule := range oscalPolicy {
+		if !validateRuleExistence(rule.Rule.ID, dsRules) {
+			return nil, fmt.Errorf("rule not found in datastream: %s", rule.Rule.ID)
+		}
+	}
+
+	var tailoringSelections []xccdf.SelectElement
+	// Rules in dsProfile but not in OSCAL Policy must be unselected in Tailoring file.
+	tailoringSelections = unselectAbsentRules(tailoringSelections, dsProfile.Selections, oscalPolicy)
+	tailoringSelections = selectAdditionalRules(tailoringSelections, dsProfile.Selections, oscalPolicy)
+
+	return tailoringSelections, nil
+}
+
+func getTailoringProfile(profileId string, dsPath string, oscalPolicy policy.Policy) (*xccdf.ProfileElement, error) {
+	tailoringProfile := new(xccdf.ProfileElement)
+	tailoringProfile.ID = getTailoringProfileID(profileId)
+
+	dsProfile, err := GetDsProfile(profileId, dsPath)
+	if err != nil {
+		return tailoringProfile, fmt.Errorf("failed to get base profile from datastream: %w", err)
+	}
+
+	tailoringProfile.Title = &xccdf.TitleOrDescriptionElement{
+		Override: true,
+		Value:    getTailoringProfileTitle(dsProfile.Title.Value),
+	}
+
+	tailoringProfile.Selections, err = getTailoringSelections(oscalPolicy, dsProfile, dsPath)
+	if err != nil {
+		return tailoringProfile, fmt.Errorf("failed to get selections for tailoring profile: %w", err)
+	}
+
+	//	tailoringProfile.Values = getTailoringValues(oscalPolicy, dsProfile, dsPath)
+	return tailoringProfile, nil
+}
+
+func PolicyToXML(oscalPolicy policy.Policy, config *config.Config) (string, error) {
+	datastreamPath := config.Files.Datastream
+	profileId := config.Parameters.Profile
+
+	tailoringProfile, err := getTailoringProfile(profileId, datastreamPath, oscalPolicy)
+	if err != nil {
+		return "", err
+	}
+
+	tailoring := xccdf.TailoringElement{
+		XMLNamespaceURI: xccdf.XCCDFURI,
+		ID:              getTailoringID(),
+		Version:         getTailoringVersion(),
+		Benchmark:       getTailoringBenchmarkHref(datastreamPath),
+		Profile:         *tailoringProfile,
+	}
+
+	output, err := xml.MarshalIndent(tailoring, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return xccdf.XMLHeader + "\n" + string(output), nil
+}
+
+/*
 func getValuesFromPolicyVariables(tp policy.Policy) []xccdf.SetValueElement {
 	var values []xccdf.SetValueElement
 	if len(tp) != 0 {
@@ -91,22 +189,4 @@ func getValuesFromPolicyVariables(tp policy.Policy) []xccdf.SetValueElement {
 
 	return nil
 }
-
-func PolicyToXML(tailoringPolicy policy.Policy, config *config.Config) (string, error) {
-	datastreamPath := config.Files.Datastream
-	profileId := config.Parameters.Profile
-
-	tailoring := xccdf.TailoringElement{
-		XMLNamespaceURI: xccdf.XCCDFURI,
-		ID:              getTailoringID(),
-		Version:         getTailoringVersion(),
-		Benchmark:       getTailoringBenchmarkHref(datastreamPath),
-		Profile:         getTailoringProfile(profileId, tailoringPolicy, datastreamPath),
-	}
-
-	output, err := xml.MarshalIndent(tailoring, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return xccdf.XMLHeader + "\n" + string(output), nil
-}
+*/
