@@ -260,17 +260,6 @@ func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error
 	return parsedProfile, nil
 }
 
-func GetDsProfileTitle(profileId string, dsPath string) (string, error) {
-	// TODO: This function can likely be removed with the introduction of the GetDsProfile
-	// function. Keeping it for now to avoid out of scope changes.
-	profile, err := GetDsProfile(profileId, dsPath)
-	if err != nil {
-		return "", fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
-	}
-
-	return profile.Title.Value, nil
-}
-
 func GetDsVariablesValues(dsPath string) ([]DsVariables, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
@@ -327,6 +316,30 @@ func GetDsVariablesValues(dsPath string) ([]DsVariables, error) {
 	return dsVariablesValues, nil
 }
 
+func getValueFromOption(variables []DsVariables, variableId string, selector string) (string, error) {
+	for _, variable := range variables {
+		if variable.ID == variableId {
+			for _, option := range variable.Options {
+				if option.Selector == selector {
+					return option.Value, nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("variable not found: %s", variableId)
+}
+
+func ResolveDsVariableOptions(profile *xccdf.ProfileElement, variables []DsVariables) (*xccdf.ProfileElement, error) {
+	for i, value := range profile.Values {
+		resolvedValue, err := getValueFromOption(variables, value.IDRef, value.Value)
+		if err != nil {
+			return profile, fmt.Errorf("error resolving variable options: %w", err)
+		}
+		profile.Values[i].Value = resolvedValue
+	}
+	return profile, nil
+}
+
 func GetDsRules(dsPath string) ([]DsRules, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
@@ -372,30 +385,6 @@ func GetDsRules(dsPath string) ([]DsRules, error) {
 		})
 	}
 	return dsRulesInfo, nil
-}
-
-func getValueFromOption(variables []DsVariables, variableId string, selector string) (string, error) {
-	for _, variable := range variables {
-		if variable.ID == variableId {
-			for _, option := range variable.Options {
-				if option.Selector == selector {
-					return option.Value, nil
-				}
-			}
-		}
-	}
-	return "", fmt.Errorf("variable not found")
-}
-
-func ResolveDsVariableOptions(profile *xccdf.ProfileElement, variables []DsVariables) (*xccdf.ProfileElement, error) {
-	for i, value := range profile.Values {
-		resolvedValue, err := getValueFromOption(variables, value.IDRef, value.Value)
-		if err != nil {
-			return profile, fmt.Errorf("error resolving variable options: %s", err)
-		}
-		profile.Values[i].Value = resolvedValue
-	}
-	return profile, nil
 }
 
 // Getting rule information
