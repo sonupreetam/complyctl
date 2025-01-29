@@ -5,6 +5,7 @@ package xccdf
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
 	"github.com/antchfx/xmlquery"
@@ -160,6 +161,38 @@ func populateProfileVariables(dsProfile *xmlquery.Node, parsedProfile *xccdf.Pro
 	return parsedProfile, nil
 }
 
+func populateProfileRules(dsProfile *xmlquery.Node, parsedProfile *xccdf.ProfileElement) (*xccdf.ProfileElement, error) {
+	if parsedProfile.Selections == nil {
+		parsedProfile.Selections = []xccdf.SelectElement{}
+	}
+
+	profileRules, err := getDsElements(dsProfile, "xccdf-1.2:select")
+	if err != nil {
+		return parsedProfile, fmt.Errorf("error finding 'select' elements in profile: %s", err)
+	}
+
+	for _, rule := range profileRules {
+		ruleIdRef, err := getDsElementAttrValue(rule, "idref")
+		if err != nil {
+			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %s", err)
+		}
+		ruleSelected, err := getDsElementAttrValue(rule, "selected")
+		if err != nil {
+			return nil, fmt.Errorf("error getting value of 'selected' attribute: %s", err)
+		}
+		selectedBoolean, err := strconv.ParseBool(ruleSelected)
+		if err != nil {
+			return nil, fmt.Errorf("error converting the 'selected' attribute from string to boolean: %s", err)
+		}
+
+		parsedProfile.Selections = append(parsedProfile.Selections, xccdf.SelectElement{
+			IDRef:    ruleIdRef,
+			Selected: selectedBoolean,
+		})
+	}
+	return parsedProfile, nil
+}
+
 func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileElement, error) {
 	parsedProfile := new(xccdf.ProfileElement)
 	parsedProfile.ID = dsProfileId
@@ -169,7 +202,10 @@ func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileEl
 		return parsedProfile, fmt.Errorf("error populating profile title and description: %s", err)
 	}
 
-	// Here we can add the logic to populate profile rules in a separate PR
+	parsedProfile, err = populateProfileRules(dsProfile, parsedProfile)
+	if err != nil {
+		return parsedProfile, fmt.Errorf("error populating profile rules: %s", err)
+	}
 
 	parsedProfile, err = populateProfileVariables(dsProfile, parsedProfile)
 	if err != nil {
@@ -296,7 +332,6 @@ func ResolveDsVariableOptions(profile *xccdf.ProfileElement, variables []DsVaria
 
 // Getting rule information
 // Copied from https://github.com/ComplianceAsCode/compliance-operator/blob/fed54b4b761374578016d79d97bcb7636bf9d920/pkg/utils/parse_arf_result.go#L170
-
 func NewRuleHashTable(dsDom *xmlquery.Node) NodeByIdHashTable {
 	return newHashTableFromRootAndQuery(dsDom, "//ds:component/xccdf-1.2:Benchmark", "//xccdf-1.2:Rule")
 }
