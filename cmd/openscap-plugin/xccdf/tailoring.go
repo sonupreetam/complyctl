@@ -16,7 +16,7 @@ import (
 
 const (
 	XCCDFNamespace       string = "complytime.openscapplugin"
-	XCCDFTailoringSuffix string = "complytime-tailoring-profile"
+	XCCDFTailoringSuffix string = "complytime"
 )
 
 func removePrefix(str, prefix string) string {
