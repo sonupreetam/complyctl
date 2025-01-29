@@ -14,19 +14,19 @@ import (
 
 var testDataDir = filepath.Join("..", "..", "..", "internal", "complytime", "testdata", "openscap")
 
-// Helper function to load Datastream XML file.
+// Helper function to load Datastream XML file. It is used by multiple tests in xccdf package.
 func LoadDsTest(t *testing.T, dsTestFile string) (*xmlquery.Node, error) {
 	dsTestFilePath := filepath.Join(testDataDir, dsTestFile)
 	file, err := os.Open(dsTestFilePath)
 	if err != nil {
-		t.Fatalf("error opening datastream file: %s", err)
+		t.Fatalf("error opening datastream file: %v", err)
 		return nil, err
 	}
 	defer file.Close()
 
 	dsDom, err := xmlquery.Parse(file)
 	if err != nil {
-		t.Fatalf("error parsing datastream file: %s", err)
+		t.Fatalf("error parsing datastream file: %v", err)
 		return nil, err
 	}
 

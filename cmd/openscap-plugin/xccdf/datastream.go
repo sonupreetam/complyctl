@@ -40,13 +40,13 @@ type DsRules struct {
 func loadDataStream(dsPath string) (*xmlquery.Node, error) {
 	file, err := os.Open(dsPath)
 	if err != nil {
-		return nil, fmt.Errorf("error opening datastream file: %s", err)
+		return nil, fmt.Errorf("error opening datastream file: %w", err)
 	}
 	defer file.Close()
 
 	dsDom, err := xmlquery.Parse(file)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing datastream file: %s", err)
+		return nil, fmt.Errorf("error parsing datastream file: %w", err)
 	}
 
 	return dsDom, nil
@@ -78,7 +78,7 @@ func getDsElementAttrValue(dsElement *xmlquery.Node, attrName string) (string, e
 			return dsElement.SelectAttr(attrName), nil
 		}
 	}
-	return "", fmt.Errorf("attribute not found")
+	return "", fmt.Errorf("attribute not found: %s", attrName)
 }
 
 func getDsOptionalAttrValue(dsElement *xmlquery.Node, optionalAttrName string) string {
@@ -103,7 +103,7 @@ func getDsProfile(dsDom *xmlquery.Node, dsProfileID string) (*xmlquery.Node, err
 func getDsElementTitle(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
 	profileTitle, err := getDsElement(dsProfile, "xccdf-1.2:title")
 	if err != nil {
-		return nil, fmt.Errorf("error finding 'title' element: %s", err)
+		return nil, fmt.Errorf("error finding 'title' element: %w", err)
 	}
 	return profileTitle, nil
 }
@@ -111,7 +111,7 @@ func getDsElementTitle(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
 func getDsElementDescription(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
 	profileDescription, err := getDsElement(dsProfile, "xccdf-1.2:description")
 	if err != nil {
-		return nil, fmt.Errorf("error finding 'description' element: %s", err)
+		return nil, fmt.Errorf("error finding 'description' element: %w", err)
 	}
 	return profileDescription, nil
 }
@@ -119,7 +119,7 @@ func getDsElementDescription(dsProfile *xmlquery.Node) (*xmlquery.Node, error) {
 func populateProfileInfo(dsProfile *xmlquery.Node, parsedProfile *xccdf.ProfileElement) (*xccdf.ProfileElement, error) {
 	profileTitle, err := getDsElementTitle(dsProfile)
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error populating profile title: %s", err)
+		return parsedProfile, fmt.Errorf("error populating profile title: %w", err)
 	}
 	if parsedProfile.Title == nil {
 		parsedProfile.Title = &xccdf.TitleOrDescriptionElement{}
@@ -136,7 +136,7 @@ func populateProfileInfo(dsProfile *xmlquery.Node, parsedProfile *xccdf.ProfileE
 
 	profileDescription, err := getDsElementDescription(dsProfile)
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error populating profile description: %s", err)
+		return parsedProfile, fmt.Errorf("error populating profile description: %w", err)
 	}
 	if parsedProfile.Description == nil {
 		parsedProfile.Description = &xccdf.TitleOrDescriptionElement{}
@@ -161,17 +161,17 @@ func populateProfileVariables(dsProfile *xmlquery.Node, parsedProfile *xccdf.Pro
 
 	profileVariables, err := getDsElements(dsProfile, "xccdf-1.2:refine-value")
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error finding 'refine-value' elements in profile: %s", err)
+		return parsedProfile, fmt.Errorf("error finding 'refine-value' elements in profile: %w", err)
 	}
 
 	for _, variable := range profileVariables {
 		varIdRef, err := getDsElementAttrValue(variable, "idref")
 		if err != nil {
-			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %s", err)
+			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %w", err)
 		}
 		varSelector, err := getDsElementAttrValue(variable, "selector")
 		if err != nil {
-			return parsedProfile, fmt.Errorf("error getting value of 'selector' attribute: %s", err)
+			return parsedProfile, fmt.Errorf("error getting value of 'selector' attribute: %w", err)
 		}
 
 		parsedProfile.Values = append(parsedProfile.Values, xccdf.SetValueElement{
@@ -189,21 +189,21 @@ func populateProfileRules(dsProfile *xmlquery.Node, parsedProfile *xccdf.Profile
 
 	profileRules, err := getDsElements(dsProfile, "xccdf-1.2:select")
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error finding 'select' elements in profile: %s", err)
+		return parsedProfile, fmt.Errorf("error finding 'select' elements in profile: %w", err)
 	}
 
 	for _, rule := range profileRules {
 		ruleIdRef, err := getDsElementAttrValue(rule, "idref")
 		if err != nil {
-			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %s", err)
+			return parsedProfile, fmt.Errorf("error getting value of 'idref' attribute: %w", err)
 		}
 		ruleSelected, err := getDsElementAttrValue(rule, "selected")
 		if err != nil {
-			return nil, fmt.Errorf("error getting value of 'selected' attribute: %s", err)
+			return nil, fmt.Errorf("error getting value of 'selected' attribute: %w", err)
 		}
 		selectedBoolean, err := strconv.ParseBool(ruleSelected)
 		if err != nil {
-			return nil, fmt.Errorf("error converting the 'selected' attribute from string to boolean: %s", err)
+			return nil, fmt.Errorf("error converting the 'selected' attribute from string to boolean: %w", err)
 		}
 
 		parsedProfile.Selections = append(parsedProfile.Selections, xccdf.SelectElement{
@@ -220,17 +220,17 @@ func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileEl
 
 	parsedProfile, err := populateProfileInfo(dsProfile, parsedProfile)
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error populating profile title and description: %s", err)
+		return parsedProfile, fmt.Errorf("error populating profile title and description: %w", err)
 	}
 
 	parsedProfile, err = populateProfileRules(dsProfile, parsedProfile)
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error populating profile rules: %s", err)
+		return parsedProfile, fmt.Errorf("error populating profile rules: %w", err)
 	}
 
 	parsedProfile, err = populateProfileVariables(dsProfile, parsedProfile)
 	if err != nil {
-		return parsedProfile, fmt.Errorf("error populating profile variables: %s", err)
+		return parsedProfile, fmt.Errorf("error populating profile variables: %w", err)
 	}
 
 	return parsedProfile, nil
@@ -239,13 +239,13 @@ func initProfile(dsProfile *xmlquery.Node, dsProfileId string) (*xccdf.ProfileEl
 func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading datastream: %s", err)
+		return nil, fmt.Errorf("error loading datastream: %w", err)
 	}
 
 	dsProfileID := getDsProfileID(profileId)
 	dsProfile, err := getDsProfile(dsDom, dsProfileID)
 	if err != nil {
-		return nil, fmt.Errorf("error processing profile %s in datastream: %s", profileId, err)
+		return nil, fmt.Errorf("error processing profile %s in datastream: %w", profileId, err)
 	}
 
 	if dsProfile == nil {
@@ -254,7 +254,7 @@ func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error
 
 	parsedProfile, err := initProfile(dsProfile, dsProfileID)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing a parsed profile for %s: %s", profileId, err)
+		return nil, fmt.Errorf("error initializing a parsed profile for %s: %w", profileId, err)
 	}
 
 	return parsedProfile, nil
@@ -263,34 +263,34 @@ func GetDsProfile(profileId string, dsPath string) (*xccdf.ProfileElement, error
 func GetDsVariablesValues(dsPath string) ([]DsVariables, error) {
 	dsDom, err := loadDataStream(dsPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading datastream: %s", err)
+		return nil, fmt.Errorf("error loading datastream: %w", err)
 	}
 
 	dsVariables, err := getDsElements(dsDom, "//xccdf-1.2:Value")
 	if err != nil {
-		return nil, fmt.Errorf("error getting variables from datastream: %s", err)
+		return nil, fmt.Errorf("error getting variables from datastream: %w", err)
 	}
 
 	dsVariablesValues := []DsVariables{}
 	for _, variable := range dsVariables {
 		varId, err := getDsElementAttrValue(variable, "id")
 		if err != nil {
-			return nil, fmt.Errorf("error getting value of 'id' attribute: %s", err)
+			return nil, fmt.Errorf("error getting value of 'id' attribute: %w", err)
 		}
 
 		varTitle, err := getDsElementTitle(variable)
 		if err != nil {
-			return nil, fmt.Errorf("error getting variable title: %s", err)
+			return nil, fmt.Errorf("error getting variable title: %w", err)
 		}
 
 		varDescription, err := getDsElementDescription(variable)
 		if err != nil {
-			return nil, fmt.Errorf("error getting variable description: %s", err)
+			return nil, fmt.Errorf("error getting variable description: %w", err)
 		}
 
 		varOptions, err := getDsElements(variable, "xccdf-1.2:value")
 		if err != nil {
-			return nil, fmt.Errorf("error getting variable options: %s", err)
+			return nil, fmt.Errorf("error getting variable options: %w", err)
 		}
 
 		dsVarOptions := []DsVariableOptions{}

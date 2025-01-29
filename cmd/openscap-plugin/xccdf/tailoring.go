@@ -95,14 +95,13 @@ func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.Sele
 		for _, dsRule := range dsProfileSelections {
 			ruleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
 			if rule.Rule.ID == ruleID {
-				// Not a common case, but a rule be be unselected in Datastream Profile
+				// Not a common case, but a rule be be unselected in a Datastream Profile
 				if dsRule.Selected {
 					ruleAlreadyInDsProfile = true
 				}
 				break
 			}
 		}
-
 		if !ruleAlreadyInDsProfile {
 			tailoringSelections = append(tailoringSelections, xccdf.SelectElement{
 				IDRef:    getDsRuleID(rule.Rule.ID),
@@ -119,7 +118,7 @@ func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileE
 		return nil, fmt.Errorf("failed to get rules from datastream: %w", err)
 	}
 
-	// All policy rules should be present in the Datastream
+	// All OSCAL Policy rules should be present in the Datastream
 	for _, rule := range oscalPolicy {
 		if !validateRuleExistence(rule.Rule.ID, dsRules) {
 			return nil, fmt.Errorf("rule not found in datastream: %s", rule.Rule.ID)
@@ -146,7 +145,6 @@ func updateTailoringValues(tailoringValues, dsProfileValues []xccdf.SetValueElem
 				break
 			}
 		}
-
 		if !varAlreadyInDsProfile {
 			tailoringValues = append(tailoringValues, xccdf.SetValueElement{
 				IDRef: getDsVarID(rule.Rule.Parameter.ID),
@@ -163,7 +161,7 @@ func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileEleme
 		return nil, fmt.Errorf("failed to get variables from datastream: %w", err)
 	}
 
-	// All policy variables should be present in the Datastream
+	// All OSCAL policy variables should be present in the Datastream
 	for _, rule := range oscalPolicy {
 		if !validateVariableExistence(rule.Rule.Parameter.ID, dsVariables) {
 			return nil, fmt.Errorf("variable not found in datastream: %s", rule.Rule.Parameter.ID)
@@ -172,7 +170,7 @@ func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileEleme
 
 	dsProfile, err = ResolveDsVariableOptions(dsProfile, dsVariables)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve variable options: %w", err)
+		return nil, fmt.Errorf("failed to get values from variables options: %w", err)
 	}
 
 	var tailoringValues []xccdf.SetValueElement

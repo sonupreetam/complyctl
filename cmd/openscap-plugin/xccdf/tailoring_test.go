@@ -622,6 +622,9 @@ func TestGetTailoringProfile(t *testing.T) {
 	}
 }
 
+// This is a supporting function used by TestPolicyToXML.
+// It removes the time attribute from the XML because it is generated
+// dynamically and may differ in some seconds during the tests.
 func removeVersionTimeTest(xml string) string {
 	re := regexp.MustCompile(`time="[^"]*"`)
 	return re.ReplaceAllString(xml, `time=""`)
