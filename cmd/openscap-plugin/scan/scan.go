@@ -35,10 +35,12 @@ func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {
 		return nil, err
 	}
 
-	if cfg.Files.Policy != "" {
-		if _, err := isXMLFile(cfg.Files.Policy); err != nil {
-			return nil, err
-		}
+	if _, err := os.Stat(cfg.Files.Policy); err != nil {
+		return nil, err
+	}
+
+	if _, err := isXMLFile(cfg.Files.Policy); err != nil {
+		return nil, err
 	}
 
 	return map[string]string{
