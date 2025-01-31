@@ -135,6 +135,9 @@ func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileE
 
 func updateTailoringValues(tailoringValues, dsProfileValues []xccdf.SetValueElement, oscalPolicy policy.Policy) []xccdf.SetValueElement {
 	for _, rule := range oscalPolicy {
+		if rule.Rule.Parameter == nil {
+			continue
+		}
 		varAlreadyInDsProfile := false
 		for _, dsVar := range dsProfileValues {
 			varID := removePrefix(dsVar.IDRef, varIDPrefix)
@@ -163,6 +166,9 @@ func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileEleme
 
 	// All OSCAL policy variables should be present in the Datastream
 	for _, rule := range oscalPolicy {
+		if rule.Rule.Parameter == nil {
+			continue
+		}
 		if !validateVariableExistence(rule.Rule.Parameter.ID, dsVariables) {
 			return nil, fmt.Errorf("variable not found in datastream: %s", rule.Rule.Parameter.ID)
 		}

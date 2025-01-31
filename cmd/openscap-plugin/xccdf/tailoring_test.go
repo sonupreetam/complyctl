@@ -477,6 +477,17 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "new_value"},
 			},
 		},
+		{
+			name:            "Rule without parameter",
+			tailoringValues: []xccdf.SetValueElement{},
+			dsProfileValues: []xccdf.SetValueElement{
+				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
+			},
+			oscalPolicy: policy.Policy{
+				{Rule: extensions.Rule{Parameter: nil}},
+			},
+			expectedValues: []xccdf.SetValueElement{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -545,6 +556,14 @@ func TestGetTailoringValues(t *testing.T) {
 			expectedResult: []xccdf.SetValueElement{
 				{IDRef: "xccdf_org.ssgproject.content_value_var_selinux_policy_name", Value: "mls"},
 			},
+		},
+		{
+			name: "OSCAL policy without variables",
+			oscalPolicy: policy.Policy{
+				{Rule: extensions.Rule{Parameter: nil}},
+			},
+			expectedError:  false,
+			expectedResult: []xccdf.SetValueElement{},
 		},
 	}
 
