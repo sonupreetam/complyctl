@@ -95,7 +95,7 @@ func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.Sele
 		for _, dsRule := range dsProfileSelections {
 			ruleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
 			if rule.Rule.ID == ruleID {
-				// Not a common case, but a rule be be unselected in a Datastream Profile
+				// Not a common case, but a rule can be unselected in a Datastream Profile
 				if dsRule.Selected {
 					ruleAlreadyInDsProfile = true
 				}
