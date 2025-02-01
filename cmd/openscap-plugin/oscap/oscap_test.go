@@ -3,11 +3,20 @@
 package oscap
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
 
 func TestConstructScanCommand(t *testing.T) {
+	tailoringFilePath := filepath.Join(t.TempDir(), "test-policy.xml")
+	tailoringFile, err := os.Create(tailoringFilePath)
+	if err != nil {
+		t.Fatalf("Failed to create fake tailoring file: %v", err)
+	}
+	tailoringFile.Close()
+
 	tests := []struct {
 		name          string
 		openscapFiles map[string]string
@@ -19,7 +28,7 @@ func TestConstructScanCommand(t *testing.T) {
 			name: "Valid input with tailoring file",
 			openscapFiles: map[string]string{
 				"datastream": "test-datastream.xml",
-				"policy":     "test-policy.xml",
+				"policy":     tailoringFilePath,
 				"results":    "test-results.xml",
 				"arf":        "test-arf.xml",
 			},
@@ -35,7 +44,7 @@ func TestConstructScanCommand(t *testing.T) {
 				"--results-arf",
 				"test-arf.xml",
 				"--tailoring-file",
-				"test-policy.xml",
+				tailoringFilePath,
 				"test-datastream.xml",
 			},
 			expectedErr: false,

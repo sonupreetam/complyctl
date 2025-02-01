@@ -259,7 +259,7 @@ func TestDefineFilesPaths(t *testing.T) {
 					Datastream: filepath.Join(tempDir, "datastream.xml"),
 					Results:    "results.xml",
 					ARF:        "arf.xml",
-					Policy:     "absent_policy.yaml",
+					Policy:     "policy.yaml",
 				},
 			},
 			expectError: false,
@@ -275,7 +275,7 @@ func TestDefineFilesPaths(t *testing.T) {
 
 			if !tt.expectError {
 				// Check if the paths are correctly set
-				expectedPolicyPath := ""
+				expectedPolicyPath := filepath.Join(tempDir, "workspace", "plugins", "policy", "policy.yaml")
 				expectedResultsPath := filepath.Join(tempDir, "workspace", "plugins", "results", "results.xml")
 				expectedARFPath := filepath.Join(tempDir, "workspace", "plugins", "results", "arf.xml")
 

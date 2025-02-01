@@ -5,6 +5,7 @@ package oscap
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 )
 
@@ -26,9 +27,10 @@ func constructScanCommand(openscapFiles map[string]string, profile string) ([]st
 		arfFile,
 	}
 
-	if tailoringFile != "" {
+	if _, err := os.Stat(tailoringFile); err == nil {
 		cmd = append(cmd, "--tailoring-file", tailoringFile)
 	}
+
 	cmd = append(cmd, datastream)
 	return cmd, nil
 }

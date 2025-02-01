@@ -74,7 +74,7 @@ func SanitizePath(path string) (string, error) {
 	cleanPath := filepath.Clean(path)
 	expandedPath, err := expandPath(cleanPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to expand path: %v", err)
+		return "", fmt.Errorf("failed to expand path: %w", err)
 	}
 	return expandedPath, nil
 }
@@ -143,15 +143,6 @@ func defineFilesPaths(cfg *Config) (*Config, error) {
 	cfg.Files.Policy = filepath.Join(directories["policyDir"], cfg.Files.Policy)
 	cfg.Files.Results = filepath.Join(directories["resultsDir"], cfg.Files.Results)
 	cfg.Files.ARF = filepath.Join(directories["resultsDir"], cfg.Files.ARF)
-
-	_, err = validatePath(cfg.Files.Policy, false)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			cfg.Files.Policy = ""
-		} else {
-			return nil, err
-		}
-	}
 
 	return cfg, nil
 }
