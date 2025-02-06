@@ -4,15 +4,21 @@ package cli
 
 import (
 	"fmt"
-	"io"
+	"os"
+	"path/filepath"
 
+	"github.com/complytime/complytime/internal/complytime"
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
+	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/settings"
 )
+
+const assessmentResultsLocation = "assessment-results.json"
 
 // scanOptions defined options for the scan subcommand.
 type scanOptions struct {
@@ -65,6 +71,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
+
 	// Ensure all the plugins launch above are cleaned up
 	defer manager.Clean()
 
@@ -73,24 +80,68 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		return err
 	}
 
-	// This is a temporary solution for results processing.
-	return displayResults(opts.Out, allResults)
+	apPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentPlanLocation)
+	apCleanedPath := filepath.Clean(apPath)
+	assessmentPlan, err := loadAssessmentPlan(apCleanedPath)
+	if err != nil {
+		return err
+	}
+
+	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *assessmentPlan.Metadata.Props)
+	if !valid {
+		return fmt.Errorf("error reading framework property from assessment plan")
+	}
+
+	r, err := framework.NewReporter(cfg)
+	if err != nil {
+		return err
+	}
+
+	var allImplementations []oscalTypes.ControlImplementationSet
+	for _, compDef := range cfg.ComponentDefinitions {
+		for _, component := range *compDef.Components {
+			if component.ControlImplementations == nil {
+				continue
+			}
+			allImplementations = append(allImplementations, *component.ControlImplementations...)
+
+		}
+	}
+
+	implementationSettings, err := settings.Framework(frameworkProp.Value, allImplementations)
+	if err != nil {
+		return err
+	}
+
+	planHref := fmt.Sprintf("file://%s", apCleanedPath)
+	assessmentResults, err := r.GenerateAssessmentResults(cmd.Context(), planHref, implementationSettings, allResults)
+	if err != nil {
+		return err
+	}
+
+	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocation)
+	cleanedPath := filepath.Clean(filePath)
+
+	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// displayResults write the results from the scan with the given io.Writer.
-func displayResults(writer io.Writer, allResults []policy.PVPResult) error {
-	_, _ = fmt.Fprintf(writer, "Processing %d result(s)...\n", len(allResults))
-	for _, results := range allResults {
-		for _, observation := range results.ObservationsByCheck {
-			_, _ = fmt.Fprintf(writer, "Observation: %s\n", observation.Title)
-			for _, sub := range observation.Subjects {
-				_, _ = fmt.Fprintf(writer, "Subject: %s\n", sub.Title)
-				_, _ = fmt.Fprintf(writer, "Resource: %s\n", sub.ResourceID)
-				_, _ = fmt.Fprintf(writer, "Result: %s\n", sub.Result.String())
-				_, _ = fmt.Fprintf(writer, "Reason: %s\n\n", sub.Reason)
-			}
-		}
-		_, _ = fmt.Fprintf(writer, "\n")
+// Load assessment plan from assessment-plan.json
+func loadAssessmentPlan(filePath string) (*oscalTypes.AssessmentPlan, error) {
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	defer file.Close()
+
+	assessmentPlan, err := generators.NewAssessmentPlan(file)
+	if err != nil {
+		return nil, err
+	}
+	return assessmentPlan, nil
 }

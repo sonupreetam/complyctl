@@ -41,8 +41,8 @@ github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQ
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
 github.com/clarketm/json v1.17.1 h1:U1IxjqJkJ7bRK4L6dyphmoO840P6bdhPdbbLySourqI=
 github.com/clarketm/json v1.17.1/go.mod h1:ynr2LRfb0fQU34l07csRNBTcivjySLLiY1YzQqKVfdo=
-github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250128200120-f27fee1a891c h1:iZw2tq2R6TxqzKTMkNqUmKCI2xgR9KaXAg53ILFhOds=
-github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250128200120-f27fee1a891c/go.mod h1:oyNjCAtFj4XNCZO7+02mb1kPCTXL4IOK6oN8Qy2Tjeo=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250204175751-c17051365f3f h1:rjw14D8dSWQSbRH7KqXrvTOLarOVB5QA+W+4n/0anTY=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250204175751-c17051365f3f/go.mod h1:oyNjCAtFj4XNCZO7+02mb1kPCTXL4IOK6oN8Qy2Tjeo=
 github.com/complytime/oscal-sdk-go v0.0.0-20250125144051-7723a7b6b06b h1:F3tqX70f1WSdGrOnSFlc0AU/QiGxBKw6MfmC/ZX0wdE=
 github.com/complytime/oscal-sdk-go v0.0.0-20250125144051-7723a7b6b06b/go.mod h1:O922y+Za9/ez0jKTR3/97BilPnrjabtFJ6rCVhHk37s=
 github.com/coreos/fcct v0.5.0 h1:f/z+MCoR2vULes+MyoPEApQ6iluy/JbXoRi6dahPItQ=
