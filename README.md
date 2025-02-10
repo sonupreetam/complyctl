@@ -37,6 +37,9 @@ Run the generate command to `generate` policy artifacts in the workspace and run
 complytime generate
 ...
 complytime scan
+
+# The results will be written to assessment-results.json in the specified workspace.
+# Defaults to current working directory.
 ```
 
 ## Contributing
