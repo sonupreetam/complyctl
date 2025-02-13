@@ -17,6 +17,7 @@ directory should be created under $HOME/.config
 complytime
 ├── bundles
 └── plugins
+└── controls
 ```
 
 You will need an OSCAL Component Definition that defines an OSCAL Component for your target system and an OSCAL Component the corresponding
@@ -24,6 +25,7 @@ policy validation plugin. See `docs/samples/` for example configuration for the 
 
 ```bash
 cp docs/samples/sample-component-definition.json ~/.config/complytime/bundles
+cp docs/samples/sample-profile.json ~/.config/complytime/controls
 ```
 
 ## Step 3: Install a plugin
