@@ -131,11 +131,12 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocation)
 	cleanedPath := filepath.Clean(filePath)
 
+
 	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
 	if err != nil {
 		return err
 	}
-
+	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil
 }
 
