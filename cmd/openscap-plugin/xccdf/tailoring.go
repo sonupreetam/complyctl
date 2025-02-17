@@ -121,7 +121,7 @@ func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileE
 	// All OSCAL Policy rules should be present in the Datastream
 	for _, rule := range oscalPolicy {
 		if !validateRuleExistence(rule.Rule.ID, dsRules) {
-			return nil, fmt.Errorf("rule not found in datastream: %s", rule.Rule.ID)
+			return nil, fmt.Errorf("rule %s not found in datastream: %s", rule.Rule.ID, dsPath)
 		}
 	}
 
@@ -170,7 +170,7 @@ func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileEleme
 			continue
 		}
 		if !validateVariableExistence(rule.Rule.Parameter.ID, dsVariables) {
-			return nil, fmt.Errorf("variable not found in datastream: %s", rule.Rule.Parameter.ID)
+			return nil, fmt.Errorf("variable %s not found in datastream: %s", rule.Rule.Parameter.ID, dsPath)
 		}
 	}
 
