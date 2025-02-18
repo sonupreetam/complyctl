@@ -54,11 +54,8 @@ echo "Complytime installed successfully!"
 set +e
 # Running list command that will fail due to no requirements files
 echo "Attempting to run the command complytime list."
-bin/complytime list
-if [ $? -ne 0 ]; then
-    echo "An error occurred, but we will continue."
-fi
-echo "Script continues after the complytime list."
+bin/complytime list 2>/dev/null
+echo "An error occurred, but script continues after the complytime list."
 # Copy the artifacts to workspace
 cp docs/samples/sample-component-definition.json ~/.config/complytime/bundles
 cp docs/samples/sample-profile.json ~/.config/complytime/controls
