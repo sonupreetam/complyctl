@@ -7,23 +7,34 @@
 # export APPS_REPO=$APPS_REPO
 # sh quick_start.sh
 
-set -e
-# Check if the APPS_REPO environment variable is set
-if [ -z "$APPS_REPO" ]; then
-    echo "APPS_REPO is not set. Please set the variable and try again."
-    exit 1
-fi
-echo "Setting up CaC Apps repository..."
-echo "
+set +e
+# Check if the scap-security-guide package is available in the enabled repositories
+dnf provides scap-security-guide
+
+# Check the exit status of the previous command
+if [ $? -ne 0 ]; then
+    echo "No working repository is available to install scap-security-guide."
+
+    # Check if APPS_REPO variable is set
+    if [ -z "$APPS_REPO" ]; then
+        echo "Error: APPS_REPO is not set. Please set the variable and try again."
+        exit 1
+    else
+        echo "Setting up CaC Apps repository..."
+        cat > /etc/yum.repos.d/cac.repo <<EOF
 [cac_apps_repo]
 name=CaC Apps Repo
 baseurl=${APPS_REPO}
 enabled=1
-gpgcheck=0" > /etc/yum.repos.d/cac.repo
+gpgcheck=0
+EOF
+        echo "CaC Apps repository has been added."
+    fi
+fi
 
 echo "Installing dependencies..."
-yum update -y
-yum install git wget make scap-security-guide -y
+dnf update -y
+dnf install git wget make scap-security-guide -y
 rm -rf /usr/bin/go
 go_mod="https://raw.githubusercontent.com/complytime/complytime/main/go.mod"
 go_version=$(curl -s $go_mod | grep '^go' | awk '{print $2}')
@@ -37,9 +48,7 @@ source ~/.bash_profile
 # Install and build complytime
 echo "Cloning the Complytime repository..."
 git clone https://github.com/complytime/complytime.git
-cd complytime
-make build
-cp ./bin/complytime /usr/local/bin
+cd complytime && make build && cp ./bin/complytime /usr/local/bin
 echo "Complytime installed successfully!"
 # Run complytime list to create the workspace
 set +e
