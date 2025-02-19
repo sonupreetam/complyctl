@@ -61,8 +61,8 @@ cp docs/samples/sample-component-definition.json ~/.config/complytime/bundles
 cp docs/samples/sample-profile.json ~/.config/complytime/controls
 
 # Copy the plugins' files
-cp -rp bin/openscap-plugin ~/.config/complytime/plugins 
-cp -rp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins 
+cp -rp bin/openscap-plugin ~/.config/complytime/plugins
+cp -rp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
 checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
 cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
 {
