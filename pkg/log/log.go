@@ -22,7 +22,7 @@ var (
 	FatalColor = lipgloss.AdaptiveColor{Light: "134", Dark: "134"}
 )
 
-func DefaultOptions() *charmlog.Options {
+func defaultOptions() *charmlog.Options {
 	return &charmlog.Options{
 		ReportCaller:    false,
 		ReportTimestamp: false,
@@ -63,9 +63,10 @@ func defaultStyles() *charmlog.Styles {
 	return styles
 }
 
-// Wrap the functionality of charm logger in go-hclog.
-func WrapLog(charmlog *charmlog.Logger) hclog.Logger {
-	l := &CharmHclog{charmlog}
+// NewLogger initializes a new wrapped logger with default styles
+func NewLogger(o io.Writer) hclog.Logger {
+	c := charmlog.NewWithOptions(o, *defaultOptions())
+	l := &CharmHclog{c}
 	l.logger.SetStyles(defaultStyles())
 	return l
 }
@@ -137,13 +138,11 @@ func (c *CharmHclog) With(args ...interface{}) hclog.Logger {
 // The GetPrefix() method will return the prefix of the logger.
 func (c *CharmHclog) Name() string { return c.logger.GetPrefix() }
 
-// The WithPrefix() method returns a logger with the prefix passed to Named().
 // The Named() method appends to the current logger prefix.
 func (c *CharmHclog) Named(name string) hclog.Logger {
 	return &CharmHclog{c.logger.WithPrefix(name)}
 }
 
-// The WithPrefix() method returns a logger with the prefix passed to ResetNamed().
 // The ResetNamed() method creates the logger with only the prefix passed.
 func (c *CharmHclog) ResetNamed(name string) hclog.Logger {
 	return &CharmHclog{c.logger.WithPrefix(name)}
