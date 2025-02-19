@@ -2,7 +2,7 @@
 
 To get started with the `complytime` CLI, at least one plugin must be installed with a corresponding OSCAL [Component Definition](https://pages.nist.gov/OSCAL/resources/concepts/layer/implementation/component-definition/).
 
-> Note: Some of these steps are manual. The [quick_start.sh](scripts/quick_start.sh) automates the process below.
+> Note: Some of these steps are manual. The [quick_start.sh](../scripts/quick_start/quick_start.sh) automates the process below.
 
 ## Step 1: Install ComplyTime
 

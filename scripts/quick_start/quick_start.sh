@@ -4,7 +4,7 @@
 # 1. Download/copy this script in your RHEL system
 # 2. Run the script
 # chmod +x quick_start.sh
-# export APPS_REPO=$APPS_REPO
+# export RHEL_APPS_REPO=$RHEL_APPS_REPO
 # sh quick_start.sh
 
 set +e
@@ -15,16 +15,16 @@ dnf provides scap-security-guide
 if [ $? -ne 0 ]; then
     echo "No working repository is available to install scap-security-guide."
 
-    # Check if APPS_REPO variable is set
-    if [ -z "$APPS_REPO" ]; then
-        echo "Error: APPS_REPO is not set. Please set the variable and try again."
+    # Check if RHEL_APPS_REPO variable is set
+    if [ -z "$RHEL_APPS_REPO" ]; then
+        echo "Error: RHEL_APPS_REPO is not set. Please set the variable and try again."
         exit 1
     else
         echo "Setting up CaC Apps repository..."
         cat > /etc/yum.repos.d/cac.repo <<EOF
 [cac_apps_repo]
 name=CaC Apps Repo
-baseurl=${APPS_REPO}
+baseurl=${RHEL_APPS_REPO}
 enabled=1
 gpgcheck=0
 EOF

@@ -15,19 +15,19 @@ dnf install git podman -y
 
 ```bash
 git clone https://github.com/complytime/complytime.git
-cd complytime/docs/scripts/
+cd complytime/scripts/quick_start
 ```
 
-2. Set the APPS_REPO variable to the app DNF repository URL:
+2. Set the RHEL_APPS_REPO variable to the app DNF repository URL:
 
 ```bash
-export APPS_REPO=${APPS_REPO} # Change the ${APPS_REPO} to the app dnf repo
+export RHEL_APPS_REPO=${RHEL_APPS_REPO} # Change the ${RHEL_APPS_REPO} to the app dnf repo
 ```
 
 3. Build the container image:
 
 ```bash
-podman build --build-arg APPS_REPO=${APPS_REPO} . -t quick-start:latest
+podman build --build-arg RHEL_APPS_REPO=${RHEL_APPS_REPO} . -t quick-start:latest
 podman run -it quick-start:latest /bin/bash
 ```
 
@@ -39,7 +39,7 @@ Assume that you have already installed a fresh RHEL
 
 ```bash
 chmod +x quick_start.sh
-export APPS_REPO=$APPS_REPO # Change the ${APPS_REPO} to the app dnf repo
+export RHEL_APPS_REPO=$RHEL_APPS_REPO # Change the ${RHEL_APPS_REPO} to the app dnf repo
 sh quick_start.sh
 ```
 
