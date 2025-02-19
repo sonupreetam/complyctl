@@ -2,7 +2,7 @@
 
 To get started with the `complytime` CLI, at least one plugin must be installed with a corresponding OSCAL [Component Definition](https://pages.nist.gov/OSCAL/resources/concepts/layer/implementation/component-definition/).
 
-> Note: Some of these steps are manual and will become more automated as the project gets further in development.
+> Note: Some of these steps are manual. The [quick_start.sh](../scripts/quick_start/quick_start.sh) automates the process below.
 
 ## Step 1: Install ComplyTime
 
@@ -33,17 +33,18 @@ cp docs/samples/sample-profile.json ~/.config/complytime/controls
 Each plugin requires a plugin manifest. For more information about plugin discovery see [PLUGIN_GUIDE.md](PLUGIN_GUIDE.md).
 
 ```bash
-cp myplugin ~/.config/complytime/plugins
-checksum=$(sha256sum ~/.config/complytime/plugins/myplugin | cut -d ' ' -f 1 )
-cat > ~/.config/complytime/plugins/c2p-myplugin-manifest.json << EOF
+cp bin/openscap-plugin ~/.config/complytime/plugins
+cp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
+checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
+cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
 {
   "metadata": {
-    "id": "myplugin",
-    "description": "My complytime plugin",
+    "id": "openscap",
+    "description": "My openscap plugin",
     "version": "0.0.1",
     "types": ["pvp"]
   },
-  "executablePath": "myplugin",
+  "executablePath": "openscap-plugin",
   "sha256": "$checksum"
 }
 EOF
