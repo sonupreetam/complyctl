@@ -17,9 +17,6 @@ import (
 )
 
 type Config struct {
-	Server struct {
-		Socket string `yaml:"socket"`
-	} `yaml:"server"`
 	Files struct {
 		PluginDir  string `yaml:"plugindir"`
 		Workspace  string `yaml:"workspace"`

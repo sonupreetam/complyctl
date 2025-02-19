@@ -1,6 +1,3 @@
-server:
-  # For tests it is currently created in the homeDir
-  socket: server_socket.sock
 files:
   plugindir: openscap
   workspace: ~/.config/complytime
