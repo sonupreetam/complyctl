@@ -16,9 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const PluginDir = "openscap"
+
 type Config struct {
 	Files struct {
-		PluginDir  string `yaml:"plugindir"`
 		Workspace  string `yaml:"workspace"`
 		Datastream string `yaml:"datastream"`
 		Results    string `yaml:"results"`
@@ -117,9 +118,9 @@ func ensureWorkspace(cfg *Config) (map[string]string, error) {
 
 	directories := map[string]string{
 		"workspace":  workspace,
-		"pluginDir":  filepath.Join(workspace, cfg.Files.PluginDir),
-		"policyDir":  filepath.Join(workspace, cfg.Files.PluginDir, "policy"),
-		"resultsDir": filepath.Join(workspace, cfg.Files.PluginDir, "results"),
+		"pluginDir":  filepath.Join(workspace, PluginDir),
+		"policyDir":  filepath.Join(workspace, PluginDir, "policy"),
+		"resultsDir": filepath.Join(workspace, PluginDir, "results"),
 	}
 
 	for key, dir := range directories {
@@ -160,7 +161,6 @@ func ReadConfig(configFile string) (*Config, error) {
 
 	// String values to sanitize
 	inputValues := []*string{
-		&config.Files.PluginDir,
 		&config.Files.Policy,
 		&config.Files.Results,
 		&config.Files.ARF,
