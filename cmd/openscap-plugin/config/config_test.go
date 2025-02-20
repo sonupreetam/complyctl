@@ -269,9 +269,9 @@ func TestDefineFilesPaths(t *testing.T) {
 
 			if !tt.expectError {
 				// Check if the paths are correctly set
-				expectedPolicyPath := filepath.Join(tempDir, "workspace", "openscap", "policy", "policy.yaml")
-				expectedResultsPath := filepath.Join(tempDir, "workspace", "openscap", "results", "results.xml")
-				expectedARFPath := filepath.Join(tempDir, "workspace", "openscap", "results", "arf.xml")
+				expectedPolicyPath := filepath.Join(tempDir, "workspace", PluginDir, "policy", "policy.yaml")
+				expectedResultsPath := filepath.Join(tempDir, "workspace", PluginDir, "results", "results.xml")
+				expectedARFPath := filepath.Join(tempDir, "workspace", PluginDir, "results", "arf.xml")
 
 				if tt.cfg.Files.Policy != expectedPolicyPath {
 					t.Errorf("Expected policy path: %s, got: %s", expectedPolicyPath, tt.cfg.Files.Policy)
