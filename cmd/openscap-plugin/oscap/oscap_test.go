@@ -3,32 +3,22 @@
 package oscap
 
 import (
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
 
 func TestConstructScanCommand(t *testing.T) {
-	tailoringFilePath := filepath.Join(t.TempDir(), "test-policy.xml")
-	tailoringFile, err := os.Create(tailoringFilePath)
-	if err != nil {
-		t.Fatalf("Failed to create fake tailoring file: %v", err)
-	}
-	tailoringFile.Close()
-
 	tests := []struct {
 		name          string
 		openscapFiles map[string]string
 		profile       string
 		expectedCmd   []string
-		expectedErr   bool
 	}{
 		{
-			name: "Valid input with tailoring file",
+			name: "Scan command contruction",
 			openscapFiles: map[string]string{
 				"datastream": "test-datastream.xml",
-				"policy":     tailoringFilePath,
+				"policy":     "test-policy.xml",
 				"results":    "test-results.xml",
 				"arf":        "test-arf.xml",
 			},
@@ -44,43 +34,15 @@ func TestConstructScanCommand(t *testing.T) {
 				"--results-arf",
 				"test-arf.xml",
 				"--tailoring-file",
-				tailoringFilePath,
+				"test-policy.xml",
 				"test-datastream.xml",
 			},
-			expectedErr: false,
-		},
-		{
-			name: "Valid input without tailoring file",
-			openscapFiles: map[string]string{
-				"datastream": "test-datastream.xml",
-				"policy":     "",
-				"results":    "test-results.xml",
-				"arf":        "test-arf.xml",
-			},
-			profile: "test-profile",
-			expectedCmd: []string{
-				"oscap",
-				"xccdf",
-				"eval",
-				"--profile",
-				"test-profile",
-				"--results",
-				"test-results.xml",
-				"--results-arf",
-				"test-arf.xml",
-				"test-datastream.xml",
-			},
-			expectedErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd, err := constructScanCommand(tt.openscapFiles, tt.profile)
-			if (err != nil) != tt.expectedErr {
-				t.Errorf("constructScanCommand() error = %v, expectedErr %v", err, tt.expectedErr)
-				return
-			}
+			cmd := constructScanCommand(tt.openscapFiles, tt.profile)
 			if !reflect.DeepEqual(cmd, tt.expectedCmd) {
 				t.Errorf("constructScanCommand() = %v, expected %v", cmd, tt.expectedCmd)
 			}
