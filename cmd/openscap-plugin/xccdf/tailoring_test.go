@@ -676,7 +676,7 @@ func TestPolicyToXML(t *testing.T) {
 <xccdf-1.2:Tailoring xmlns:xccdf-1.2="http://checklists.nist.gov/xccdf/1.2" id="xccdf_complytime.openscapplugin_tailoring_complytime">
   <xccdf-1.2:benchmark href="` + dsPath + `"></xccdf-1.2:benchmark>
   <xccdf-1.2:version time="` + getTailoringVersion().Time + `">1</xccdf-1.2:version>
-  <xccdf-1.2:Profile id="xccdf_complytime.openscapplugin_profile_test_profile_complytime">
+  <xccdf-1.2:Profile id="xccdf_complytime.openscapplugin_profile_test_profile_complytime" extends="xccdf_complytime.openscapplugin_profile_test_profile">
     <xccdf-1.2:title override="true">ComplyTime Tailoring Profile - Test Profile</xccdf-1.2:title>
     <xccdf-1.2:select idref="xccdf_org.ssgproject.content_rule_package_telnet-server_removed" selected="false"></xccdf-1.2:select>
     <xccdf-1.2:select idref="xccdf_org.ssgproject.content_rule_package_telnet_removed" selected="false"></xccdf-1.2:select>

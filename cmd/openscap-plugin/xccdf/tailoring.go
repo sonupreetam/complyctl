@@ -27,6 +27,11 @@ func getTailoringID() string {
 	return fmt.Sprintf("xccdf_%s_tailoring_%s", XCCDFNamespace, XCCDFTailoringSuffix)
 }
 
+func getTailoringExtendedProfileID(profileId string) string {
+	return fmt.Sprintf(
+		"xccdf_%s_profile_%s", XCCDFNamespace, profileId)
+}
+
 func getTailoringProfileID(profileId string) string {
 	return fmt.Sprintf(
 		"xccdf_%s_profile_%s_%s", XCCDFNamespace, profileId, XCCDFTailoringSuffix)
@@ -193,6 +198,8 @@ func getTailoringProfile(profileId string, dsPath string, oscalPolicy policy.Pol
 	if err != nil {
 		return tailoringProfile, fmt.Errorf("failed to get base profile from datastream: %w", err)
 	}
+
+	tailoringProfile.Extends = getTailoringExtendedProfileID(profileId)
 
 	tailoringProfile.Title = &xccdf.TitleOrDescriptionElement{
 		Override: true,
