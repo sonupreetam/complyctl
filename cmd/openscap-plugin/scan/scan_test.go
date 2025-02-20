@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 )
 
 func TestIsXMLFile(t *testing.T) {
@@ -70,5 +72,42 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// validateOpenSCAPFiles and ScanSystem functions are not tested because they are high-level
-// functions using other functions already tested above or in other packages.
+// TestValidateOpenSCAPFiles tests the validateOpenSCAPFiles function when a policy file is present,
+// after the generate command, or absent before the generate command.
+// validateOpenSCAPFiles consumes other functions already tested so the only part to be tested here
+// is the policy file existence.
+func TestValidateOpenSCAPFiles(t *testing.T) {
+	cfg := new(config.Config)
+	cfg.Files.Datastream = "testdata/valid.xml"
+
+	tests := []struct {
+		name    string
+		cfgPol  string
+		wantErr bool
+	}{
+		{
+			name:    "present and valid policy file",
+			cfgPol:  "testdata/valid.xml",
+			wantErr: false,
+		},
+		{
+			name:    "absent policy file",
+			cfgPol:  "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg.Files.Policy = tt.cfgPol
+			_, err := validateOpenSCAPFiles(cfg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateOpenSCAPFiles() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+// ScanSystem function is not tested because it is high-level functions using other functions
+// already tested above or in other packages.
