@@ -9,6 +9,7 @@ import (
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 	"github.com/complytime/complytime/cmd/openscap-plugin/oscap"
+	"github.com/complytime/complytime/cmd/openscap-plugin/xccdf"
 )
 
 func isXMLFile(filePath string) (bool, error) {
@@ -57,7 +58,12 @@ func ScanSystem(cfg *config.Config, profile string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid openscap files: %w", err)
 	}
 
-	output, err := oscap.OscapScan(openscapFiles, profile)
+	tailoringProfile := fmt.Sprintf("%s_%s", profile, xccdf.XCCDFTailoringSuffix)
+	// In the future, we can add an integrity check to confirm if the expected tailoring profile
+	// id exists in the tailoring file. It is not a common case but a guardrail to prevent manual
+	// manipulation of the tailoring file would be good.
+
+	output, err := oscap.OscapScan(openscapFiles, tailoringProfile)
 	if err != nil {
 		return output, fmt.Errorf("failed during scan: %w", err)
 	}
