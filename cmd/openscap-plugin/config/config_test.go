@@ -181,14 +181,12 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					PluginDir  string "yaml:\"plugindir\""
 					Workspace  string "yaml:\"workspace\""
 					Datastream string "yaml:\"datastream\""
 					Results    string "yaml:\"results\""
 					ARF        string "yaml:\"arf\""
 					Policy     string "yaml:\"policy\""
 				}{
-					PluginDir: "plugins",
 					Workspace: filepath.Join(tempDir, "workspace"),
 					Policy:    "policy.yaml",
 					Results:   "results.xml",
@@ -200,14 +198,12 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					PluginDir  string "yaml:\"plugindir\""
 					Workspace  string "yaml:\"workspace\""
 					Datastream string "yaml:\"datastream\""
 					Results    string "yaml:\"results\""
 					ARF        string "yaml:\"arf\""
 					Policy     string "yaml:\"policy\""
 				}{
-					PluginDir: "plugins",
 					Workspace: filepath.Join(tempDir, "invalid\000workspace"),
 					Policy:    "policy.yaml",
 					Results:   "results.xml",
@@ -247,14 +243,12 @@ func TestDefineFilesPaths(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					PluginDir  string "yaml:\"plugindir\""
 					Workspace  string "yaml:\"workspace\""
 					Datastream string "yaml:\"datastream\""
 					Results    string "yaml:\"results\""
 					ARF        string "yaml:\"arf\""
 					Policy     string "yaml:\"policy\""
 				}{
-					PluginDir:  "plugins",
 					Workspace:  filepath.Join(tempDir, "workspace"),
 					Datastream: filepath.Join(tempDir, "datastream.xml"),
 					Results:    "results.xml",
@@ -275,9 +269,9 @@ func TestDefineFilesPaths(t *testing.T) {
 
 			if !tt.expectError {
 				// Check if the paths are correctly set
-				expectedPolicyPath := filepath.Join(tempDir, "workspace", "plugins", "policy", "policy.yaml")
-				expectedResultsPath := filepath.Join(tempDir, "workspace", "plugins", "results", "results.xml")
-				expectedARFPath := filepath.Join(tempDir, "workspace", "plugins", "results", "arf.xml")
+				expectedPolicyPath := filepath.Join(tempDir, "workspace", "openscap", "policy", "policy.yaml")
+				expectedResultsPath := filepath.Join(tempDir, "workspace", "openscap", "results", "results.xml")
+				expectedARFPath := filepath.Join(tempDir, "workspace", "openscap", "results", "arf.xml")
 
 				if tt.cfg.Files.Policy != expectedPolicyPath {
 					t.Errorf("Expected policy path: %s, got: %s", expectedPolicyPath, tt.cfg.Files.Policy)
