@@ -4,20 +4,16 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/internal/complytime"
-
-	"github.com/oscal-compass/oscal-sdk-go/generators"
-	"github.com/oscal-compass/oscal-sdk-go/settings"
-
 	"github.com/complytime/complytime/cmd/complytime/option"
+	"github.com/complytime/complytime/internal/complytime"
 )
 
 const assessmentResultsLocation = "assessment-results.json"
@@ -50,10 +46,25 @@ func scanCmd(common *option.Common) *cobra.Command {
 
 func runScan(cmd *cobra.Command, opts *scanOptions) error {
 
-	planSettings, err := getPlanSettingsForWorkspace(opts.complyTimeOpts)
+	// Load settings from assessment plan
+	ap, apCleanedPath, err := loadPlan(opts.complyTimeOpts)
 	if err != nil {
 		return err
 	}
+
+	planSettings, err := getPlanSettings(opts.complyTimeOpts, ap)
+	if err != nil {
+		return err
+	}
+
+	// Set the framework ID from state (assessment plan)
+	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *ap.Metadata.Props)
+	if !valid {
+		return fmt.Errorf("error reading framework property from assessment plan")
+	}
+	opts.complyTimeOpts.FrameworkID = frameworkProp.Value
+	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
+
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
 	if err != nil {
@@ -73,32 +84,21 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
 	}
-	plugins, err := manager.LaunchPolicyPlugins()
-	if err != nil {
-		return err
-	}
-	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
-	// Ensure all the plugins launched above are cleaned up
-	defer manager.Clean()
+	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
+	plugins, cleanup, err := complytime.Plugins(manager, pluginOptions)
+	if err != nil {
+		return fmt.Errorf("errors launching plugins: %w", err)
+	}
+	defer cleanup()
+	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
 	allResults, err := manager.AggregateResults(cmd.Context(), plugins, planSettings)
 	if err != nil {
 		return err
 	}
 
-	apPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentPlanLocation)
-	apCleanedPath := filepath.Clean(apPath)
-	assessmentPlan, err := loadAssessmentPlan(apCleanedPath)
-	if err != nil {
-		return err
-	}
-
-	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *assessmentPlan.Metadata.Props)
-	if !valid {
-		return fmt.Errorf("error reading framework property from assessment plan")
-	}
-	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
+	// Collect results in a single report
 	r, err := framework.NewReporter(cfg)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		}
 	}
 
-	implementationSettings, err := settings.Framework(frameworkProp.Value, allImplementations)
+	implementationSettings, err := settings.Framework(opts.complyTimeOpts.FrameworkID, allImplementations)
 	if err != nil {
 		return err
 	}
@@ -135,20 +135,4 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil
-}
-
-// Load assessment plan from assessment-plan.json
-func loadAssessmentPlan(filePath string) (*oscalTypes.AssessmentPlan, error) {
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	assessmentPlan, err := generators.NewAssessmentPlan(file)
-	if err != nil {
-		return nil, err
-	}
-	return assessmentPlan, nil
 }
