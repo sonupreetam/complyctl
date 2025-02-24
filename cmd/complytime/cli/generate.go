@@ -4,6 +4,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ type generateOptions struct {
 }
 
 // generateCmd creates a new cobra.Command for the "generate" subcommand
-func generateCmd(common *option.Common) *cobra.Command {
+func generateCmd(common *option.Common, logger hclog.Logger) *cobra.Command {
 	generateOpts := &generateOptions{
 		Common:         common,
 		complyTimeOpts: &option.ComplyTime{},
@@ -29,15 +30,21 @@ func generateCmd(common *option.Common) *cobra.Command {
 		Short:   "Generate PVP policy from an assessment plan",
 		Example: "complytime generate",
 		Args:    cobra.NoArgs,
+		PreRun: func(cmd *cobra.Command, _ []string) {
+			enableDebug(logger, common)
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runGenerate(cmd, generateOpts)
+			if err := runGenerate(cmd, generateOpts, logger); err != nil {
+				logger.Error(err.Error())
+			}
+			return nil
 		},
 	}
 	generateOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
 
-func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
+func runGenerate(cmd *cobra.Command, opts *generateOptions, logger hclog.Logger) error {
 
 	planSettings, err := getPlanSettingsForWorkspace(opts.complyTimeOpts)
 	if err != nil {
@@ -49,6 +56,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 	cfg, err := complytime.Config(appDir)
 	if err != nil {
 		return err

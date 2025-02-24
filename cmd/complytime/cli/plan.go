@@ -5,6 +5,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-hclog"
 	"os"
 	"path/filepath"
 
@@ -32,7 +33,7 @@ func setOptsPlanFromArgs(args []string, opts *planOptions) {
 }
 
 // planCmd creates a new cobra.Command for the "plan" subcommand
-func planCmd(common *option.Common) *cobra.Command {
+func planCmd(common *option.Common, logger hclog.Logger) *cobra.Command {
 	planOpts := &planOptions{
 		Common:         common,
 		complyTimeOpts: &option.ComplyTime{},
@@ -43,22 +44,28 @@ func planCmd(common *option.Common) *cobra.Command {
 		Example: "complytime plan myframework",
 		Args:    cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
+			enableDebug(logger, common)
 			setOptsPlanFromArgs(args, planOpts)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runPlan(cmd, planOpts)
+			if err := runPlan(cmd, planOpts, logger); err != nil {
+				logger.Error(err.Error())
+			}
+			logger.Info("The plan command is running.", "command", cmd.CommandPath())
+			return nil
 		},
 	}
 	planOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
 
-func runPlan(cmd *cobra.Command, opts *planOptions) error {
+func runPlan(cmd *cobra.Command, opts *planOptions, logger hclog.Logger) error {
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 	componentDefs, err := complytime.FindComponentDefinitions(appDir.BundleDir())
 	if err != nil {
 		return err
