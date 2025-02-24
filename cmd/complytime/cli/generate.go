@@ -4,8 +4,8 @@ package cli
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/spf13/cobra"
 

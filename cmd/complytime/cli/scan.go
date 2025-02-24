@@ -4,9 +4,10 @@ package cli
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
 	"os"
 	"path/filepath"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/complytime/complytime/internal/complytime"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"

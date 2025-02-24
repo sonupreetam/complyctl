@@ -5,9 +5,10 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-hclog"
 	"os"
 	"path/filepath"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/transformers"
