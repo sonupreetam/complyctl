@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package log
 
 import (
@@ -116,6 +118,8 @@ func TestTypes(t *testing.T) {
 		})
 	}
 }
+
+// Testing various prefixes and levels entered.
 func TestPrefixMatch(t *testing.T) {
 	tests := []struct {
 		prefix   string

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package log
 
 import (
@@ -71,7 +73,7 @@ func NewLogger(o io.Writer) hclog.Logger {
 	return l
 }
 
-// CharmHclog is a structure that accesses the attributes of charm logger.
+// CharmHclog adapts the charm logger to the hashicorp logger.
 type CharmHclog struct {
 	logger *charmlog.Logger
 }
