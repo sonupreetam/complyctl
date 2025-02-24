@@ -47,7 +47,6 @@ func scanCmd(common *option.Common, logger hclog.Logger) *cobra.Command {
 			if err := runScan(cmd, scanOpts, logger); err != nil {
 				logger.Error(err.Error())
 			}
-			logger.Info("The scan command is running.", "command", cmd.CommandPath())
 			return nil
 		},
 	}

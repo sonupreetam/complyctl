@@ -52,7 +52,6 @@ func planCmd(common *option.Common, logger hclog.Logger) *cobra.Command {
 			if err := runPlan(cmd, planOpts, logger); err != nil {
 				logger.Error(err.Error())
 			}
-			logger.Info("The plan command is running.", "command", cmd.CommandPath())
 			return nil
 		},
 	}
