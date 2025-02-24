@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestSanitizeInput tests the SanitizeInput function with various valid and invalid inputs.
@@ -181,11 +183,11 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace: filepath.Join(tempDir, "workspace"),
 					Policy:    "policy.yaml",
@@ -198,11 +200,11 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace: filepath.Join(tempDir, "invalid\000workspace"),
 					Policy:    "policy.yaml",
@@ -243,11 +245,11 @@ func TestDefineFilesPaths(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace:  filepath.Join(tempDir, "workspace"),
 					Datastream: filepath.Join(tempDir, "datastream.xml"),
@@ -262,7 +264,7 @@ func TestDefineFilesPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
-			_, err := defineFilesPaths(&tt.cfg)
+			err := defineFilesPaths(&tt.cfg)
 			if (err != nil) != tt.expectError {
 				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
 			}
@@ -287,5 +289,72 @@ func TestDefineFilesPaths(t *testing.T) {
 	}
 }
 
-// Tests for ReadConfig are not included because the function relies on other functions
-// already tested.
+func TestConfig_LoadSettings(t *testing.T) {
+	tempDir := t.TempDir()
+	tempDataStream := filepath.Join(tempDir, "datastream.xml")
+	err := os.WriteFile(tempDataStream, []byte("example"), 0400)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		inputSettings map[string]string
+		expectError   string
+		wantCfg       Config
+	}{
+		{
+			name: "Valid/AllSettingsSupplied",
+			inputSettings: map[string]string{
+				"workspace":  tempDir,
+				"datastream": tempDataStream,
+				"results":    "results.xml",
+				"arf":        "arf.xml",
+				"policy":     "policy.yaml",
+				"profile":    "test",
+			},
+			wantCfg: Config{
+				Files: struct {
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
+				}{
+					Workspace:  tempDir,
+					Datastream: tempDataStream,
+					Results:    filepath.Join(tempDir, "openscap", "results", "results.xml"),
+					ARF:        filepath.Join(tempDir, "openscap", "results", "arf.xml"),
+					Policy:     filepath.Join(tempDir, "openscap", "policy", "policy.yaml"),
+				},
+				Parameters: struct {
+					Profile string `config:"profile"`
+				}{Profile: "test"},
+			},
+			expectError: "",
+		},
+		{
+			name: "Invalid/MissingSettings",
+			inputSettings: map[string]string{
+				"workspace":  tempDir,
+				"datastream": tempDataStream,
+				"results":    "results.xml",
+				"arf":        "arf.xml",
+				"policy":     "policy.yaml",
+			},
+			expectError: "missing configuration value for option \"profile\" (field: Profile)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotConfig := NewConfig()
+			err := gotConfig.LoadSettings(tt.inputSettings)
+
+			if tt.expectError != "" {
+				require.EqualError(t, err, tt.expectError)
+			} else {
+				require.Equal(t, tt.wantCfg, *gotConfig)
+				require.NoError(t, err)
+			}
+		})
+	}
+}

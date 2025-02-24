@@ -35,13 +35,14 @@ type PluginServer struct {
 	Config *config.Config
 }
 
-func New(cfg *config.Config) PluginServer {
-	return PluginServer{Config: cfg}
+func New() PluginServer {
+	return PluginServer{
+		Config: config.NewConfig(),
+	}
 }
 
-func (s PluginServer) Configure(m map[string]string) error {
-	//TODO implement me
-	panic("implement me")
+func (s PluginServer) Configure(configMap map[string]string) error {
+	return s.Config.LoadSettings(configMap)
 }
 
 func (s PluginServer) Generate(policy policy.Policy) error {

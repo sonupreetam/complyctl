@@ -10,25 +10,71 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 const PluginDir = "openscap"
 
 type Config struct {
 	Files struct {
-		Workspace  string `yaml:"workspace"`
-		Datastream string `yaml:"datastream"`
-		Results    string `yaml:"results"`
-		ARF        string `yaml:"arf"`
-		Policy     string `yaml:"policy"`
-	} `yaml:"files"`
+		Workspace  string `config:"workspace"`
+		Datastream string `config:"datastream"`
+		Results    string `config:"results"`
+		ARF        string `config:"arf"`
+		Policy     string `config:"policy"`
+	}
 	Parameters struct {
-		Profile string `yaml:"profile"`
-	} `yaml:"parameters"`
+		Profile string `config:"profile"`
+	}
+}
+
+// NewConfig creates a new, empty Config.
+func NewConfig() *Config {
+	return &Config{}
+}
+
+// LoadSettings sets the values in the Config from a given config map and
+// performs validation.
+func (c *Config) LoadSettings(config map[string]string) error {
+	filesVal := reflect.ValueOf(&c.Files).Elem()
+	if err := setConfigStruct(filesVal, config); err != nil {
+		return err
+	}
+	paramVal := reflect.ValueOf(&c.Parameters).Elem()
+	if err := setConfigStruct(paramVal, config); err != nil {
+		return err
+	}
+	return c.validate()
+}
+
+func (c *Config) validate() error {
+	// String values to sanitize
+	inputValues := []*string{
+		&c.Files.Policy,
+		&c.Files.Results,
+		&c.Files.ARF,
+		&c.Parameters.Profile,
+	}
+
+	for _, inputValue := range inputValues {
+		sanitized, err := SanitizeInput(*inputValue)
+		if err != nil {
+			return err
+		}
+		*inputValue = sanitized
+	}
+
+	_, err := SanitizeAndValidatePath(c.Files.Datastream, false)
+	if err != nil {
+		return fmt.Errorf("invalid datastream path: %s: %w", c.Files.Datastream, err)
+	}
+
+	if err := defineFilesPaths(c); err != nil {
+		return err
+	}
+	return nil
 }
 
 func SanitizeInput(input string) (string, error) {
@@ -132,58 +178,33 @@ func ensureWorkspace(cfg *Config) (map[string]string, error) {
 	return directories, nil
 }
 
-func defineFilesPaths(cfg *Config) (*Config, error) {
+func defineFilesPaths(cfg *Config) error {
 	directories, err := ensureWorkspace(cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cfg.Files.Policy = filepath.Join(directories["policyDir"], cfg.Files.Policy)
 	cfg.Files.Results = filepath.Join(directories["resultsDir"], cfg.Files.Results)
 	cfg.Files.ARF = filepath.Join(directories["resultsDir"], cfg.Files.ARF)
 
-	return cfg, nil
+	return nil
 }
 
-func ReadConfig(configFile string) (*Config, error) {
-	config := &Config{}
-
-	file, err := os.Open(configFile)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	d := yaml.NewDecoder(file)
-	if err := d.Decode(&config); err != nil {
-		return nil, err
-	}
-
-	// String values to sanitize
-	inputValues := []*string{
-		&config.Files.Policy,
-		&config.Files.Results,
-		&config.Files.ARF,
-		&config.Parameters.Profile,
-	}
-
-	for _, inputValue := range inputValues {
-		sanitized, err := SanitizeInput(*inputValue)
-		if err != nil {
-			return nil, err
+// setConfigStruct populates struct fields with matching tags to values
+// in a given config map.
+func setConfigStruct(val reflect.Value, config map[string]string) error {
+	t := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		fieldType := t.Field(i)
+		key := fieldType.Tag.Get("config")
+		value, ok := config[key]
+		if !ok {
+			return fmt.Errorf("missing configuration value for option %q (field: %s)", key, fieldType.Name)
 		}
-		*inputValue = sanitized
-	}
 
-	_, err = SanitizeAndValidatePath(config.Files.Datastream, false)
-	if err != nil {
-		return nil, fmt.Errorf("invalid datastream path: %s: %w", config.Files.Datastream, err)
+		fieldVal := val.Field(i)
+		fieldVal.SetString(value)
 	}
-
-	config, err = defineFilesPaths(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
+	return nil
 }
