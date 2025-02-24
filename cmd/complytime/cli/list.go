@@ -38,7 +38,7 @@ func runList(opts *option.Common, logger hclog.Logger) error {
 	if err != nil {
 		return err
 	}
-	logger.Debug(fmt.Sprintf("using application directory: %s", appDir.AppDir()))
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 
 	frameworks, err := complytime.LoadFrameworks(appDir)
 	if err != nil {

@@ -60,7 +60,6 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 	if err != nil {
 		return err
 	}
-
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
 	if err != nil {
@@ -80,7 +79,10 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 	if err != nil {
 		return err
 	}
-
+	for _, plugin := range plugins {
+		logger.Debug(fmt.Sprintf("Successfully loaded %v plugin.", plugin))
+	}
+	logger.Info("Information successfully retrieved from plugins.")
 	// Ensure all the plugins launch above are cleaned up
 	defer manager.Clean()
 
@@ -100,7 +102,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 	if !valid {
 		return fmt.Errorf("error reading framework property from assessment plan")
 	}
-
+	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
 	r, err := framework.NewReporter(cfg)
 	if err != nil {
 		return err
@@ -130,7 +132,6 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 
 	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocation)
 	cleanedPath := filepath.Clean(filePath)
-
 
 	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
 	if err != nil {

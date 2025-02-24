@@ -61,6 +61,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions, logger hclog.Logger)
 	if err != nil {
 		return err
 	}
+	logger.Debug("The configuration from the C2PConfig was successfully loaded.")
 	manager, err := framework.NewPluginManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
@@ -77,6 +78,6 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions, logger hclog.Logger)
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(opts.Out, "Policy generation completed successfully.")
+	logger.Info("Policy generation completed successfully.")
 	return nil
 }
