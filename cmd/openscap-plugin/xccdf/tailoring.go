@@ -85,7 +85,7 @@ func unselectAbsentRules(tailoringSelections, dsProfileSelections []xccdf.Select
 				break
 			}
 		}
-		if !dsRuleAlsoInPolicy {
+		if !dsRuleAlsoInPolicy && dsRule.Selected {
 			tailoringSelections = append(tailoringSelections, xccdf.SelectElement{
 				IDRef:    dsRule.IDRef,
 				Selected: false,
