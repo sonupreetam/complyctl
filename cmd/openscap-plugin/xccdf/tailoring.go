@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	XCCDFCaCNamespace    string = "xccdf_org.ssgproject.content"
 	XCCDFNamespace       string = "complytime.openscapplugin"
 	XCCDFTailoringSuffix string = "complytime"
 )
@@ -29,7 +30,7 @@ func getTailoringID() string {
 
 func getTailoringExtendedProfileID(profileId string) string {
 	return fmt.Sprintf(
-		"xccdf_%s_profile_%s", XCCDFNamespace, profileId)
+		"%s_profile_%s", XCCDFCaCNamespace, profileId)
 }
 
 func getTailoringProfileID(profileId string) string {
