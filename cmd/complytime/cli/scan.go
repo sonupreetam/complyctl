@@ -71,6 +71,10 @@ func runScan(cmd *cobra.Command, opts *scanOptions, logger hclog.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	// set config logger to CLI charm logger
+	cfg.Logger = logger
+
 	manager, err := framework.NewPluginManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)

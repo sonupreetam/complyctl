@@ -62,6 +62,10 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions, logger hclog.Logger)
 		return err
 	}
 	logger.Debug("The configuration from the C2PConfig was successfully loaded.")
+
+	// set config logger to CLI charm logger
+	cfg.Logger = logger
+
 	manager, err := framework.NewPluginManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
