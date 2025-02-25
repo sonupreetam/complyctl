@@ -96,11 +96,13 @@ func unselectAbsentRules(tailoringSelections, dsProfileSelections []xccdf.Select
 }
 
 func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.SelectElement, oscalPolicy policy.Policy) []xccdf.SelectElement {
+	rulesMap := make(map[string]bool)
+
 	for _, rule := range oscalPolicy {
 		ruleAlreadyInDsProfile := false
 		for _, dsRule := range dsProfileSelections {
-			ruleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
-			if rule.Rule.ID == ruleID {
+			dsRuleID := removePrefix(dsRule.IDRef, ruleIDPrefix)
+			if rule.Rule.ID == dsRuleID {
 				// Not a common case, but a rule can be unselected in a Datastream Profile
 				if dsRule.Selected {
 					ruleAlreadyInDsProfile = true
@@ -108,9 +110,11 @@ func selectAdditionalRules(tailoringSelections, dsProfileSelections []xccdf.Sele
 				break
 			}
 		}
-		if !ruleAlreadyInDsProfile {
+		ruleID := getDsRuleID(rule.Rule.ID)
+		if !ruleAlreadyInDsProfile && !rulesMap[ruleID] {
+			rulesMap[ruleID] = true
 			tailoringSelections = append(tailoringSelections, xccdf.SelectElement{
-				IDRef:    getDsRuleID(rule.Rule.ID),
+				IDRef:    ruleID,
 				Selected: true,
 			})
 		}
@@ -140,23 +144,27 @@ func getTailoringSelections(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileE
 }
 
 func updateTailoringValues(tailoringValues, dsProfileValues []xccdf.SetValueElement, oscalPolicy policy.Policy) []xccdf.SetValueElement {
+	varsMap := make(map[string]bool)
+
 	for _, rule := range oscalPolicy {
 		if rule.Rule.Parameter == nil {
 			continue
 		}
 		varAlreadyInDsProfile := false
 		for _, dsVar := range dsProfileValues {
-			varID := removePrefix(dsVar.IDRef, varIDPrefix)
-			if rule.Rule.Parameter.ID == varID {
+			dsVarID := removePrefix(dsVar.IDRef, varIDPrefix)
+			if rule.Rule.Parameter.ID == dsVarID {
 				if rule.Rule.Parameter.Value == dsVar.Value {
 					varAlreadyInDsProfile = true
 				}
 				break
 			}
 		}
-		if !varAlreadyInDsProfile {
+		varID := getDsVarID(rule.Rule.Parameter.ID)
+		if !varAlreadyInDsProfile && !varsMap[varID] {
+			varsMap[varID] = true
 			tailoringValues = append(tailoringValues, xccdf.SetValueElement{
-				IDRef: getDsVarID(rule.Rule.Parameter.ID),
+				IDRef: varID,
 				Value: rule.Rule.Parameter.Value,
 			})
 		}
