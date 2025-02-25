@@ -5,11 +5,10 @@ package oscap
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 )
 
-func constructScanCommand(openscapFiles map[string]string, profile string) ([]string, error) {
+func constructScanCommand(openscapFiles map[string]string, profile string) []string {
 	datastream := openscapFiles["datastream"]
 	tailoringFile := openscapFiles["policy"]
 	resultsFile := openscapFiles["results"]
@@ -19,27 +18,18 @@ func constructScanCommand(openscapFiles map[string]string, profile string) ([]st
 		"oscap",
 		"xccdf",
 		"eval",
-		"--profile",
-		profile,
-		"--results",
-		resultsFile,
-		"--results-arf",
-		arfFile,
+		"--profile", profile,
+		"--results", resultsFile,
+		"--results-arf", arfFile,
+		"--tailoring-file", tailoringFile,
+		datastream,
 	}
 
-	if _, err := os.Stat(tailoringFile); err == nil {
-		cmd = append(cmd, "--tailoring-file", tailoringFile)
-	}
-
-	cmd = append(cmd, datastream)
-	return cmd, nil
+	return cmd
 }
 
 func OscapScan(openscapFiles map[string]string, profile string) ([]byte, error) {
-	command, err := constructScanCommand(openscapFiles, profile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct command %s: %w", command, err)
-	}
+	command := constructScanCommand(openscapFiles, profile)
 
 	cmdPath, err := exec.LookPath(command[0])
 	if err != nil {

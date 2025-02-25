@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	XCCDFCaCNamespace    string = "xccdf_org.ssgproject.content"
 	XCCDFNamespace       string = "complytime.openscapplugin"
 	XCCDFTailoringSuffix string = "complytime"
 )
@@ -25,6 +26,11 @@ func removePrefix(str, prefix string) string {
 
 func getTailoringID() string {
 	return fmt.Sprintf("xccdf_%s_tailoring_%s", XCCDFNamespace, XCCDFTailoringSuffix)
+}
+
+func getTailoringExtendedProfileID(profileId string) string {
+	return fmt.Sprintf(
+		"%s_profile_%s", XCCDFCaCNamespace, profileId)
 }
 
 func getTailoringProfileID(profileId string) string {
@@ -193,6 +199,8 @@ func getTailoringProfile(profileId string, dsPath string, oscalPolicy policy.Pol
 	if err != nil {
 		return tailoringProfile, fmt.Errorf("failed to get base profile from datastream: %w", err)
 	}
+
+	tailoringProfile.Extends = getTailoringExtendedProfileID(profileId)
 
 	tailoringProfile.Title = &xccdf.TitleOrDescriptionElement{
 		Override: true,
