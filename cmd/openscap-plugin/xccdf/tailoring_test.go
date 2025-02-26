@@ -320,6 +320,21 @@ func TestSelectAdditionalRules(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_rule_rule1", Selected: true},
 			},
 		},
+		{
+			name:                "One additional rule informed twice",
+			tailoringSelections: []xccdf.SelectElement{},
+			dsProfileSelections: []xccdf.SelectElement{
+				{IDRef: "xccdf_org.ssgproject.content_rule_rule1", Selected: true},
+			},
+			oscalPolicy: policy.Policy{
+				{Rule: extensions.Rule{ID: "rule1"}},
+				{Rule: extensions.Rule{ID: "rule2"}},
+				{Rule: extensions.Rule{ID: "rule2"}},
+			},
+			expectedSelections: []xccdf.SelectElement{
+				{IDRef: "xccdf_org.ssgproject.content_rule_rule2", Selected: true},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -487,6 +502,21 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{Rule: extensions.Rule{Parameter: nil}},
 			},
 			expectedValues: []xccdf.SetValueElement{},
+		},
+		{
+			name:            "One additional value informed twice",
+			tailoringValues: []xccdf.SetValueElement{},
+			dsProfileValues: []xccdf.SetValueElement{
+				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
+			},
+			oscalPolicy: policy.Policy{
+				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "value1"}}},
+				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+			},
+			expectedValues: []xccdf.SetValueElement{
+				{IDRef: "xccdf_org.ssgproject.content_value_var2", Value: "value2"},
+			},
 		},
 	}
 
