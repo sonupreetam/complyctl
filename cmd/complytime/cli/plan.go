@@ -84,7 +84,7 @@ func loadPlan(opts *option.ComplyTime) (*oscalTypes.AssessmentPlan, string, erro
 	assessmentPlan, err := complytime.ReadPlan(apCleanedPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, "", fmt.Errorf("error: assessment plan does exist in workspace %s: %w\n\nDid you run the plan command?",
+			return nil, "", fmt.Errorf("error: assessment plan does not exist in workspace %s: %w\n\nDid you run the plan command?",
 				opts.UserWorkspace,
 				err)
 		}
