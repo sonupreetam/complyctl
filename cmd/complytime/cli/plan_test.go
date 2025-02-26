@@ -17,7 +17,7 @@ func TestPlansInWorkspace(t *testing.T) {
 	testOpts := &option.ComplyTime{
 		UserWorkspace: "doesnotexist",
 	}
-	wantErr := "error: assessment plan does exist in workspace doesnotexist: o" +
+	wantErr := "error: assessment plan does not exist in workspace doesnotexist: o" +
 		"pen doesnotexist/assessment-plan.json: no such file or directory\n\nDid you run the plan command?"
 	_, _, gotErr := loadPlan(testOpts)
 	require.EqualError(t, gotErr, wantErr)
