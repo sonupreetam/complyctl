@@ -66,75 +66,9 @@ To compile complytime and openscap-plugin:
 make build
 ```
 
-## Running
-Install the plugin
-```bash
-mkdir -p ~/.config/complytime/plugins
-cp -rp bin/openscap-plugin ~/.config/complytime/plugins
-```
+### Running
 
-Create the manifest
-```bash
-checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
-cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
-{
-  "metadata": {
-    "id": "openscap",
-    "description": "My openscap plugin",
-    "version": "0.0.1",
-    "types": [
-      "pvp"
-    ]
-  },
-  "executablePath": "openscap-plugin",
-  "sha256": "$checksum",
-  "configuration": [
-    {
-      "name": "workspace",
-      "description": "Directory for writing plugin artifacts",
-      "required": true
-    },
-    {
-      "name": "datastream",
-      "description": "The OpenSCAP datastream to use.",
-      "default": "/usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml",
-      "required": false
-    },
-    {
-      "name": "results",
-      "description": "The name of the generated results file",
-      "default": "results.xml",
-      "required": false
-    },
-    {
-      "name": "arf",
-      "description": "The name of the generated ARF file",
-      "default": "arf.xml",
-      "required": false
-    },
-    {
-      "name": "policy",
-      "description": "The name of the generated tailoring file",
-      "default": "tailoring_policy.xml",
-      "required": false
-    },
-    {
-      "name": "profile",
-      "description": "The OpenSCAP profile to run for assessment",
-      "required": true
-    }
-  ]
-}
-EOF
-```
-
-### Scan
-Run ComplyTime scan command to use plugin
-```bash
-bin/complytime scan
-```
-
-After the scan, check the files in "user_workspace" directory.
+To use the plugin with `complytime`, see the quick start [guide](../../docs/QUICK_START.md).
 
 ### Testing
 Tests are organized within each package. Whenever possible a unit test is created for every function.
