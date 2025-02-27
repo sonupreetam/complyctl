@@ -18,7 +18,6 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	github.com/stretchr/testify v1.10.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -93,6 +92,7 @@ require (
 	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.32.1 // indirect
 	k8s.io/apimachinery v0.32.1 // indirect
 	k8s.io/apiserver v0.32.0 // indirect
@@ -106,4 +106,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/oscal-compass/compliance-to-policy-go/v2 => github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250219212651-3ec848c23b40
+replace github.com/oscal-compass/compliance-to-policy-go/v2 => github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250227121630-81169b4b0d96

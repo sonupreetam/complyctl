@@ -39,8 +39,8 @@ github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQ
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
 github.com/clarketm/json v1.17.1 h1:U1IxjqJkJ7bRK4L6dyphmoO840P6bdhPdbbLySourqI=
 github.com/clarketm/json v1.17.1/go.mod h1:ynr2LRfb0fQU34l07csRNBTcivjySLLiY1YzQqKVfdo=
-github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250219212651-3ec848c23b40 h1:sKrGLNSVIrfkOU2b6DbBAz1Stb6zHo9V3oiJQ5/3Q88=
-github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250219212651-3ec848c23b40/go.mod h1:ayAFbmq1/RzJpxsSWHpax+IkMBWCQCM3PcXX+oPXqKo=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250227121630-81169b4b0d96 h1:S750mby90gVx16QxxCNNU+D1+nl2UjSVXtqauODMyXg=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250227121630-81169b4b0d96/go.mod h1:brB4VZ/WQKUk3MDvGoPegnBUROF5rwrDEN0l+oLz7jI=
 github.com/coreos/fcct v0.5.0 h1:f/z+MCoR2vULes+MyoPEApQ6iluy/JbXoRi6dahPItQ=
 github.com/coreos/fcct v0.5.0/go.mod h1:cbE+j77YSQwFB2fozWVB3qsI2Pi3YiVEbDz/b6Yywdo=
 github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb h1:rmqyI19j3Z/74bIRhuC59RB442rXUazKNueVpfJPxg4=
