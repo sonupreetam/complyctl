@@ -44,7 +44,7 @@ type ComplyTime struct {
 
 // BindFlags populate ComplyTime options from user-specified flags.
 func (o *ComplyTime) BindFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&o.UserWorkspace, "workspace", "w", ".", "workspace to use for artifact generation")
+	fs.StringVarP(&o.UserWorkspace, "workspace", "w", "./complytime", "workspace to use for artifact generation")
 }
 
 // ToPluginOptions returns global PluginOptions based on complytime Options.

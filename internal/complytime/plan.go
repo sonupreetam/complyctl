@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
@@ -16,6 +17,12 @@ import (
 
 // WritePlan writes an AssessmentPlan to a given path location with consistency.
 func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation string) error {
+	// Ensure UserWorkspace exists before writing the plan
+	userWorkspace := filepath.Dir(planLocation)
+	if err := os.MkdirAll(userWorkspace, 0700); err != nil {
+		return err
+	}
+
 	// Add the framework property needed for ComplyTime
 	if plan.Metadata.Props == nil {
 		plan.Metadata.Props = &[]oscalTypes.Property{}
