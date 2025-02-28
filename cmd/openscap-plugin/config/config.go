@@ -3,6 +3,7 @@
 package config
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -15,7 +16,11 @@ import (
 	"strings"
 )
 
-const PluginDir = "openscap"
+const (
+	PluginDir      string = "openscap"
+	DatastreamsDir string = "/usr/share/xml/scap/ssg/content"
+	SystemInfoFile string = "/etc/os-release"
+)
 
 type Config struct {
 	Files struct {
@@ -66,7 +71,21 @@ func (c *Config) validate() error {
 		*inputValue = sanitized
 	}
 
-	_, err := SanitizeAndValidatePath(c.Files.Datastream, false)
+	cleanDsPath, err := SanitizePath(c.Files.Datastream)
+	if err != nil {
+		return err
+	}
+
+	// an empty string is updated to the current directory after SanitizePath
+	if cleanDsPath == "." {
+		matchingDsFile, err := findMatchingDatastream()
+		if err != nil {
+			return err
+		}
+		c.Files.Datastream = matchingDsFile
+	}
+
+	_, err = validatePath(c.Files.Datastream, false)
 	if err != nil {
 		return fmt.Errorf("invalid datastream path: %s: %w", c.Files.Datastream, err)
 	}
@@ -121,18 +140,6 @@ func SanitizePath(path string) (string, error) {
 		return "", fmt.Errorf("failed to expand path: %w", err)
 	}
 	return expandedPath, nil
-}
-
-func SanitizeAndValidatePath(path string, shouldBeDir bool) (string, error) {
-	cleanPath, err := SanitizePath(path)
-	if err != nil {
-		return "", err
-	}
-	validPath, err := validatePath(cleanPath, shouldBeDir)
-	if err != nil {
-		return "", err
-	}
-	return validPath, nil
 }
 
 func ensureDirectory(path string) error {
@@ -207,4 +214,75 @@ func setConfigStruct(val reflect.Value, config map[string]string) error {
 		fieldVal.SetString(value)
 	}
 	return nil
+}
+
+// GetDistroVersion returns the distribution and version of the system based
+// on information from SystemInfoFile.
+func getDistroVersion() (string, string, error) {
+	file, err := os.Open(SystemInfoFile)
+	if err != nil {
+		return "", "", err
+	}
+	defer file.Close()
+
+	var id, versionID string
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ID=") {
+			id = strings.Trim(strings.Split(line, "=")[1], `"`)
+		} else if strings.HasPrefix(line, "VERSION_ID=") {
+			versionID = strings.Trim(strings.Split(line, "=")[1], `"`)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", "", err
+	}
+
+	if id != "" && versionID != "" {
+		// Extract major version (e.g., 9 from 9.5)
+		majorVersion := strings.Split(versionID, ".")[0]
+		// Also keep the full version without dots (e.g., "95" from "9.5")
+		fullVersion := strings.ReplaceAll(versionID, ".", "")
+
+		return fmt.Sprintf("%s%s", id, majorVersion), fmt.Sprintf("%s%s", id, fullVersion), nil
+	}
+
+	return "", "", fmt.Errorf("could not determine distribution and version based on %s", SystemInfoFile)
+}
+
+func findMatchingDatastream() (string, error) {
+	distroVersion, distroFullVersion, err := getDistroVersion()
+	if err != nil {
+		return "", err
+	}
+	// These pattern are currently used in scap-security-guide package
+	exactPattern := fmt.Sprintf("ssg-%s-ds.xml", distroVersion)
+	alternativePattern := fmt.Sprintf("ssg-%s-ds.xml", distroFullVersion)
+
+	var foundFile string
+
+	err = filepath.Walk(DatastreamsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if info.Name() == exactPattern || info.Name() == alternativePattern {
+				foundFile = path
+				return filepath.SkipDir
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	if foundFile != "" {
+		return foundFile, nil
+	}
+
+	return "", fmt.Errorf("could not determine a datastream file for a %s system.", distroVersion)
 }

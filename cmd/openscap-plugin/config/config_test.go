@@ -86,52 +86,6 @@ func TestSanitizePath(t *testing.T) {
 	}
 }
 
-// TestSanitizeAndValidatePath tests the SanitizeAndValidatePath function with various
-// valid and invalid paths.
-func TestSanitizeAndValidatePath(t *testing.T) {
-	tempDir := t.TempDir()
-	tempFile := filepath.Join(tempDir, "testfile")
-
-	file, err := os.Create(tempFile)
-	if err != nil {
-		t.Fatalf("Failed to create temporary file: %v", err)
-	}
-	file.Close()
-	defer os.RemoveAll(tempFile)
-
-	tests := []struct {
-		path        string
-		shouldBeDir bool
-		expectError bool
-		expected    string
-	}{
-		// Valid cases
-		{tempDir, true, false, tempDir},    // directory exists
-		{tempFile, false, false, tempFile}, // file exists
-		{"/nonexistent", true, true, ""},   // directory does not exist
-		{"/nonexistent", false, true, ""},  // file does not exist
-
-		// Invalid cases
-		{tempFile, true, true, ""},          // expected directory but found file
-		{tempDir, false, true, ""},          // expected file but found directory
-		{"/foo/bar/../baz", true, true, ""}, // normalized path does not exist
-		{"./foo/bar", true, true, ""},       // relative path does not exist
-		{"./foo/bar", true, true, ""},       // relative path does not exist
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			result, err := SanitizeAndValidatePath(tt.path, tt.shouldBeDir)
-			if (err != nil) != tt.expectError {
-				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
-			}
-			if result != tt.expected {
-				t.Errorf("Expected result: %s, got: %s", tt.expected, result)
-			}
-		})
-	}
-}
-
 // TestEnsureDirectory tests the ensureDirectory function with various cases.
 func TestEnsureDirectory(t *testing.T) {
 	tempDir := t.TempDir()

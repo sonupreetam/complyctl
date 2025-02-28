@@ -55,8 +55,8 @@ cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
     },
     {
       "name": "datastream",
-      "description": "The OpenSCAP datastream to use.",
-      "default": "/usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml",
+      "description": "The OpenSCAP datastream to use. If empty, the plugin will try to determine it based on system information",
+      "default": "",
       "required": false
     },
     {
