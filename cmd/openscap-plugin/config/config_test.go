@@ -86,6 +86,64 @@ func TestSanitizePath(t *testing.T) {
 	}
 }
 
+func setupTestFiles() error {
+	if err := os.MkdirAll("testdata", os.ModePerm); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile("testdata/valid.xml", []byte(`<root></root>`), 0600); err != nil {
+		return err
+	}
+	if err := os.WriteFile("testdata/invalid.xml", []byte(`<root>`), 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
+func teardownTestFiles() {
+	os.RemoveAll("testdata")
+}
+
+func TestIsXMLFile(t *testing.T) {
+	if err := setupTestFiles(); err != nil {
+		t.Fatalf("Failed to setup test files: %v", err)
+	}
+	defer teardownTestFiles()
+
+	tests := []struct {
+		name      string
+		filePath  string
+		want      bool
+		expectErr bool
+	}{
+		{
+			name:      "Valid XML file",
+			filePath:  "testdata/valid.xml",
+			want:      true,
+			expectErr: false,
+		},
+		{
+			name:      "Invalid XML file",
+			filePath:  "testdata/invalid.xml",
+			want:      false,
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isXML, err := IsXMLFile(tt.filePath)
+			if (err != nil) != tt.expectErr {
+				t.Errorf("IsXMLFile(%s) error = %v, expectErr %v", tt.filePath, err, tt.expectErr)
+				return
+			}
+			if isXML != tt.want {
+				t.Errorf("IsXMLFile() = %v, want %v", isXML, tt.want)
+			}
+		})
+	}
+}
+
 // TestEnsureDirectory tests the ensureDirectory function with various cases.
 func TestEnsureDirectory(t *testing.T) {
 	tempDir := t.TempDir()

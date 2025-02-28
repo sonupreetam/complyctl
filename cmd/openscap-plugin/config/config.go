@@ -4,6 +4,7 @@ package config
 
 import (
 	"bufio"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -90,6 +91,11 @@ func (c *Config) validate() error {
 		return fmt.Errorf("invalid datastream path: %s: %w", c.Files.Datastream, err)
 	}
 
+	isXML, err := IsXMLFile(c.Files.Datastream)
+	if err != nil || !isXML {
+		return fmt.Errorf("invalid datastream file: %s: %w", c.Files.Datastream, err)
+	}
+
 	if err := defineFilesPaths(c); err != nil {
 		return err
 	}
@@ -140,6 +146,25 @@ func SanitizePath(path string) (string, error) {
 		return "", fmt.Errorf("failed to expand path: %w", err)
 	}
 	return expandedPath, nil
+}
+
+func IsXMLFile(filePath string) (bool, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false, fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+
+	decoder := xml.NewDecoder(file)
+	for {
+		_, err := decoder.Token()
+		if err != nil {
+			if err.Error() == "EOF" {
+				return true, nil
+			}
+			return false, fmt.Errorf("invalid XML file %s: %w", filePath, err)
+		}
+	}
 }
 
 func ensureDirectory(path string) error {
