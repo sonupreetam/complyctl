@@ -71,6 +71,7 @@ func TestSanitizePath(t *testing.T) {
 
 		// Weird but valid cases
 		{"~weird", "~weird", false}, // not common but possible
+		{"", ".", false},            // empty path is updated to the current directory
 	}
 
 	for _, tt := range tests {

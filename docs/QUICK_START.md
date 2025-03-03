@@ -54,21 +54,13 @@ cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
       "required": true
     },
     {
+      "name": "profile",
+      "description": "The OpenSCAP profile to run for assessment",
+      "required": true
+    },
+    {
       "name": "datastream",
-      "description": "The OpenSCAP datastream to use. If empty, the plugin will try to determine it based on system information",
-      "default": "",
-      "required": false
-    },
-    {
-      "name": "results",
-      "description": "The name of the generated results file",
-      "default": "results.xml",
-      "required": false
-    },
-    {
-      "name": "arf",
-      "description": "The name of the generated ARF file",
-      "default": "arf.xml",
+      "description": "The OpenSCAP datastream to use. If not set, the plugin will try to determine it based on system information",
       "required": false
     },
     {
@@ -78,9 +70,16 @@ cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
       "required": false
     },
     {
-      "name": "profile",
-      "description": "The OpenSCAP profile to run for assessment",
-      "required": true
+      "name": "arf",
+      "description": "The name of the generated ARF file",
+      "default": "arf.xml",
+      "required": false
+    },
+    {
+      "name": "results",
+      "description": "The name of the generated results file",
+      "default": "results.xml",
+      "required": false
     }
   ]
 }

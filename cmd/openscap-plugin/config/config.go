@@ -77,7 +77,8 @@ func (c *Config) validate() error {
 		return err
 	}
 
-	// an empty string is updated to the current directory after SanitizePath
+	// if a Datastream path is not defined in plugin manifest, it will be set
+	// to the current directory after SanitizePath.
 	if cleanDsPath == "." {
 		matchingDsFile, err := findMatchingDatastream()
 		if err != nil {
@@ -231,7 +232,9 @@ func setConfigStruct(val reflect.Value, config map[string]string) error {
 		fieldType := t.Field(i)
 		key := fieldType.Tag.Get("config")
 		value, ok := config[key]
-		if !ok {
+		// if datastream is not set in manifest file, plugin will try to determine
+		// and validate the datastream path later based on system information.
+		if !ok && key != "datastream" {
 			return fmt.Errorf("missing configuration value for option %q (field: %s)", key, fieldType.Name)
 		}
 
