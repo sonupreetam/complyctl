@@ -16,7 +16,8 @@ import (
 	"github.com/complytime/complytime/internal/complytime"
 )
 
-const assessmentResultsLocation = "assessment-results.json"
+const assessmentResultsLocationJson = "assessment-results.json"
+const assessmentResultsLocationMd = "assessment-results.md"
 
 // scanOptions defined options for the scan subcommand.
 type scanOptions struct {
@@ -33,13 +34,14 @@ func scanCmd(common *option.Common) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "scan [flags]",
 		Short:        "Scan environment with assessment plan",
-		Example:      "complytime scan",
+		Example:      "complytime scan -o json|md",
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runScan(cmd, scanOpts)
 		},
 	}
+	cmd.Flags().StringP("output-format", "o", "json", "Specify output format (md, json)")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -126,12 +128,34 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		return err
 	}
 
-	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocation)
-	cleanedPath := filepath.Clean(filePath)
-
-	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
-	if err != nil {
-		return err
+	switch outputFormat {
+	case "json":
+		filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
+		cleanedPath := filepath.Clean(filePath)
+		err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
+		if err != nil {
+			return err
+		}
+	case "md":
+		// Handle MD (Markdown) output
+		catalog, err := complytime.LoadCatalogSource(appDir)
+		if err != nil {
+			return err
+		}
+		filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
+		cleanedPath := filepath.Clean(filePath)
+		templateValues := framework.CreateTemplateValues(*catalog, *assessmentPlan, assessmentResults)
+		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(cleanedPath)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(cleanedPath, assessmentResultsMd, 0600)
+		if err != nil {
+			return err
+		}
+	default:
+		// Handle default case (this should be unreachable if input is validated properly)
+		fmt.Println("Invalid output format specified")
 	}
 	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil

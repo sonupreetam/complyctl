@@ -39,8 +39,20 @@ github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQ
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
 github.com/clarketm/json v1.17.1 h1:U1IxjqJkJ7bRK4L6dyphmoO840P6bdhPdbbLySourqI=
 github.com/clarketm/json v1.17.1/go.mod h1:ynr2LRfb0fQU34l07csRNBTcivjySLLiY1YzQqKVfdo=
+<<<<<<< HEAD
 github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250306172138-9fb77e6b1ecd h1:SrPAVkVVdgMnm98U6Z1sn50R3ruF0wM/Er21uOp9S8A=
 github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250306172138-9fb77e6b1ecd/go.mod h1:brB4VZ/WQKUk3MDvGoPegnBUROF5rwrDEN0l+oLz7jI=
+=======
+<<<<<<< HEAD
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250227121630-81169b4b0d96 h1:S750mby90gVx16QxxCNNU+D1+nl2UjSVXtqauODMyXg=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250227121630-81169b4b0d96/go.mod h1:brB4VZ/WQKUk3MDvGoPegnBUROF5rwrDEN0l+oLz7jI=
+=======
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250303075821-2c4e7c5779bd h1:fvqz4iZrMpgNDY9z3fYHfgumlIQhHBgm1xQWYN7agD0=
+github.com/complytime/compliance-to-policy-go/v2 v2.0.0-20250303075821-2c4e7c5779bd/go.mod h1:brB4VZ/WQKUk3MDvGoPegnBUROF5rwrDEN0l+oLz7jI=
+github.com/complytime/oscal-sdk-go v0.0.0-20250125144051-7723a7b6b06b h1:F3tqX70f1WSdGrOnSFlc0AU/QiGxBKw6MfmC/ZX0wdE=
+github.com/complytime/oscal-sdk-go v0.0.0-20250125144051-7723a7b6b06b/go.mod h1:O922y+Za9/ez0jKTR3/97BilPnrjabtFJ6rCVhHk37s=
+>>>>>>> 4c4f594 (feat: generate the assessment results as md format)
+>>>>>>> f3b4fbc (feat: generate the assessment results as md format)
 github.com/coreos/fcct v0.5.0 h1:f/z+MCoR2vULes+MyoPEApQ6iluy/JbXoRi6dahPItQ=
 github.com/coreos/fcct v0.5.0/go.mod h1:cbE+j77YSQwFB2fozWVB3qsI2Pi3YiVEbDz/b6Yywdo=
 github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb h1:rmqyI19j3Z/74bIRhuC59RB442rXUazKNueVpfJPxg4=
