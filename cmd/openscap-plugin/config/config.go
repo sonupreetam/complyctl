@@ -312,5 +312,5 @@ func findMatchingDatastream() (string, error) {
 		return foundFile, nil
 	}
 
-	return "", fmt.Errorf("could not determine a datastream file for a %s system.", distroVersion)
+	return "", fmt.Errorf("could not determine a datastream file for a %s system", distroVersion)
 }

@@ -9,12 +9,12 @@ Plugins communicate with ComplyTime via gRPC and can be authored using any prefe
 The plugin acts as the gRPC server while the ComplyTime CLI acts as the client.
 When a `complytime` command is run, it invokes the appropriate method served by the plugin.
 
-ComplyTime is built on [compliance-to-policy-go](https://github.com/oscal-compass/compliance-to-policy-go/ which provides a flexible plugin framework for levering OSCAL with various PVPs. For developers choosing Golang, the same SDK can be used for plugin authoring.
+ComplyTime is built on [compliance-to-policy-go](https://github.com/oscal-compass/compliance-to-policy-go/ which provides a flexible plugin framework for leveraging OSCAL with various PVPs. For developers choosing Golang, the same SDK can be used for plugin authoring.
 
 ## Plugin Discovery
 
 ComplyTime performs automated plugin discovery using the compliance-to-policy-go [plugin manager](https://github.com/complytime/compliance-to-policy-go/blob/CPLYTM-272/plugin/discovery.go).
-Plugins are defined using a manifest files placed in the `c2p-plugins` directory.
+Plugins are defined using manifest files placed in the `c2p-plugins` directory.
 The plugin manifest is a JSON file that provides metadata about the plugin.
 Check the quick start [guide](QUICK_START.md) to see an example.
 
@@ -34,7 +34,7 @@ Check the quick start [guide](QUICK_START.md) to see an example.
       {
         "name": "config_name",
         "description": "Config description",
-		"default": "default_value",
+        "default": "default_value",
         "required": true
       },
 	]

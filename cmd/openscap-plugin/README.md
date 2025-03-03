@@ -36,12 +36,12 @@ openscap-plugin/
 
 ### Configuration
 
-The plugin have some parameter that can be configured via the manifest file. Check the quick start [guide](../../docs/QUICK_START.md) to see an example.
+The plugin has some parameters that can be configured via the manifest file. Check the quick start [guide](../../docs/QUICK_START.md) to see an example.
 ComplyTime process the manifest file and send the configuration values to the plugin.
 
 These are the configuration used by openscap-plugin:
-- **workspace**:  Directory used to read the tailoring file and to save oscap files generated during the scan
-- **profile**:    Is the FrameworkID informed by ComplyTime. This FrameworkID correspond to a profile ID in the Datastream
+- **workspace**:  Directory used to read the tailoring file and to save oscap files generated during the scan. This configuration can also be set by ComplyTime CLI.
+- **profile**:    Is the FrameworkID informed by ComplyTime. This FrameworkID corresponds to a profile ID in the Datastream.
 - **datastream**: Datastream file to be used by `generate` and `scan` commands.
 - **policy**:     File name for the tailoring file created by the `generate` command and consumed by the `scan` command.
 - **arf**:        File name to save the `oscap` ARF results during the `scan` command.
