@@ -142,7 +142,10 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		}
 		filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
 		cleanedPath := filepath.Clean(filePath)
-		templateValues := framework.CreateTemplateValues(*catalog, *assessmentPlan, assessmentResults)
+		templateValues, err := framework.CreateTemplateValues(*catalog, *assessmentPlan, assessmentResults)
+		if err != nil {
+			return err
+		}
 		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(cleanedPath)
 		if err != nil {
 			return err
