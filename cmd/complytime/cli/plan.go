@@ -43,7 +43,6 @@ func planCmd(common *option.Common) *cobra.Command {
 		Example: "complytime plan myframework",
 		Args:    cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
-			enableDebug(logger, common)
 			setOptsPlanFromArgs(args, planOpts)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {

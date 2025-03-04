@@ -29,9 +29,6 @@ func generateCmd(common *option.Common) *cobra.Command {
 		Short:   "Generate PVP policy from an assessment plan",
 		Example: "complytime generate",
 		Args:    cobra.NoArgs,
-		PreRun: func(cmd *cobra.Command, _ []string) {
-			enableDebug(logger, common)
-		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runGenerate(cmd, generateOpts)
 		},

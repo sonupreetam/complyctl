@@ -40,9 +40,6 @@ func scanCmd(common *option.Common) *cobra.Command {
 		Example:      "complytime scan",
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
-		PreRun: func(cmd *cobra.Command, _ []string) {
-			enableDebug(logger, common)
-		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runScan(cmd, scanOpts)
 		},

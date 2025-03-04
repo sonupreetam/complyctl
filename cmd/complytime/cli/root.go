@@ -22,7 +22,7 @@ func Error(msg string) {
 	logger.Error(msg)
 }
 
-func enableDebug(logger hclog.Logger, opts *option.Common) {
+func enableDebug(opts *option.Common) {
 	if opts.Debug {
 		logger.SetLevel(hclog.Debug)
 	}
@@ -36,8 +36,6 @@ func New() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  false,
 	}
-
-	cmd.Context()
 
 	opts := option.Common{
 		Output: option.Output{
@@ -54,6 +52,7 @@ func New() *cobra.Command {
 		planCmd(&opts),
 		listCmd(&opts),
 	)
+	cmd.PersistentPreRun = func(_ *cobra.Command, _ []string) { enableDebug(&opts) }
 
 	return cmd
 }

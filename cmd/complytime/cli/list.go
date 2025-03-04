@@ -21,7 +21,6 @@ func listCmd(common *option.Common) *cobra.Command {
 		SilenceUsage: true,
 		Example:      "complytime list",
 		Args:         cobra.NoArgs,
-		PreRun:       func(_ *cobra.Command, _ []string) { enableDebug(logger, common) },
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return runList(common)
 		},
