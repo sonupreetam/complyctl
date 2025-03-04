@@ -77,10 +77,8 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-	for _, plugin := range plugins {
-		logger.Debug(fmt.Sprintf("Successfully loaded %v plugin.", plugin))
-	}
-	logger.Info("Information successfully retrieved from plugins.")
+	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
+
 	// Ensure all the plugins launch above are cleaned up
 	defer manager.Clean()
 
