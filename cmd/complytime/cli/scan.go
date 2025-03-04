@@ -34,14 +34,14 @@ func scanCmd(common *option.Common) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "scan [flags]",
 		Short:        "Scan environment with assessment plan",
-		Example:      "complytime scan -o json|md",
+		Example:      "complytime scan",
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runScan(cmd, scanOpts)
 		},
 	}
-	cmd.Flags().StringP("output-format", "o", "json", "Specify output format (md, json)")
+	cmd.Flags().BoolP("output", "o", false, "If true, assessement-result markdown will be generated")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -127,16 +127,14 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-
-	switch outputFormat {
-	case "json":
-		filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
-		cleanedPath := filepath.Clean(filePath)
-		err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
-		if err != nil {
-			return err
-		}
-	case "md":
+	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
+	cleanedPath := filepath.Clean(filePath)
+	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
+	if err != nil {
+		return err
+	}
+	outputFlag, _ := cmd.Flags().GetBool("output")
+	if outputFlag {
 		// Handle MD (Markdown) output
 		catalog, err := complytime.LoadCatalogSource(appDir)
 		if err != nil {
@@ -153,9 +151,8 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		if err != nil {
 			return err
 		}
-	default:
-		// Handle default case (this should be unreachable if input is validated properly)
-		fmt.Println("Invalid output format specified")
+	} else {
+		fmt.Println("No assessment result markdown will be generated.")
 	}
 	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil

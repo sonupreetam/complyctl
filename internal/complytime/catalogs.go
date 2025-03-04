@@ -15,7 +15,7 @@ import (
 
 func LoadCatalogSource(appDir ApplicationDirectory) (*oscalTypes.Catalog, error) {
 	var path string
-	path = "catalogs/catalog.json"
+	path = "controls/catalog.json"
 	appDirPath := appDir.AppDir()
 
 	// A path relative to the root of the complytime application directory
