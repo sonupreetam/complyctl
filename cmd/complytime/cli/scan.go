@@ -79,7 +79,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
-	// Ensure all the plugins launch above are cleaned up
+	// Ensure all the plugins launched above are cleaned up
 	defer manager.Clean()
 
 	allResults, err := manager.AggregateResults(cmd.Context(), plugins, planSettings)
