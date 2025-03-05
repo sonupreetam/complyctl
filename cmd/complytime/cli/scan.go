@@ -7,15 +7,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/complytime/complytime/internal/complytime"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
+	"github.com/complytime/complytime/internal/complytime"
+
 	"github.com/oscal-compass/oscal-sdk-go/generators"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+
+	"github.com/complytime/complytime/cmd/complytime/option"
 )
 
 const assessmentResultsLocation = "assessment-results.json"
@@ -52,17 +54,21 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 
 	cfg, err := complytime.Config(appDir)
 	if err != nil {
 		return err
 	}
+
+	// set config logger to CLI charm logger
+	cfg.Logger = logger
+
 	manager, err := framework.NewPluginManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
@@ -71,8 +77,9 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
+	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
-	// Ensure all the plugins launch above are cleaned up
+	// Ensure all the plugins launched above are cleaned up
 	defer manager.Clean()
 
 	allResults, err := manager.AggregateResults(cmd.Context(), plugins, planSettings)
@@ -91,7 +98,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if !valid {
 		return fmt.Errorf("error reading framework property from assessment plan")
 	}
-
+	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
 	r, err := framework.NewReporter(cfg)
 	if err != nil {
 		return err
@@ -126,7 +133,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-
+	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil
 }
 

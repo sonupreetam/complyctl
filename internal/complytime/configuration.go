@@ -13,9 +13,6 @@ import (
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
 	"github.com/oscal-compass/oscal-sdk-go/generators"
-	"go.uber.org/zap"
-
-	"github.com/complytime/complytime/pkg/log"
 )
 
 const (
@@ -149,11 +146,6 @@ func FindComponentDefinitions(bundleDir string) ([]oscalTypes.ComponentDefinitio
 // the plugin manager.
 func Config(a ApplicationDirectory) (*config.C2PConfig, error) {
 	cfg := config.DefaultConfig()
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return cfg, fmt.Errorf("unable to create logger: %w", err)
-	}
-	cfg.Logger = log.Wrap(logger.Sugar())
 	cfg.PluginDir = a.PluginDir()
 	compDefBundles, err := FindComponentDefinitions(a.BundleDir())
 	if err != nil {

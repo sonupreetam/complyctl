@@ -59,10 +59,12 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 	componentDefs, err := complytime.FindComponentDefinitions(appDir.BundleDir())
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using bundle directory: %s for component definitions.", appDir.BundleDir()))
 	assessmentPlan, err := transformers.ComponentDefinitionsToAssessmentPlan(cmd.Context(), componentDefs, opts.frameworkID)
 	if err != nil {
 		return err
@@ -74,7 +76,7 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 	if err := complytime.WritePlan(assessmentPlan, opts.frameworkID, cleanedPath); err != nil {
 		return fmt.Errorf("error writing assessment plan to %s: %w", cleanedPath, err)
 	}
-	fmt.Printf("Assessment plan written to %s\n", cleanedPath)
+	logger.Info(fmt.Sprintf("Assessment plan written to %s\n", cleanedPath))
 	return nil
 }
 

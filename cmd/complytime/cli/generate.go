@@ -49,10 +49,16 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 	cfg, err := complytime.Config(appDir)
 	if err != nil {
 		return err
 	}
+	logger.Debug("The configuration from the C2PConfig was successfully loaded.")
+
+	// set config logger to CLI charm logger
+	cfg.Logger = logger
+
 	manager, err := framework.NewPluginManager(cfg)
 	if err != nil {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
@@ -69,6 +75,6 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(opts.Out, "Policy generation completed successfully.")
+	logger.Info("Policy generation completed successfully.")
 	return nil
 }
