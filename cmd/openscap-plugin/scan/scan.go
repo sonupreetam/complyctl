@@ -3,7 +3,6 @@
 package scan
 
 import (
-	"encoding/xml"
 	"fmt"
 	"os"
 
@@ -12,35 +11,13 @@ import (
 	"github.com/complytime/complytime/cmd/openscap-plugin/xccdf"
 )
 
-func isXMLFile(filePath string) (bool, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false, fmt.Errorf("error opening file: %w", err)
-	}
-	defer file.Close()
-
-	decoder := xml.NewDecoder(file)
-	for {
-		_, err := decoder.Token()
-		if err != nil {
-			if err.Error() == "EOF" {
-				return true, nil
-			}
-			return false, fmt.Errorf("invalid XML file %s: %w", filePath, err)
-		}
-	}
-}
-
 func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {
-	if _, err := isXMLFile(cfg.Files.Datastream); err != nil {
-		return nil, err
-	}
-
 	if _, err := os.Stat(cfg.Files.Policy); err != nil {
 		return nil, err
 	}
 
-	if _, err := isXMLFile(cfg.Files.Policy); err != nil {
+	isXML, err := config.IsXMLFile(cfg.Files.Policy)
+	if err != nil || !isXML {
 		return nil, err
 	}
 

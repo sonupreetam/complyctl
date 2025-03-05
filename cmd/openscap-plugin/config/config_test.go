@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestSanitizeInput tests the SanitizeInput function with various valid and invalid inputs.
@@ -69,6 +71,7 @@ func TestSanitizePath(t *testing.T) {
 
 		// Weird but valid cases
 		{"~weird", "~weird", false}, // not common but possible
+		{"", ".", false},            // empty path is updated to the current directory
 	}
 
 	for _, tt := range tests {
@@ -84,47 +87,59 @@ func TestSanitizePath(t *testing.T) {
 	}
 }
 
-// TestSanitizeAndValidatePath tests the SanitizeAndValidatePath function with various
-// valid and invalid paths.
-func TestSanitizeAndValidatePath(t *testing.T) {
-	tempDir := t.TempDir()
-	tempFile := filepath.Join(tempDir, "testfile")
-
-	file, err := os.Create(tempFile)
-	if err != nil {
-		t.Fatalf("Failed to create temporary file: %v", err)
+func setupTestFiles() error {
+	if err := os.MkdirAll("testdata", os.ModePerm); err != nil {
+		return err
 	}
-	file.Close()
-	defer os.RemoveAll(tempFile)
+
+	if err := os.WriteFile("testdata/valid.xml", []byte(`<root></root>`), 0600); err != nil {
+		return err
+	}
+	if err := os.WriteFile("testdata/invalid.xml", []byte(`<root>`), 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
+func teardownTestFiles() {
+	os.RemoveAll("testdata")
+}
+
+func TestIsXMLFile(t *testing.T) {
+	if err := setupTestFiles(); err != nil {
+		t.Fatalf("Failed to setup test files: %v", err)
+	}
+	defer teardownTestFiles()
 
 	tests := []struct {
-		path        string
-		shouldBeDir bool
-		expectError bool
-		expected    string
+		name      string
+		filePath  string
+		want      bool
+		expectErr bool
 	}{
-		// Valid cases
-		{tempDir, true, false, tempDir},    // directory exists
-		{tempFile, false, false, tempFile}, // file exists
-		{"/nonexistent", true, true, ""},   // directory does not exist
-		{"/nonexistent", false, true, ""},  // file does not exist
-
-		// Invalid cases
-		{tempFile, true, true, ""},          // expected directory but found file
-		{tempDir, false, true, ""},          // expected file but found directory
-		{"/foo/bar/../baz", true, true, ""}, // normalized path does not exist
-		{"./foo/bar", true, true, ""},       // relative path does not exist
-		{"./foo/bar", true, true, ""},       // relative path does not exist
+		{
+			name:      "Valid XML file",
+			filePath:  "testdata/valid.xml",
+			want:      true,
+			expectErr: false,
+		},
+		{
+			name:      "Invalid XML file",
+			filePath:  "testdata/invalid.xml",
+			want:      false,
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			result, err := SanitizeAndValidatePath(tt.path, tt.shouldBeDir)
-			if (err != nil) != tt.expectError {
-				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
+		t.Run(tt.name, func(t *testing.T) {
+			isXML, err := IsXMLFile(tt.filePath)
+			if (err != nil) != tt.expectErr {
+				t.Errorf("IsXMLFile(%s) error = %v, expectErr %v", tt.filePath, err, tt.expectErr)
+				return
 			}
-			if result != tt.expected {
-				t.Errorf("Expected result: %s, got: %s", tt.expected, result)
+			if isXML != tt.want {
+				t.Errorf("IsXMLFile() = %v, want %v", isXML, tt.want)
 			}
 		})
 	}
@@ -181,11 +196,11 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace: filepath.Join(tempDir, "workspace"),
 					Policy:    "policy.yaml",
@@ -198,11 +213,11 @@ func TestEnsureWorkspace(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace: filepath.Join(tempDir, "invalid\000workspace"),
 					Policy:    "policy.yaml",
@@ -243,11 +258,11 @@ func TestDefineFilesPaths(t *testing.T) {
 		{
 			cfg: Config{
 				Files: struct {
-					Workspace  string "yaml:\"workspace\""
-					Datastream string "yaml:\"datastream\""
-					Results    string "yaml:\"results\""
-					ARF        string "yaml:\"arf\""
-					Policy     string "yaml:\"policy\""
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
 				}{
 					Workspace:  filepath.Join(tempDir, "workspace"),
 					Datastream: filepath.Join(tempDir, "datastream.xml"),
@@ -262,7 +277,7 @@ func TestDefineFilesPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.cfg.Files.Workspace, func(t *testing.T) {
-			_, err := defineFilesPaths(&tt.cfg)
+			err := defineFilesPaths(&tt.cfg)
 			if (err != nil) != tt.expectError {
 				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
 			}
@@ -287,5 +302,72 @@ func TestDefineFilesPaths(t *testing.T) {
 	}
 }
 
-// Tests for ReadConfig are not included because the function relies on other functions
-// already tested.
+func TestConfig_LoadSettings(t *testing.T) {
+	tempDir := t.TempDir()
+	tempDataStream := filepath.Join(tempDir, "datastream.xml")
+	err := os.WriteFile(tempDataStream, []byte("example"), 0400)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		inputSettings map[string]string
+		expectError   string
+		wantCfg       Config
+	}{
+		{
+			name: "Valid/AllSettingsSupplied",
+			inputSettings: map[string]string{
+				"workspace":  tempDir,
+				"datastream": tempDataStream,
+				"results":    "results.xml",
+				"arf":        "arf.xml",
+				"policy":     "policy.yaml",
+				"profile":    "test",
+			},
+			wantCfg: Config{
+				Files: struct {
+					Workspace  string "config:\"workspace\""
+					Datastream string "config:\"datastream\""
+					Results    string "config:\"results\""
+					ARF        string "config:\"arf\""
+					Policy     string "config:\"policy\""
+				}{
+					Workspace:  tempDir,
+					Datastream: tempDataStream,
+					Results:    filepath.Join(tempDir, "openscap", "results", "results.xml"),
+					ARF:        filepath.Join(tempDir, "openscap", "results", "arf.xml"),
+					Policy:     filepath.Join(tempDir, "openscap", "policy", "policy.yaml"),
+				},
+				Parameters: struct {
+					Profile string `config:"profile"`
+				}{Profile: "test"},
+			},
+			expectError: "",
+		},
+		{
+			name: "Invalid/MissingSettings",
+			inputSettings: map[string]string{
+				"workspace":  tempDir,
+				"datastream": tempDataStream,
+				"results":    "results.xml",
+				"arf":        "arf.xml",
+				"policy":     "policy.yaml",
+			},
+			expectError: "missing configuration value for option \"profile\" (field: Profile)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotConfig := NewConfig()
+			err := gotConfig.LoadSettings(tt.inputSettings)
+
+			if tt.expectError != "" {
+				require.EqualError(t, err, tt.expectError)
+			} else {
+				require.Equal(t, tt.wantCfg, *gotConfig)
+				require.NoError(t, err)
+			}
+		})
+	}
+}

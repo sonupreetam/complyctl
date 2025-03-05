@@ -9,41 +9,6 @@ import (
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 )
 
-func TestIsXMLFile(t *testing.T) {
-	tests := []struct {
-		name      string
-		filePath  string
-		want      bool
-		expectErr bool
-	}{
-		{
-			name:      "Valid XML file",
-			filePath:  "testdata/valid.xml",
-			want:      true,
-			expectErr: false,
-		},
-		{
-			name:      "Invalid XML file",
-			filePath:  "testdata/invalid.xml",
-			want:      false,
-			expectErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isXML, err := isXMLFile(tt.filePath)
-			if (err != nil) != tt.expectErr {
-				t.Errorf("isXMLFile(%s) error = %v, expectErr %v", tt.filePath, err, tt.expectErr)
-				return
-			}
-			if isXML != tt.want {
-				t.Errorf("isXMLFile() = %v, want %v", isXML, tt.want)
-			}
-		})
-	}
-}
-
 func setupTestFiles() error {
 	if err := os.MkdirAll("testdata", os.ModePerm); err != nil {
 		return err

@@ -34,7 +34,6 @@ Each plugin requires a plugin manifest. For more information about plugin discov
 
 ```bash
 cp bin/openscap-plugin ~/.config/complytime/plugins
-cp cmd/openscap-plugin/openscap-plugin.yml ~/.config/complytime/plugins
 checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
 cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
 {
@@ -42,10 +41,47 @@ cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
     "id": "openscap",
     "description": "My openscap plugin",
     "version": "0.0.1",
-    "types": ["pvp"]
+    "types": [
+      "pvp"
+    ]
   },
   "executablePath": "openscap-plugin",
-  "sha256": "$checksum"
+  "sha256": "$checksum",
+  "configuration": [
+    {
+      "name": "workspace",
+      "description": "Directory for writing plugin artifacts",
+      "required": true
+    },
+    {
+      "name": "profile",
+      "description": "The OpenSCAP profile to run for assessment",
+      "required": true
+    },
+    {
+      "name": "datastream",
+      "description": "The OpenSCAP datastream to use. If not set, the plugin will try to determine it based on system information",
+      "required": false
+    },
+    {
+      "name": "policy",
+      "description": "The name of the generated tailoring file",
+      "default": "tailoring_policy.xml",
+      "required": false
+    },
+    {
+      "name": "arf",
+      "description": "The name of the generated ARF file",
+      "default": "arf.xml",
+      "required": false
+    },
+    {
+      "name": "results",
+      "description": "The name of the generated results file",
+      "default": "results.xml",
+      "required": false
+    }
+  ]
 }
 EOF
 ```

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
@@ -16,6 +17,12 @@ import (
 
 // WritePlan writes an AssessmentPlan to a given path location with consistency.
 func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation string) error {
+	// Ensure UserWorkspace exists before writing the plan
+	userWorkspace := filepath.Dir(planLocation)
+	if err := os.MkdirAll(userWorkspace, 0700); err != nil {
+		return err
+	}
+
 	// Add the framework property needed for ComplyTime
 	if plan.Metadata.Props == nil {
 		plan.Metadata.Props = &[]oscalTypes.Property{}
@@ -40,22 +47,26 @@ func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation
 	return os.WriteFile(planLocation, assessmentPlanData, 0600)
 }
 
-var ErrNoActivities = errors.New("no local activities detected")
-
-// PlanSettings return a new compliance Settings instance based on the
-// given assessment plan path.
-func PlanSettings(assessmentPlanPath string) (settings.Settings, error) {
+// ReadPlan reads an assessment plans from a given file path.
+func ReadPlan(assessmentPlanPath string) (*oscalTypes.AssessmentPlan, error) {
 	file, err := os.Open(assessmentPlanPath)
 	if err != nil {
-		return settings.Settings{}, err
+		return nil, err
 	}
 	defer file.Close()
 
 	plan, err := generators.NewAssessmentPlan(file)
 	if err != nil {
-		return settings.Settings{}, fmt.Errorf("failed to load assessment plan from %s: %w", assessmentPlanPath, err)
+		return nil, fmt.Errorf("failed to load assessment plan from %s: %w", assessmentPlanPath, err)
 	}
+	return plan, nil
+}
 
+var ErrNoActivities = errors.New("no local activities detected")
+
+// PlanSettings return a new compliance Settings instance based on the
+// given assessment plan path.
+func PlanSettings(plan *oscalTypes.AssessmentPlan) (settings.Settings, error) {
 	if plan.LocalDefinitions != nil && plan.LocalDefinitions.Activities != nil {
 		return settings.NewAssessmentActivitiesSettings(*plan.LocalDefinitions.Activities), nil
 	}
