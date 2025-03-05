@@ -43,7 +43,7 @@ func scanCmd(common *option.Common) *cobra.Command {
 			return runScan(cmd, scanOpts)
 		},
 	}
-	cmd.Flags().BoolP("output", "o", false, "If true, assessement-result markdown will be generated")
+	cmd.Flags().BoolP("with-md", "m", false, "If true, assessement-result markdown will be generated")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -148,7 +148,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-	outputFlag, _ := cmd.Flags().GetBool("output")
+	outputFlag, _ := cmd.Flags().GetBool("with-md")
 	if outputFlag {
 		profile, err := complytime.LoadProfile(appDir, profileHref)
 		if err != nil {
