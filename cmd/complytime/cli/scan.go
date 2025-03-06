@@ -117,13 +117,10 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 			}
 			for _, implementation := range *component.ControlImplementations {
 				frameworkShortName, found := settings.GetFrameworkShortName(implementation)
-				fmt.Println(frameworkShortName)
-				fmt.Println(frameworkProp.Value)
 				// If the framework property value match the assessment plan framework property values
 				// this is the correct control source.
 				if found && frameworkShortName == frameworkProp.Value {
 					profileHref = implementation.Source
-					fmt.Println(profileHref)
 					// The implementations would have been filtered later in settings.Framework, but no need to add extra
 					// implementations that are not needed to the slice.
 					allImplementations = append(allImplementations, *component.ControlImplementations...)
