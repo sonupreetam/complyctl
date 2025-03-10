@@ -8,8 +8,7 @@ import (
 )
 
 // The assessment results md file needs the catalog title information
-// LoadCatalogSource returns an OSCAL catalogs from a given application directory.
-
+// LoadCatalogSource returns an OSCAL catalogs from a given application directory and a found catalog source.
 func LoadCatalogSource(appDir ApplicationDirectory, catalogSource string) (*oscalTypes.Catalog, error) {
 	sourceFile, err := findControlSource(appDir, catalogSource)
 	if err != nil {

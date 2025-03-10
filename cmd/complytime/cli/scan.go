@@ -5,12 +5,12 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/spf13/cobra"
 
@@ -139,12 +139,12 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
-	cleanedPath := filepath.Clean(filePath)
-	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
+	arJsonPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
+	err = complytime.WriteAssessmentResults(&assessmentResults, arJsonPath)
 	if err != nil {
 		return err
 	}
+	logger.Info(fmt.Sprintf("The assessment results in JSON were successfully written to %v.", arJsonPath))
 	outputFlag, _ := cmd.Flags().GetBool("with-md")
 	if outputFlag {
 		profile, err := complytime.LoadProfile(appDir, profileHref)
@@ -159,23 +159,22 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		if err != nil {
 			return err
 		}
-		filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
-		cleanedPath := filepath.Clean(filePath)
-		templateValues, err := framework.CreateTemplateValues(*catalog, *assessmentPlan, assessmentResults)
+		arMarkdownPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
+		templateValues, err := framework.CreateTemplateValues(*catalog, *ap, assessmentResults)
 		if err != nil {
 			return err
 		}
-		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(cleanedPath)
+		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(arMarkdownPath)
 		if err != nil {
 			return err
 		}
-		err = os.WriteFile(cleanedPath, assessmentResultsMd, 0600)
+		err = os.WriteFile(arMarkdownPath, assessmentResultsMd, 0600)
 		if err != nil {
 			return err
 		}
+		logger.Info(fmt.Sprintf("The assessment results in markdown were successfully written to %v.", arMarkdownPath))
 	} else {
-		fmt.Println("No assessment result markdown will be generated.")
+		logger.Info("No assessment result in markdown will be generated.")
 	}
-	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
 	return nil
 }

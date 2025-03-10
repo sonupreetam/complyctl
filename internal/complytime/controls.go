@@ -95,7 +95,7 @@ func processComponent(appDir ApplicationDirectory, component oscalTypes.DefinedC
 	return frameworks, nil
 }
 
-// LoadProfileSource returns an OSCAL profile from a given control source from a given application directory.
+// LoadProfile returns an OSCAL profiles from a given application directory and a found profile source.
 func LoadProfile(appDir ApplicationDirectory, controlSource string) (*oscalTypes.Profile, error) {
 	sourceFile, err := findControlSource(appDir, controlSource)
 	if err != nil {
@@ -105,7 +105,7 @@ func LoadProfile(appDir ApplicationDirectory, controlSource string) (*oscalTypes
 	return generators.NewProfile(sourceFile)
 }
 
-// LoadControlSource returns an OSCAL profiles from a given control source from a given application directory.
+// findControlSource returns the correct control source file from the given control source or imported source.
 func findControlSource(appDir ApplicationDirectory, controlSource string) (io.ReadCloser, error) {
 	uri, err := url.ParseRequestURI(controlSource)
 	if err != nil {
