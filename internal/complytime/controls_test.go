@@ -3,7 +3,6 @@
 package complytime
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,38 +56,42 @@ func TestLoadFrameworks(t *testing.T) {
 	}
 }
 
-func TestLoadControlSource(t *testing.T) {
-	tmpDir := t.TempDir()
-	appDir, err := newApplicationDirectory(tmpDir, true)
-	require.NoError(t, err)
-
+func TestLoadProfile(t *testing.T) {
 	tests := []struct {
 		name    string
+		appDir  func() ApplicationDirectory
 		source  string
 		wantErr string
 	}{
 		{
-			name:    "Invalid/Format",
-			source:  "profile/profile.json",
-			wantErr: "parse \"profile/profile.json\": invalid URI for request",
+			name: "Valid Profile Load",
+			appDir: func() ApplicationDirectory {
+				appDir, err := newApplicationDirectory("testdata", false)
+				require.NoError(t, err)
+				return appDir
+			},
+			source:  "file://controls/sample-profile.json",
+			wantErr: "",
 		},
 		{
-			name:    "Invalid/WrongDirectory",
-			source:  "file://anotherdirectory/profile.json",
-			wantErr: fmt.Sprintf("got path anotherdirectory/profile.json, control source is expected to be under path %s", appDir.ControlDir()),
-		},
-		{
-			name:    "Invalid/FileDoesNotExist",
-			source:  fmt.Sprintf("file://%s/profile.json", appDir.AppDir()),
-			wantErr: fmt.Sprintf("open %s/profile.json: no such file or directory", appDir.AppDir()),
+			name: "File Does Not Exist",
+			appDir: func() ApplicationDirectory {
+				appDir, err := newApplicationDirectory("testdata", false)
+				require.NoError(t, err)
+				return appDir
+			},
+			source:  "file://nonexistent/path/profile.json",
+			wantErr: "got path nonexistent/path/profile.json, control source is expected to be under path testdata/complytime/controls",
 		},
 	}
 
-	for _, c := range tests {
-		t.Run(c.name, func(t *testing.T) {
-			_, err := LoadControlSource(appDir, c.source)
-			if c.wantErr != "" {
-				require.EqualError(t, err, c.wantErr)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := LoadProfile(tt.appDir(), tt.source)
+			if tt.wantErr != "" {
+				require.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

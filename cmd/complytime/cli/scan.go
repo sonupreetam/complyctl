@@ -3,7 +3,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
@@ -16,7 +18,8 @@ import (
 	"github.com/complytime/complytime/internal/complytime"
 )
 
-const assessmentResultsLocation = "assessment-results.json"
+const assessmentResultsLocationJson = "assessment-results.json"
+const assessmentResultsLocationMd = "assessment-results.md"
 
 // scanOptions defined options for the scan subcommand.
 type scanOptions struct {
@@ -40,6 +43,7 @@ func scanCmd(common *option.Common) *cobra.Command {
 			return runScan(cmd, scanOpts)
 		},
 	}
+	cmd.Flags().BoolP("with-md", "m", false, "If true, assessement-result markdown will be generated")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -105,13 +109,23 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 
 	var allImplementations []oscalTypes.ControlImplementationSet
+	var profileHref string
 	for _, compDef := range cfg.ComponentDefinitions {
 		for _, component := range *compDef.Components {
 			if component.ControlImplementations == nil {
 				continue
 			}
-			allImplementations = append(allImplementations, *component.ControlImplementations...)
-
+			for _, implementation := range *component.ControlImplementations {
+				frameworkShortName, found := settings.GetFrameworkShortName(implementation)
+				// If the framework property value match the assessment plan framework property values
+				// this is the correct control source.
+				if found && frameworkShortName == frameworkProp.Value {
+					profileHref = implementation.Source
+					// The implementations would have been filtered later in settings.Framework, but no need to add extra
+					// implementations that are not needed to the slice.
+					allImplementations = append(allImplementations, *component.ControlImplementations...)
+				}
+			}
 		}
 	}
 
@@ -125,14 +139,42 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	if err != nil {
 		return err
 	}
-
-	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocation)
-	cleanedPath := filepath.Clean(filePath)
-
-	err = complytime.WriteAssessmentResults(&assessmentResults, cleanedPath)
+	arJsonPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
+	err = complytime.WriteAssessmentResults(&assessmentResults, arJsonPath)
 	if err != nil {
 		return err
 	}
-	logger.Info(fmt.Sprintf("The assessment results were successfully written to %v.", assessmentResultsLocation))
+	logger.Info(fmt.Sprintf("The assessment results in JSON were successfully written to %v.", arJsonPath))
+	outputFlag, _ := cmd.Flags().GetBool("with-md")
+	if outputFlag {
+		profile, err := complytime.LoadProfile(appDir, profileHref)
+		if err != nil {
+			return err
+		}
+
+		if len(profile.Imports) != 1 {
+			return errors.New("profile imports must be one")
+		}
+		catalog, err := complytime.LoadCatalogSource(appDir, profile.Imports[0].Href)
+		if err != nil {
+			return err
+		}
+		arMarkdownPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
+		templateValues, err := framework.CreateTemplateValues(*catalog, *ap, assessmentResults)
+		if err != nil {
+			return err
+		}
+		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(arMarkdownPath)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(arMarkdownPath, assessmentResultsMd, 0600)
+		if err != nil {
+			return err
+		}
+		logger.Info(fmt.Sprintf("The assessment results in markdown were successfully written to %v.", arMarkdownPath))
+	} else {
+		logger.Info("No assessment result in markdown will be generated.")
+	}
 	return nil
 }

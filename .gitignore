@@ -34,5 +34,6 @@ user_workspace
 
 # Outputs
 assessment-plan.json
+assessment-results.*
 !**/testdata/assessment-plan.json
-!**/testdata/assessment-results.json
+!**/testdata/assessment-results.*
