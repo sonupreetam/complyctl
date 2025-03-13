@@ -39,7 +39,12 @@ complytime generate
 complytime scan
 
 # The results will be written to assessment-results.json in the specified workspace.
-# Defaults to current working directory.
+# Defaults to current working directory under folder "complytime".
+
+complytime scan --with-md
+
+# Both assessment-results.md and assessment-results.json will be written in the specified workspace.
+# Defaults to current working directory under folder "complytime".
 ```
 
 ## Contributing
