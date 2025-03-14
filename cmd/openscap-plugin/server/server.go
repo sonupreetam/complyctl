@@ -132,6 +132,12 @@ func (s PluginServer) GetResults(oscalPolicy policy.Policy) (policy.PVPResult, e
 						Reason:      "my reason",
 					},
 				},
+				RelevantEvidences: []policy.Link{
+					{
+						Href:        fmt.Sprintf("file://%s", s.Config.Files.ARF),
+						Description: "ARF_FILE",
+					},
+				},
 			}
 			pvpResults.ObservationsByCheck = append(pvpResults.ObservationsByCheck, observation)
 		}
