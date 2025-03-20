@@ -88,6 +88,6 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Policy generation completed successfully.")
+	logger.Info("Policy generation process completed for available plugins.")
 	return nil
 }
