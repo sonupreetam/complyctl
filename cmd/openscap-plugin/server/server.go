@@ -15,6 +15,7 @@ import (
 
 	"github.com/ComplianceAsCode/compliance-operator/pkg/utils"
 	"github.com/antchfx/xmlquery"
+	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
@@ -46,7 +47,7 @@ func (s PluginServer) Configure(configMap map[string]string) error {
 }
 
 func (s PluginServer) Generate(policy policy.Policy) error {
-	fmt.Println("Generating a tailoring file")
+	hclog.Default().Info("Generating a tailoring file")
 	tailoringXML, err := xccdf.PolicyToXML(policy, s.Config)
 	if err != nil {
 		return err
