@@ -11,14 +11,14 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 )
 
-var log hclog.Logger
+var logger hclog.Logger
 
 func init() {
-	log = hclog.New(&hclog.LoggerOptions{
+	logger = hclog.New(&hclog.LoggerOptions{
 		Name:  "openscap-plugin",
 		Level: hclog.Debug,
 	})
-	hclog.SetDefault(log)
+	hclog.SetDefault(logger)
 }
 
 func main() {
