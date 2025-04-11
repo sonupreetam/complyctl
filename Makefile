@@ -8,6 +8,16 @@ GO_LD_EXTRAFLAGS :=-X github.com/complytime/complytime/internal/version.version=
 				   -X github.com/complytime/complytime/internal/version.commit="$(GIT_COMMIT)" \
 				   -X github.com/complytime/complytime/internal/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
+MAN_COMPLYTIME = docs/man/complytime.md
+MAN_COMPLYTIME_OUTPUT = docs/man/complytime.1
+MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
+MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
+
+man:
+	mkdir -p $(dir $(MAN_COMPLYTIME_OUTPUT)) $(dir $(MAN_OPENSCAP_CONF_OUTPUT))
+	pandoc -s -t man $(MAN_COMPLYTIME) -o $(MAN_COMPLYTIME_OUTPUT)
+	pandoc -s -t man $(MAN_OPENSCAP_CONF) -o $(MAN_OPENSCAP_CONF_OUTPUT)
+
 dev-setup: dev-setup-commit-hooks
 .PHONY: dev-setup
 
@@ -31,6 +41,7 @@ vendor:
 
 clean:
 	@rm -rf ./$(GO_BUILD_BINDIR)/*
+	rm -f $(MAN_COMPLYTIME_OUTPUT) $(MAN_OPENSCAP_CONF_OUTPUT)
 .PHONY: clean
 
 test-unit:
