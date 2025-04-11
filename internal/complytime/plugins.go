@@ -58,7 +58,7 @@ func (p PluginOptions) ToMap() map[string]string {
 }
 
 // Plugins launches and configures plugins with the given complytime global options. This function returns the plugin map with the
-// launched plugins, a plugin cleanup function, and an error.
+// launched plugins, a plugin cleanup function, and an error. The cleanup function should be used if it is not nil.
 func Plugins(manager *framework.PluginManager, selections PluginOptions) (map[string]policy.Provider, func(), error) {
 	manifests, err := manager.FindRequestedPlugins()
 	if err != nil {
@@ -70,8 +70,9 @@ func Plugins(manager *framework.PluginManager, selections PluginOptions) (map[st
 		return nil, nil, err
 	}
 	plugins, err := manager.LaunchPolicyPlugins(manifests, configSelections)
+	// Plugin subprocess has now been launched; cleanup always required below
 	if err != nil {
-		return nil, nil, err
+		return nil, manager.Clean, err
 	}
 	return plugins, manager.Clean, nil
 }
