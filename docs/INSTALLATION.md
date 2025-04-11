@@ -4,6 +4,7 @@
 
 - **Go** version 1.20 or higher
 - **Make** (optional, for using the `Makefile` if included)
+- **pandoc** (optional, for generating man pages using the `make man`)
 
 ### Clone the repository
 
