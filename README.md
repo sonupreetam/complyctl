@@ -24,7 +24,7 @@ complytime list
 ```
 
 ```bash
-complytime plan <framkework-id>
+complytime plan <framework-id>
 ...
 # The file will be written out to assessment-plan.json in the specified workspace.
 # Defaults to current working directory.
