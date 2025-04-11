@@ -3,6 +3,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/hashicorp/go-hclog"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/server"
@@ -15,8 +17,10 @@ var logger hclog.Logger
 
 func init() {
 	logger = hclog.New(&hclog.LoggerOptions{
-		Name:  "openscap-plugin",
-		Level: hclog.Debug,
+		Name:       "openscap-plugin",
+		Level:      hclog.Debug,
+		Output:     os.Stderr,
+		JSONFormat: true,
 	})
 	hclog.SetDefault(logger)
 }
