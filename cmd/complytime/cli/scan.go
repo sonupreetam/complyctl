@@ -91,10 +91,12 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
 	plugins, cleanup, err := complytime.Plugins(manager, pluginOptions)
+	if cleanup != nil {
+		defer cleanup()
+	}
 	if err != nil {
 		return fmt.Errorf("errors launching plugins: %w", err)
 	}
-	defer cleanup()
 	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
 	allResults, err := manager.AggregateResults(cmd.Context(), plugins, planSettings)

@@ -79,10 +79,12 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
 	plugins, cleanup, err := complytime.Plugins(manager, pluginOptions)
+	if cleanup != nil {
+		defer cleanup()
+	}
 	if err != nil {
 		return fmt.Errorf("errors launching plugins: %w", err)
 	}
-	defer cleanup()
 
 	err = manager.GeneratePolicy(cmd.Context(), plugins, planSettings)
 	if err != nil {
