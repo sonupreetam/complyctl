@@ -45,7 +45,7 @@ Path or name of the plugin binary to execute. Typically just:
 ```
 
 ## sha256
-SHA256 checksum of the plugin binary, used for verification.
+SHA256 checksum of the plugin binary, used for runtime verification.
 
 ## configuration
 A list of supported configuration parameters for the plugin.
