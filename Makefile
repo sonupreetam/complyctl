@@ -13,6 +13,9 @@ MAN_COMPLYTIME_OUTPUT = docs/man/complytime.1
 MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
 MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
 
+all: clean vendor test-unit build
+.PHONY: all
+
 man:
 	mkdir -p $(dir $(MAN_COMPLYTIME_OUTPUT)) $(dir $(MAN_OPENSCAP_CONF_OUTPUT))
 	pandoc -s -t man $(MAN_COMPLYTIME) -o $(MAN_COMPLYTIME_OUTPUT)
@@ -59,6 +62,3 @@ format:
 vet:
 	go vet ./...
 .PHONY: vet
-
-all: clean vendor test-unit build
-.PHONY: all
