@@ -8,13 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/hashicorp/go-hclog"
 )
 
 const (
@@ -175,7 +176,7 @@ func ensureDirectory(path string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
-		log.Printf("Directory created: %s\n", path)
+		hclog.Default().Info("Directory created", "path", path)
 	} else if err != nil {
 		return fmt.Errorf("error checking directory: %w", err)
 	}
@@ -191,7 +192,7 @@ func ensureWorkspace(cfg *Config) (map[string]string, error) {
 
 	workspace, err := validatePath(workspacePath, true)
 	if err != nil {
-		log.Printf("Informed workspace was not found. It will be created.")
+		hclog.Default().Info("Informed workspace was not found. It will be created.")
 		workspace = workspacePath
 	}
 

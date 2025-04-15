@@ -4,8 +4,9 @@ package oscap
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
+
+	"github.com/hashicorp/go-hclog"
 )
 
 func constructScanCommand(openscapFiles map[string]string, profile string) []string {
@@ -36,7 +37,7 @@ func OscapScan(openscapFiles map[string]string, profile string) ([]byte, error) 
 		return nil, fmt.Errorf("command not found: %s", command[0])
 	}
 
-	log.Printf("Executing the command: '%v'", command)
+	hclog.Default().Info("Executing command", "command", command)
 	cmd := exec.Command(cmdPath, command[1:]...)
 
 	output, err := cmd.CombinedOutput()
@@ -44,10 +45,10 @@ func OscapScan(openscapFiles map[string]string, profile string) ([]byte, error) 
 		if err.Error() == "exit status 1" {
 			return output, fmt.Errorf("%s: oscap error during evaluation", err)
 		} else if err.Error() == "exit status 2" {
-			log.Printf("%s: at least one rule resulted in fail or unknown", err)
+			hclog.Default().Warn("at least one rule resulted in fail or unknown", "err", err)
 			return output, nil
 		} else {
-			log.Printf("%s", err)
+			hclog.Default().Warn("Error", "err", err)
 			return output, nil
 		}
 	}
