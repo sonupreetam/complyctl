@@ -50,6 +50,12 @@ changelog:
       - "^docs:"
       - "^test:"
 
+sboms:
+  - id: archive
+    artifacts: archive
+  - id: source
+    artifacts: source
+
 signs:
   - cmd: cosign
     certificate: "${artifact}.pem"
