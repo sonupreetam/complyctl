@@ -245,51 +245,60 @@ func setConfigStruct(val reflect.Value, config map[string]string) error {
 	return nil
 }
 
-// GetDistroVersion returns the distribution and version of the system based
-// on information from SystemInfoFile.
-func getDistroVersion() (string, string, error) {
+// GetDistroIdsAndVersions returns a slice of allowable distribution IDs and allowable versions of the system
+// based on information from SystemInfoFile.
+// Example return values: ["centos", "rhel", "fedora"], ["9", "95"]
+func getDistroIdsAndVersions() ([]string, []string, error) {
 	file, err := os.Open(SystemInfoFile)
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 	defer file.Close()
 
-	var id, versionID string
+	// Like ["rhel", "fedora", "centos"]
+	var ids []string
+	// Like "9.5"
+	var versionID string
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "ID=") {
-			id = strings.Trim(strings.Split(line, "=")[1], `"`)
+			id := strings.Trim(strings.Split(line, "=")[1], `"`)
+			ids = append(ids, id)
 		} else if strings.HasPrefix(line, "VERSION_ID=") {
 			versionID = strings.Trim(strings.Split(line, "=")[1], `"`)
+		} else if strings.HasPrefix(line, "ID_LIKE=") {
+			altIdString := strings.Trim(strings.Split(line, "=")[1], `"`)
+			altIds := strings.Split(altIdString, " ")
+			ids = append(ids, altIds...)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
 
-	if id != "" && versionID != "" {
+	if ids != nil && versionID != "" {
 		// Extract major version (e.g., 9 from 9.5)
 		majorVersion := strings.Split(versionID, ".")[0]
 		// Also keep the full version without dots (e.g., "95" from "9.5")
 		fullVersion := strings.ReplaceAll(versionID, ".", "")
 
-		return fmt.Sprintf("%s%s", id, majorVersion), fmt.Sprintf("%s%s", id, fullVersion), nil
+		return ids, []string{majorVersion, fullVersion}, nil
 	}
 
-	return "", "", fmt.Errorf("could not determine distribution and version based on %s", SystemInfoFile)
+	return nil, nil, fmt.Errorf("could not determine distribution and version based on %s", SystemInfoFile)
 }
 
 func findMatchingDatastream() (string, error) {
-	distroVersion, distroFullVersion, err := getDistroVersion()
+	distroIds, distroVersions, err := getDistroIdsAndVersions()
 	if err != nil {
 		return "", err
 	}
-	// These pattern are currently used in scap-security-guide package
-	exactPattern := fmt.Sprintf("ssg-%s-ds.xml", distroVersion)
-	alternativePattern := fmt.Sprintf("ssg-%s-ds.xml", distroFullVersion)
+
+	// The scap-security-guide package uses datastream filenames like "ssg-rhel9-ds.xml"
+	// where rhel is ID and 9 is the VERSION_ID
 
 	var foundFile string
 
@@ -298,9 +307,22 @@ func findMatchingDatastream() (string, error) {
 			return err
 		}
 		if !info.IsDir() {
-			if info.Name() == exactPattern || info.Name() == alternativePattern {
-				foundFile = path
-				return filepath.SkipDir
+			for id := range distroIds {
+				for version := range distroVersions {
+					pattern := fmt.Sprintf("ssg-%s%s-ds.xml", distroIds[id], distroVersions[version])
+					if info.Name() == pattern {
+						foundFile = path
+						return filepath.SkipDir
+					}
+				}
+				if distroVersions == nil {
+					// In case of non-versioned or rolling release
+					pattern := fmt.Sprintf("ssg-%s-ds.xml", distroIds[id])
+					if info.Name() == pattern {
+						foundFile = path
+						return filepath.SkipDir
+					}
+				}
 			}
 		}
 		return nil
@@ -313,5 +335,5 @@ func findMatchingDatastream() (string, error) {
 		return foundFile, nil
 	}
 
-	return "", fmt.Errorf("could not determine a datastream file for a %s system", distroVersion)
+	return "", fmt.Errorf("could not determine a datastream file for a system with ids: %v and versions: %v", distroIds, distroVersions)
 }
