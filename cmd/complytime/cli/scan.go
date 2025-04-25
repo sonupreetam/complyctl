@@ -12,6 +12,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
@@ -49,9 +50,9 @@ func scanCmd(common *option.Common) *cobra.Command {
 }
 
 func runScan(cmd *cobra.Command, opts *scanOptions) error {
-
+	validator := validation.NewSchemaValidator()
 	// Load settings from assessment plan
-	ap, apCleanedPath, err := loadPlan(opts.complyTimeOpts)
+	ap, apCleanedPath, err := loadPlan(opts.complyTimeOpts, validator)
 	if err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 
-	cfg, err := complytime.Config(appDir)
+	cfg, err := complytime.Config(appDir, validator)
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	logger.Info(fmt.Sprintf("The assessment results in JSON were successfully written to %v.", arJsonPath))
 	outputFlag, _ := cmd.Flags().GetBool("with-md")
 	if outputFlag {
-		profile, err := complytime.LoadProfile(appDir, profileHref)
+		profile, err := complytime.LoadProfile(appDir, profileHref, validator)
 		if err != nil {
 			return err
 		}
@@ -157,12 +158,12 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		if len(profile.Imports) != 1 {
 			return errors.New("profile imports must be one")
 		}
-		catalog, err := complytime.LoadCatalogSource(appDir, profile.Imports[0].Href)
+		catalog, err := complytime.LoadCatalogSource(appDir, profile.Imports[0].Href, validator)
 		if err != nil {
 			return err
 		}
 		arMarkdownPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
-		templateValues, err := framework.CreateTemplateValues(*catalog, *ap, assessmentResults)
+		templateValues, err := framework.CreateResultsValues(*catalog, *ap, assessmentResults)
 		if err != nil {
 			return err
 		}

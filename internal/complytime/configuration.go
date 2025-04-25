@@ -12,7 +12,8 @@ import (
 	"github.com/adrg/xdg"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/config"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
 const (
@@ -110,7 +111,7 @@ func (a ApplicationDirectory) Dirs() []string {
 // given `bundles` directory that meet the defined naming scheme.
 //
 // The defined scheme is $COMPONENT-NAME-component-definition.json.
-func FindComponentDefinitions(bundleDir string) ([]oscalTypes.ComponentDefinition, error) {
+func FindComponentDefinitions(bundleDir string, validator validation.Validator) ([]oscalTypes.ComponentDefinition, error) {
 	items, err := os.ReadDir(bundleDir)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read bundle directory %s: %w", bundleDir, err)
@@ -127,7 +128,7 @@ func FindComponentDefinitions(bundleDir string) ([]oscalTypes.ComponentDefinitio
 		if err != nil {
 			return nil, err
 		}
-		definition, err := generators.NewComponentDefinition(file)
+		definition, err := models.NewComponentDefinition(file, validator)
 		if err != nil {
 			return nil, err
 		}
@@ -144,10 +145,11 @@ func FindComponentDefinitions(bundleDir string) ([]oscalTypes.ComponentDefinitio
 
 // Config creates a new C2P config for the ComplyTime CLI to use to configure
 // the plugin manager.
-func Config(a ApplicationDirectory) (*config.C2PConfig, error) {
+func Config(a ApplicationDirectory, validator validation.Validator) (*config.C2PConfig, error) {
 	cfg := config.DefaultConfig()
 	cfg.PluginDir = a.PluginDir()
-	compDefBundles, err := FindComponentDefinitions(a.BundleDir())
+
+	compDefBundles, err := FindComponentDefinitions(a.BundleDir(), validator)
 	if err != nil {
 		return cfg, fmt.Errorf("unable to create configuration: %w", err)
 	}

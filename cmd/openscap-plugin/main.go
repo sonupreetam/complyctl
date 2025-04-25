@@ -31,5 +31,9 @@ func main() {
 	pluginByType := map[string]hplugin.Plugin{
 		plugin.PVPPluginName: &plugin.PVPPlugin{Impl: openSCAPPlugin},
 	}
-	plugin.Register(pluginByType)
+	config := plugin.ServeConfig{
+		PluginSet: pluginByType,
+		Logger:    logger,
+	}
+	plugin.Register(config)
 }

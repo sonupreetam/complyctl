@@ -11,8 +11,9 @@ import (
 	"strings"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
 // Framework represents an implemented compliance framework across
@@ -29,8 +30,8 @@ type Framework struct {
 }
 
 // LoadFrameworks returns all loaded framework information from a given application directory.
-func LoadFrameworks(appDir ApplicationDirectory) ([]Framework, error) {
-	definitions, err := FindComponentDefinitions(appDir.BundleDir())
+func LoadFrameworks(appDir ApplicationDirectory, validator validation.Validator) ([]Framework, error) {
+	definitions, err := FindComponentDefinitions(appDir.BundleDir(), validator)
 	if err != nil {
 		return nil, fmt.Errorf("error finding component defintions in %s: %w", appDir.BundleDir(), err)
 	}
@@ -44,7 +45,7 @@ func LoadFrameworks(appDir ApplicationDirectory) ([]Framework, error) {
 				if comp.Type == "validation" {
 					continue
 				}
-				frameworks, err := processComponent(appDir, comp)
+				frameworks, err := processComponent(appDir, comp, validator)
 				if err != nil {
 					return nil, err
 				}
@@ -68,7 +69,7 @@ func LoadFrameworks(appDir ApplicationDirectory) ([]Framework, error) {
 	return frameworks, nil
 }
 
-func processComponent(appDir ApplicationDirectory, component oscalTypes.DefinedComponent) ([]Framework, error) {
+func processComponent(appDir ApplicationDirectory, component oscalTypes.DefinedComponent, validator validation.Validator) ([]Framework, error) {
 	if component.ControlImplementations == nil {
 		return nil, nil
 	}
@@ -80,7 +81,7 @@ func processComponent(appDir ApplicationDirectory, component oscalTypes.DefinedC
 		}
 
 		// Load profile of local and get more information for the description
-		profile, err := LoadProfile(appDir, implementation.Source)
+		profile, err := LoadProfile(appDir, implementation.Source, validator)
 		if err != nil {
 			return nil, fmt.Errorf("error loading control source %s for component %s: %w", frameworkShortName, component.Title, err)
 		}
@@ -96,13 +97,13 @@ func processComponent(appDir ApplicationDirectory, component oscalTypes.DefinedC
 }
 
 // LoadProfile returns an OSCAL profiles from a given application directory and a found profile source.
-func LoadProfile(appDir ApplicationDirectory, controlSource string) (*oscalTypes.Profile, error) {
+func LoadProfile(appDir ApplicationDirectory, controlSource string, validator validation.Validator) (*oscalTypes.Profile, error) {
 	sourceFile, err := findControlSource(appDir, controlSource)
 	if err != nil {
 		return nil, err
 	}
 	defer sourceFile.Close()
-	return generators.NewProfile(sourceFile)
+	return models.NewProfile(sourceFile, validator)
 }
 
 // findControlSource returns the correct control source file from the given control source or imported source.

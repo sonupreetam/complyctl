@@ -7,6 +7,7 @@ import (
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
@@ -39,8 +40,8 @@ func generateCmd(common *option.Common) *cobra.Command {
 }
 
 func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
-
-	ap, _, err := loadPlan(opts.complyTimeOpts)
+	validator := validation.NewSchemaValidator()
+	ap, _, err := loadPlan(opts.complyTimeOpts, validator)
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 		return err
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
-	cfg, err := complytime.Config(appDir)
+	cfg, err := complytime.Config(appDir, validator)
 	if err != nil {
 		return err
 	}

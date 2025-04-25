@@ -11,8 +11,9 @@ import (
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
 // WritePlan writes an AssessmentPlan to a given path location with consistency.
@@ -48,14 +49,16 @@ func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation
 }
 
 // ReadPlan reads an assessment plans from a given file path.
-func ReadPlan(assessmentPlanPath string) (*oscalTypes.AssessmentPlan, error) {
+func ReadPlan(assessmentPlanPath string, _ validation.Validator) (*oscalTypes.AssessmentPlan, error) {
 	file, err := os.Open(assessmentPlanPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	plan, err := generators.NewAssessmentPlan(file)
+	// FIXME: This should be resolved in v0.0.2 of oscal-sdk-go
+	// compliance-to-policy-go needs to be updated to OSCAL v1.1.3 before we can bump that dependency
+	plan, err := models.NewAssessmentPlan(file, validation.NoopValidator{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load assessment plan from %s: %w", assessmentPlanPath, err)
 	}

@@ -11,6 +11,7 @@ import (
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/transformers"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
@@ -56,7 +57,9 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 		return err
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
-	componentDefs, err := complytime.FindComponentDefinitions(appDir.BundleDir())
+
+	validator := validation.NewSchemaValidator()
+	componentDefs, err := complytime.FindComponentDefinitions(appDir.BundleDir(), validator)
 	if err != nil {
 		return err
 	}
@@ -78,10 +81,10 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 }
 
 // loadPlan returns the loaded assessment plan and path from the workspace.
-func loadPlan(opts *option.ComplyTime) (*oscalTypes.AssessmentPlan, string, error) {
+func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTypes.AssessmentPlan, string, error) {
 	apPath := filepath.Join(opts.UserWorkspace, assessmentPlanLocation)
 	apCleanedPath := filepath.Clean(apPath)
-	assessmentPlan, err := complytime.ReadPlan(apCleanedPath)
+	assessmentPlan, err := complytime.ReadPlan(apCleanedPath, validator)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, "", fmt.Errorf("error: assessment plan does not exist in workspace %s: %w\n\nDid you run the plan command?",

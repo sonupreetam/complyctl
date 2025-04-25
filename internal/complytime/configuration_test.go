@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,11 +40,11 @@ func TestApplicationDirectory(t *testing.T) {
 }
 
 func TestFindComponentDefinitions(t *testing.T) {
-	compDefs, err := FindComponentDefinitions("testdata/complytime/bundles")
+	compDefs, err := FindComponentDefinitions("testdata/complytime/bundles", validation.NoopValidator{})
 	require.NoError(t, err)
 	require.Len(t, compDefs, 1)
 
-	_, err = FindComponentDefinitions("testdata/")
+	_, err = FindComponentDefinitions("testdata/", validation.NoopValidator{})
 	require.ErrorIs(t, err, ErrNoComponentDefinitionsFound)
 
 }

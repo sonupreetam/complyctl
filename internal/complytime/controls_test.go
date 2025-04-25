@@ -5,6 +5,7 @@ package complytime
 import (
 	"testing"
 
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +46,7 @@ func TestLoadFrameworks(t *testing.T) {
 	for _, c := range tests {
 		t.Run(c.name, func(t *testing.T) {
 			appDir := c.appDir()
-			gotFrameworks, err := LoadFrameworks(appDir)
+			gotFrameworks, err := LoadFrameworks(appDir, validation.NoopValidator{})
 			if c.wantErr != nil {
 				require.ErrorIs(t, err, c.wantErr)
 			} else {
@@ -87,7 +88,7 @@ func TestLoadProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := LoadProfile(tt.appDir(), tt.source)
+			_, err := LoadProfile(tt.appDir(), tt.source, validation.NoopValidator{})
 			if tt.wantErr != "" {
 				require.Contains(t, err.Error(), tt.wantErr)
 			} else {

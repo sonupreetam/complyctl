@@ -8,7 +8,6 @@ import (
 	"reflect"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
-	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
@@ -65,31 +64,17 @@ func Plugins(manager *framework.PluginManager, selections PluginOptions) (map[st
 		return nil, nil, err
 	}
 
-	configSelections, err := getSelections(manifests, selections)
-	if err != nil {
-		return nil, nil, err
+	getSelections := func(_ string) map[string]string {
+		return selections.ToMap()
 	}
-	plugins, err := manager.LaunchPolicyPlugins(manifests, configSelections)
+
+	if err := selections.Validate(); err != nil {
+		return nil, nil, fmt.Errorf("failed plugin config validation: %w", err)
+	}
+	plugins, err := manager.LaunchPolicyPlugins(manifests, getSelections)
 	// Plugin subprocess has now been launched; cleanup always required below
 	if err != nil {
 		return nil, manager.Clean, err
 	}
 	return plugins, manager.Clean, nil
-}
-
-// getSelections creates a plugin config selection map expected by C2P for plugin launching.
-func getSelections(manifests plugin.Manifests, selections PluginOptions) (map[string]map[string]string, error) {
-	if err := selections.Validate(); err != nil {
-		return nil, fmt.Errorf("failed plugin config validation: %w", err)
-	}
-
-	// Converted the plugin options in a way C2P can accept
-	convertedSelections := selections.ToMap()
-
-	// Apply the global configuration for each plugin
-	configSelections := make(map[string]map[string]string, len(manifests))
-	for id := range manifests {
-		configSelections[id] = convertedSelections
-	}
-	return configSelections, nil
 }

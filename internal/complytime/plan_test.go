@@ -8,6 +8,7 @@ import (
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,7 +31,7 @@ func TestPlan(t *testing.T) {
 	err := WritePlan(&testPlan, "testid", testPlanPath)
 	require.NoError(t, err)
 
-	ap, err := ReadPlan(testPlanPath)
+	ap, err := ReadPlan(testPlanPath, validation.NoopValidator{})
 	require.NoError(t, err)
 	require.NotNil(t, ap)
 
@@ -53,7 +54,7 @@ func TestPlan(t *testing.T) {
 	require.NoError(t, err)
 
 	// read plan to ensure it has the expected props
-	ap, err = ReadPlan(testPlanPath)
+	ap, err = ReadPlan(testPlanPath, validation.NoopValidator{})
 	require.NoError(t, err)
 	require.NotNil(t, ap)
 

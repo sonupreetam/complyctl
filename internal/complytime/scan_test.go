@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/generators"
+	"github.com/oscal-compass/oscal-sdk-go/models"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,7 +43,7 @@ func TestWriteAssessmentResults(t *testing.T) {
 	file, err := os.Open(testResultsPath)
 	require.NoError(t, err)
 
-	loadedAssessmentResults, err := generators.NewAssessmentResults(file)
+	loadedAssessmentResults, err := models.NewAssessmentResults(file, validation.NoopValidator{})
 	require.NoError(t, err)
 	require.Equal(t, loadedAssessmentResults.Metadata.Title, testAssessmentResults.Metadata.Title)
 }

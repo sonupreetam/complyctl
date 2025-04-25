@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
 	"github.com/complytime/complytime/cmd/complytime/option"
@@ -44,7 +45,8 @@ func runList(opts *listOptions) error {
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 
-	frameworks, err := complytime.LoadFrameworks(appDir)
+	validator := validation.NewSchemaValidator()
+	frameworks, err := complytime.LoadFrameworks(appDir, validator)
 	if err != nil {
 		return err
 	}
