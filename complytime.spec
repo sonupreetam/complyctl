@@ -38,24 +38,31 @@ mkdir -p %{buildroot}%{_libexecdir}/%{name}/plugins
 install -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{name}/plugins/openscap-plugin
 mkdir -p %{buildroot}%{_datadir}/%{name}
 cp -rf docs/samples %{buildroot}%{_datadir}/%{name}
-# TODO: Manifest file, related issue: CPLYTM-682
-mkdir -p %{buildroot}%{_datadir}/%{name}/plugins
+mkdir -p %{buildroot}%{_datadir}/%{name}/plugins %{buildroot}%{_datadir}/%{name}/bundles %{buildroot}%{_datadir}/%{name}/controls
+mkdir -p %{buildroot}%{_sysconfdir}/%{name}/config.d
+
 
 %check
 make test-unit
 
 %files
-%license LICENSE
 %{_bindir}/complytime
-%doc README.md
 %defattr(-,root,root,644)
-%{_datadir}/%{name}
+%license LICENSE
+%doc README.md
+%attr(0777,root,root) %{_datadir}/%{name}
+%attr(0644,root,root) %{_datadir}/%{name}/samples
+%attr(0755,root,root) %{_libexecdir}/%{name}
+%attr(0777,root,root) %{_sysconfdir}/%{name}
 
 %files          openscap-plugin
 %{_libexecdir}/%{name}/plugins/openscap-plugin
 %doc cmd/openscap-plugin/README.md
 
 %changelog
+* Wed Apr 30 2025 Qingmin Duanmu <qduanmu@redhat.com>
+- Separate plugin binary from manifest
+
 * Fri Apr 11 2025 Qingmin Duanmu <qduanmu@redhat.com>
 - Separate package for openscap-plugin
 
