@@ -19,6 +19,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 
 	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complytime/cmd/openscap-plugin/oscap"
 	"github.com/complytime/complytime/cmd/openscap-plugin/scan"
 	"github.com/complytime/complytime/cmd/openscap-plugin/xccdf"
 )
@@ -60,6 +61,14 @@ func (s PluginServer) Generate(policy policy.Policy) error {
 	}
 	defer dst.Close()
 	if _, err := dst.WriteString(tailoringXML); err != nil {
+		return err
+	}
+
+	// Generate remedation files
+	hclog.Default().Info(("Generating remediation files"))
+	pluginDir := filepath.Join(s.Config.Files.Workspace, config.PluginDir)
+	err = oscap.OscapGenerateFix(pluginDir, s.Config.Parameters.Profile, s.Config.Files.Policy, s.Config.Files.Datastream)
+	if err != nil {
 		return err
 	}
 	return nil

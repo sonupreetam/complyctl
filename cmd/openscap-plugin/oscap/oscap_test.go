@@ -52,3 +52,44 @@ func TestConstructScanCommand(t *testing.T) {
 
 // In a more advanced stage we could add tests for the OscapScan function using a minimalistic
 // version of a OpenSCAP Datastream, but for now it's not implemented.
+
+func TestConstructGenerateFixCommand(t *testing.T) {
+	tests := []struct {
+		name          string
+		fixType       string
+		output        string
+		profile       string
+		tailoringFile string
+		datastream    string
+		expectedCmd   []string
+	}{
+		{
+			name:          "Genereate fix command construction",
+			fixType:       "bash",
+			output:        "test-remediation-script.sh",
+			profile:       "test-profile",
+			tailoringFile: "test-policy.xml",
+			datastream:    "test-datastream.xml",
+			expectedCmd: []string{
+				"oscap",
+				"xccdf",
+				"generate",
+				"fix",
+				"--fix-type", "bash",
+				"--output", "test-remediation-script.sh",
+				"--profile", "test-profile",
+				"--tailoring-file", "test-policy.xml",
+				"test-datastream.xml",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := constructGenerateFixCommand(tt.fixType, tt.output, tt.profile, tt.tailoringFile, tt.datastream)
+			if !reflect.DeepEqual(cmd, tt.expectedCmd) {
+				t.Errorf("constructGenerateFixCommand() = %v, expected %v", cmd, tt.expectedCmd)
+			}
+		})
+	}
+}

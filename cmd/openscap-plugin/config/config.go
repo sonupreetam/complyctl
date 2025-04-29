@@ -20,6 +20,9 @@ import (
 
 const (
 	PluginDir      string = "openscap"
+	PolicyDir      string = "policy"
+	ResultsDir     string = "results"
+	RemediationDir string = "remediations"
 	DatastreamsDir string = "/usr/share/xml/scap/ssg/content"
 	SystemInfoFile string = "/etc/os-release"
 )
@@ -197,10 +200,11 @@ func ensureWorkspace(cfg *Config) (map[string]string, error) {
 	}
 
 	directories := map[string]string{
-		"workspace":  workspace,
-		"pluginDir":  filepath.Join(workspace, PluginDir),
-		"policyDir":  filepath.Join(workspace, PluginDir, "policy"),
-		"resultsDir": filepath.Join(workspace, PluginDir, "results"),
+		"workspace":      workspace,
+		"pluginDir":      filepath.Join(workspace, PluginDir),
+		"policyDir":      filepath.Join(workspace, PluginDir, PolicyDir),
+		"resultsDir":     filepath.Join(workspace, PluginDir, ResultsDir),
+		"remediationDir": filepath.Join(workspace, PluginDir, RemediationDir),
 	}
 
 	for key, dir := range directories {
