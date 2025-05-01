@@ -27,5 +27,4 @@ func TestPlansInWorkspace(t *testing.T) {
 	_, gotPath, err := loadPlan(testOpts, validation.NoopValidator{})
 	require.NoError(t, err)
 	require.Equal(t, "testdata/assessment-plan.json", gotPath)
-	wantErr = "assessment plan in \"testdata\" workspace does not have associated activities: no local activities detected"
 }
