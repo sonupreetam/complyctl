@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"os"
 
-	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 )
 
 // WriteAssessmentResults writes AssessmentResults as a JSON file to a given path location.

@@ -8,6 +8,8 @@ import (
 	"reflect"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 )
 
@@ -58,19 +60,21 @@ func (p PluginOptions) ToMap() map[string]string {
 
 // Plugins launches and configures plugins with the given complytime global options. This function returns the plugin map with the
 // launched plugins, a plugin cleanup function, and an error. The cleanup function should be used if it is not nil.
-func Plugins(manager *framework.PluginManager, selections PluginOptions) (map[string]policy.Provider, func(), error) {
-	manifests, err := manager.FindRequestedPlugins()
+func Plugins(manager *framework.PluginManager, inputs *actions.InputContext, selections PluginOptions) (map[plugin.ID]policy.Provider, func(), error) {
+	manifests, err := manager.FindRequestedPlugins(inputs.RequestedProviders())
 	if err != nil {
 		return nil, nil, err
-	}
-
-	getSelections := func(_ string) map[string]string {
-		return selections.ToMap()
 	}
 
 	if err := selections.Validate(); err != nil {
 		return nil, nil, fmt.Errorf("failed plugin config validation: %w", err)
 	}
+
+	selectionsMap := selections.ToMap()
+	getSelections := func(_ plugin.ID) map[string]string {
+		return selectionsMap
+	}
+
 	plugins, err := manager.LaunchPolicyPlugins(manifests, getSelections)
 	// Plugin subprocess has now been launched; cleanup always required below
 	if err != nil {

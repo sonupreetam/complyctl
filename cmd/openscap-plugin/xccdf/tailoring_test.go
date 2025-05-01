@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+
+	"github.com/complytime/complytime/cmd/openscap-plugin/config"
 )
 
 // This is a supporting function to get the profile element from the testing Datastream.
@@ -447,8 +448,12 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var2", Value: "value2"},
 			},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "value1"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var1", Value: "value1"}},
+				}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var2", Value: "value2"}},
+				}},
 			},
 			expectedValues: []xccdf.SetValueElement{},
 		},
@@ -459,8 +464,12 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
 			},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "value1"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var1", Value: "value1"}},
+				}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var2", Value: "value2"}},
+				}},
 			},
 			expectedValues: []xccdf.SetValueElement{
 				{IDRef: "xccdf_org.ssgproject.content_value_var2", Value: "value2"},
@@ -471,8 +480,12 @@ func TestUpdateTailoringValues(t *testing.T) {
 			tailoringValues: []xccdf.SetValueElement{},
 			dsProfileValues: []xccdf.SetValueElement{},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "value1"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var1", Value: "value1"}},
+				}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var2", Value: "value2"}},
+				}},
 			},
 			expectedValues: []xccdf.SetValueElement{
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
@@ -486,7 +499,9 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "old_value"},
 			},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "new_value"}}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var1", Value: "new_value"}},
+				}},
 			},
 			expectedValues: []xccdf.SetValueElement{
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "new_value"},
@@ -499,7 +514,7 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
 			},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: nil}},
+				{Rule: extensions.Rule{Parameters: nil}},
 			},
 			expectedValues: []xccdf.SetValueElement{},
 		},
@@ -510,9 +525,15 @@ func TestUpdateTailoringValues(t *testing.T) {
 				{IDRef: "xccdf_org.ssgproject.content_value_var1", Value: "value1"},
 			},
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var1", Value: "value1"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var2", Value: "value2"}}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var1", Value: "value1"}},
+				}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var2", Value: "value2"}},
+				}},
+				{Rule: extensions.Rule{
+					Parameters: []extensions.Parameter{{ID: "var2", Value: "value2"}},
+				}},
 			},
 			expectedValues: []xccdf.SetValueElement{
 				{IDRef: "xccdf_org.ssgproject.content_value_var2", Value: "value2"},
@@ -548,12 +569,12 @@ func TestGetTailoringValues(t *testing.T) {
 		{
 			name: "All variables present",
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm", Value: "SHA512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_accounts_tmout", Value: "900"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember", Value: "5"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_system_crypto_policy", Value: "DEFAULT"}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm", Value: "SHA512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_accounts_tmout", Value: "900"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember", Value: "5"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_system_crypto_policy", Value: "DEFAULT"}}}},
 			},
 			expectedError:  false,
 			expectedResult: []xccdf.SetValueElement{},
@@ -561,12 +582,12 @@ func TestGetTailoringValues(t *testing.T) {
 		{
 			name: "One variable missing in datastream",
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm", Value: "SHA512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_accounts_tmout", Value: "900"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember", Value: "5"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "this_variable_is_not_in_datastream", Value: "value"}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm", Value: "SHA512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_accounts_tmout", Value: "900"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember", Value: "5"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "this_variable_is_not_in_datastream", Value: "value"}}}},
 			},
 			expectedError:  true,
 			expectedResult: nil,
@@ -574,13 +595,13 @@ func TestGetTailoringValues(t *testing.T) {
 		{
 			name: "Additional variable in OSCAL policy",
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm", Value: "SHA512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_accounts_tmout", Value: "900"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_password_pam_remember", Value: "5"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_system_crypto_policy", Value: "DEFAULT"}}},
-				{Rule: extensions.Rule{Parameter: &extensions.Parameter{ID: "var_selinux_policy_name", Value: "mls"}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm", Value: "SHA512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_hashing_algorithm_pam", Value: "sha512"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_accounts_tmout", Value: "900"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember_control_flag", Value: "requisite,required"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_password_pam_remember", Value: "5"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_system_crypto_policy", Value: "DEFAULT"}}}},
+				{Rule: extensions.Rule{Parameters: []extensions.Parameter{{ID: "var_selinux_policy_name", Value: "mls"}}}},
 			},
 			expectedError: false,
 			expectedResult: []xccdf.SetValueElement{
@@ -590,7 +611,7 @@ func TestGetTailoringValues(t *testing.T) {
 		{
 			name: "OSCAL policy without variables",
 			oscalPolicy: policy.Policy{
-				{Rule: extensions.Rule{Parameter: nil}},
+				{Rule: extensions.Rule{Parameters: nil}},
 			},
 			expectedError:  false,
 			expectedResult: []xccdf.SetValueElement{},
@@ -628,10 +649,12 @@ func TestGetTailoringProfile(t *testing.T) {
 			Rule: extensions.Rule{
 				ID:          "set_password_hashing_algorithm_logindefs",
 				Description: "Set Password Hashing Algorithm in /etc/login.defs",
-				Parameter: &extensions.Parameter{
-					ID:          "var_password_hashing_algorithm",
-					Description: "Password Hashing algorithm",
-					Value:       "YESCRYPT",
+				Parameters: []extensions.Parameter{
+					{
+						ID:          "var_password_hashing_algorithm",
+						Description: "Password Hashing algorithm",
+						Value:       "YESCRYPT",
+					},
 				},
 			},
 		},
@@ -689,10 +712,12 @@ func TestPolicyToXML(t *testing.T) {
 			Rule: extensions.Rule{
 				ID:          "account_unique_id",
 				Description: "Ensure All Accounts on the System Have Unique User IDs",
-				Parameter: &extensions.Parameter{
-					ID:          "var_password_hashing_algorithm",
-					Description: "Password Hashing algorithm",
-					Value:       "YESCRYPT",
+				Parameters: []extensions.Parameter{
+					{
+						ID:          "var_password_hashing_algorithm",
+						Description: "Password Hashing algorithm",
+						Value:       "YESCRYPT",
+					},
 				},
 			},
 		},
