@@ -48,7 +48,7 @@ In order to support automated aggregation of output files from multiple plugins 
 **Note:** The `workspace` path will be provided by ComplyTime via the [configuration](https://github.com/complytime/complytime/blob/6cf2e92aff852119bba83e579e2c6d8700e4bcec/internal/complytime/plugins.go#L72) and represents the user's desired working directory for all ComplyTime activities.
 
 - `{workspace}/{plugin name}/results` # files for evidence collection
-- `{workspace}/{plugin name}/remediations` # files for automated remediation 
+- `{workspace}/{plugin name}/remediations` # files for automated remediation
 
 ### Plugin Selection
 
@@ -90,4 +90,3 @@ func (s PluginServer) GetResults(p policy.Policy) (policy.PVPResult, error) {
 
 }
 ```
-
