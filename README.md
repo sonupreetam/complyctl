@@ -14,7 +14,7 @@ ComplyTime leverages [OSCAL](https://github.com/usnistgov/OSCAL/) to perform com
 
 ### Basic Usage
 
-Determine the baseline you want to run a scan for and create an OSCAL [Assessment Plan](https://pages.nist.gov/OSCAL/resources/concepts/layer/assessment/assessment-plan/). The Assessment
+Determine the baseline you want to run a scan for and create an OSCAL [Assessment Plan](https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-plan/). The Assessment
 Plan will act as configuration to guide the ComplyTime generation and scanning operations.
 
 ```bash
