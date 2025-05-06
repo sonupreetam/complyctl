@@ -13,7 +13,7 @@ require (
 	github.com/defenseunicorns/go-oscal v0.6.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
-	github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0
+	github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0-20250506125517-e51adaf0a7a0
 	github.com/oscal-compass/oscal-sdk-go v0.0.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
@@ -125,5 +125,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/oscal-compass/compliance-to-policy-go/v2 => github.com/jpower432/compliance-to-policy-go/v2 v2.0.0-20250501160417-6c7689b042f0
