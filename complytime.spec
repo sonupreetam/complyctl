@@ -9,6 +9,7 @@ Source0:        https://github.com/complytime/complytime/archive/refs/tags/v0.0.
 
 BuildRequires:  golang
 BuildRequires:  make
+BuildRequires:  pandoc
 
 %description
 ComplyTime leverages OSCAL to perform compliance assessment activities, using plugins for each stage of the lifecycle.
@@ -30,6 +31,7 @@ for plugin developers to choose their preferred languages.
 
 %build
 make build
+make man
 
 %install
 mkdir -p %{buildroot}%{_bindir}
@@ -41,7 +43,6 @@ cp -rf docs/samples %{buildroot}%{_datadir}/%{name}
 mkdir -p %{buildroot}%{_datadir}/%{name}/plugins %{buildroot}%{_datadir}/%{name}/bundles %{buildroot}%{_datadir}/%{name}/controls
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}/config.d
 
-
 %check
 make test-unit
 
@@ -49,7 +50,7 @@ make test-unit
 %{_bindir}/complytime
 %defattr(-,root,root,644)
 %license LICENSE
-%doc README.md
+%doc docs/man/complytime.1
 %attr(0777,root,root) %{_datadir}/%{name}
 %attr(0644,root,root) %{_datadir}/%{name}/samples
 %attr(0755,root,root) %{_libexecdir}/%{name}
@@ -57,9 +58,12 @@ make test-unit
 
 %files          openscap-plugin
 %{_libexecdir}/%{name}/plugins/openscap-plugin
-%doc cmd/openscap-plugin/README.md
+%doc docs/man/c2p-openscap-manifest.5
 
 %changelog
+* Tue May 6 2025 Qingmin Duanmu <qduanmu@redhat.com>
+- Add complytime and openscap plugin man pages
+
 * Wed Apr 30 2025 Qingmin Duanmu <qduanmu@redhat.com>
 - Separate plugin binary from manifest
 
