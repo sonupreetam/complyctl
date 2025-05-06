@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
+      contents: write # for github releases
+      id-token: write # for keyless signing
 
     steps:
       - name: Validate Tag
@@ -51,3 +52,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.event.inputs.tag }}
+        continue-on-error: false
