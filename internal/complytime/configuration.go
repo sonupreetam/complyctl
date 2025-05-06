@@ -51,11 +51,11 @@ type ApplicationDirectory struct {
 // If the application directories exist, this will not overwrite what is
 // existing.
 func NewApplicationDirectory(create bool) (ApplicationDirectory, error) {
-	// When complytime installed by rpm package
-	if _, err := os.Stat("/usr/bin/complytime"); err == nil {
-		return newApplicationDirectory(DataRootDir, false)
+	// When running local built complytime for development
+	if os.Getenv("COMPLYTIME_DEV_MODE") == "1" {
+		return newApplicationDirectory(xdg.DataHome, create)
 	} else {
-		return newApplicationDirectory(xdg.ConfigHome, create)
+		return newApplicationDirectory(DataRootDir, false)
 	}
 }
 
