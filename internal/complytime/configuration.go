@@ -17,11 +17,13 @@ import (
 )
 
 const (
-	compDefSuffix  = "component-definition.json"
-	ApplicationDir = "complytime"
-	PluginDir      = "plugins"
-	BundlesDir     = "bundles"
-	ControlsDir    = "controls"
+	compDefSuffix       = "component-definition.json"
+	ApplicationDir      = "complytime"
+	PluginDir           = "plugins"
+	BundlesDir          = "bundles"
+	ControlsDir         = "controls"
+	DataRootDir         = "/usr/share"
+	PluginBinaryRootDir = "/usr/libexec/"
 )
 
 // ErrNoComponentDefinitionsFound returns an error indicated the supplied directory
@@ -33,9 +35,10 @@ var ErrNoComponentDefinitionsFound = errors.New("no component definitions found"
 type ApplicationDirectory struct {
 	// appDir is the top-level directory
 	appDir string
-	// pluginDir is below the appDir and contains
-	// all complytime plugins.
+	// pluginDir contains all complytime binary plugins.
 	pluginDir string
+	// pluginManifestDir contains all complytime plugin manifests.
+	pluginManifestDir string
 	// bundleDir contains all the detectable component definitions
 	bundleDir string
 	// controlDir contains all OSCAL control layer models.
@@ -48,7 +51,12 @@ type ApplicationDirectory struct {
 // If the application directories exist, this will not overwrite what is
 // existing.
 func NewApplicationDirectory(create bool) (ApplicationDirectory, error) {
-	return newApplicationDirectory(xdg.ConfigHome, create)
+	// When running local built complytime for development
+	if os.Getenv("COMPLYTIME_DEV_MODE") == "1" {
+		return newApplicationDirectory(xdg.DataHome, create)
+	} else {
+		return newApplicationDirectory(DataRootDir, false)
+	}
 }
 
 // newApplicationDirectory returns a new ApplicationDirectory with the
@@ -59,7 +67,13 @@ func newApplicationDirectory(rootDir string, create bool) (ApplicationDirectory,
 	applicationDir := ApplicationDirectory{
 		appDir: filepath.Join(rootDir, ApplicationDir),
 	}
-	applicationDir.pluginDir = filepath.Join(applicationDir.appDir, PluginDir)
+	// Drop-in configuration to be supported in CPLYTM-716
+	applicationDir.pluginManifestDir = filepath.Join(applicationDir.appDir, PluginDir)
+	if rootDir == DataRootDir {
+		applicationDir.pluginDir = filepath.Join(PluginBinaryRootDir, ApplicationDir, PluginDir)
+	} else {
+		applicationDir.pluginDir = applicationDir.pluginManifestDir
+	}
 	applicationDir.bundleDir = filepath.Join(applicationDir.appDir, BundlesDir)
 	applicationDir.controlDir = filepath.Join(applicationDir.appDir, ControlsDir)
 	if create {
@@ -97,11 +111,18 @@ func (a ApplicationDirectory) BundleDir() string {
 // ControlDir returns the directory containing control layer OSCAL artifacts.
 func (a ApplicationDirectory) ControlDir() string { return a.controlDir }
 
+// PluginManifestDir returns the directory containing plugin manifests.
+// definition.
+func (a ApplicationDirectory) PluginManifestDir() string {
+	return a.pluginManifestDir
+}
+
 // Dirs returns all directories in the ApplicationDirectory.
 func (a ApplicationDirectory) Dirs() []string {
 	return []string{
 		a.appDir,
 		a.pluginDir,
+		a.pluginManifestDir,
 		a.bundleDir,
 		a.controlDir,
 	}
@@ -148,7 +169,7 @@ func FindComponentDefinitions(bundleDir string, validator validation.Validator) 
 func Config(a ApplicationDirectory, validator validation.Validator) (*config.C2PConfig, error) {
 	cfg := config.DefaultConfig()
 	cfg.PluginDir = a.PluginDir()
-
+	cfg.PluginManifestDir = a.PluginManifestDir()
 	compDefBundles, err := FindComponentDefinitions(a.BundleDir(), validator)
 	if err != nil {
 		return cfg, fmt.Errorf("unable to create configuration: %w", err)

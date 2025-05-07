@@ -12,7 +12,7 @@ This file defines the metadata and runtime configuration options for the `opensc
 
 It is a JSON-formatted file typically installed at:
 
-**~/.config/complytime/plugins/c2p-openscap-manifest.json**
+**/usr/share/complytime/plugins/c2p-openscap-manifest.json**
 
 # FILE FORMAT
 
