@@ -1,11 +1,11 @@
 Name:           complytime
-Version:        0.0.2
+Version:        0.0.3
 Release:        1%{?dist}
 Summary:        ComplyTime leverages OSCAL to perform compliance assessment activities, using plugins for each stage of the lifecycle.
 
 License:        Apache-2.0
 URL:            https://github.com/complytime/complytime
-Source0:        https://github.com/complytime/complytime/archive/refs/tags/v0.0.2.tar.gz
+Source0:        https://github.com/complytime/complytime/archive/refs/tags/v0.0.3.tar.gz
 
 BuildRequires:  golang
 BuildRequires:  make
