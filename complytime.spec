@@ -57,7 +57,7 @@ make test-unit
 
 %files
 %defattr(0644, root, root, 0755)
-%{_bindir}/complytime
+%attr(0755, root, root) %{_bindir}/complytime
 %license LICENSE
 %doc %{_mandir}/man1/complytime.1*
 %{_datadir}/%{name}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json}
@@ -65,7 +65,7 @@ make test-unit
 %{_sysconfdir}/%{name}/config.d
 
 %files          openscap-plugin
-%{_libexecdir}/%{name}/plugins/openscap-plugin
+%attr(0755, root, root) %{_libexecdir}/%{name}/plugins/openscap-plugin
 %doc %{_mandir}/man5/c2p-openscap-manifest.5*
 
 %changelog
