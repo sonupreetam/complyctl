@@ -1,10 +1,12 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 # How to run the script
 # Assume that you have already installed a fresh RHEL
 # 1. Download/copy this script in your RHEL system
 # 2. Run the script
 # chmod +x quick_start.sh
 # export RHEL_APPS_REPO=$RHEL_APPS_REPO
+# export COMPLYTIME_DEV_MODE=1
 # sh quick_start.sh
 
 set +e
@@ -57,13 +59,13 @@ echo "Attempting to run the command complytime list."
 bin/complytime list 2>/dev/null
 echo "An error occurred, but script continues after the complytime list."
 # Copy the artifacts to workspace
-cp docs/samples/sample-component-definition.json ~/.config/complytime/bundles
-cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.config/complytime/controls
+cp docs/samples/sample-component-definition.json ~/.local/share/complytime/bundles
+cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.local/share/complytime/controls
 
 # Copy the binary plugin and manifest files
-cp -rp bin/openscap-plugin ~/.config/complytime/plugins
-checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
-cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
+cp -rp bin/openscap-plugin ~/.local/share/complytime/plugins
+checksum=$(sha256sum ~/.local/share/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
+cat > ~/.local/share/complytime/plugins/c2p-openscap-manifest.json << EOF
 {
   "metadata": {
     "id": "openscap",

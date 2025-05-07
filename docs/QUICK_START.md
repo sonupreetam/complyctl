@@ -11,7 +11,7 @@ See [INSTALLATION.md](INSTALLATION.md)
 ## Step 2: Add configuration
 
 After running `complytime list` for the first time, the complytime
-directory should be created under $HOME/.config
+directory should be created under $HOME/.local/share
 
 ```markdown
 complytime
@@ -24,8 +24,8 @@ You will need an OSCAL Component Definition that defines an OSCAL Component for 
 policy validation plugin. See `docs/samples/` for example configuration for the `myplugin` plugin.
 
 ```bash
-cp docs/samples/sample-component-definition.json ~/.config/complytime/bundles
-cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.config/complytime/controls
+cp docs/samples/sample-component-definition.json ~/.local/share/complytime/bundles
+cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.local/share/complytime/controls
 ```
 
 ## Step 3: Install a plugin
@@ -33,9 +33,9 @@ cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.config/c
 Each plugin requires a plugin manifest. For more information about plugin discovery see [PLUGIN_GUIDE.md](PLUGIN_GUIDE.md).
 
 ```bash
-cp bin/openscap-plugin ~/.config/complytime/plugins
-checksum=$(sha256sum ~/.config/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
-cat > ~/.config/complytime/plugins/c2p-openscap-manifest.json << EOF
+cp bin/openscap-plugin ~/.local/share/complytime/plugins
+checksum=$(sha256sum ~/.local/share/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
+cat > ~/.local/share/complytime/plugins/c2p-openscap-manifest.json << EOF
 {
   "metadata": {
     "id": "openscap",
