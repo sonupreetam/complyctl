@@ -34,31 +34,39 @@ make build
 make man
 
 %install
-mkdir -p %{buildroot}%{_bindir}
+# Install ComplyTime directories
+install -d %{buildroot}%{_bindir}
+install -d -m 0755 %{buildroot}%{_datadir}/%{name}/{plugins,bundles,controls}
+install -d -m 0755 %{buildroot}%{_libexecdir}/%{name}/plugins
+install -d -m 0755 %{buildroot}%{_sysconfdir}/%{name}/config.d
+install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5}
+
+# Copy sample data to be consumed by ComplyTime CLI
+cp -r docs/samples %{buildroot}%{_datadir}/%{name}
+
+# Install files for ComplyTime CLI
 install -m 0755 bin/complytime %{buildroot}%{_bindir}/complytime
-mkdir -p %{buildroot}%{_libexecdir}/%{name}/plugins
+install -m 0644 docs/man/complytime.1 %{buildroot}%{_mandir}/man1/complytime.1
+
+# Install files for openscap-plugin package
 install -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{name}/plugins/openscap-plugin
-mkdir -p %{buildroot}%{_datadir}/%{name}
-cp -rf docs/samples %{buildroot}%{_datadir}/%{name}
-mkdir -p %{buildroot}%{_datadir}/%{name}/plugins %{buildroot}%{_datadir}/%{name}/bundles %{buildroot}%{_datadir}/%{name}/controls
-mkdir -p %{buildroot}%{_sysconfdir}/%{name}/config.d
+install -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
 
 %check
 make test-unit
 
 %files
+%defattr(0644, root, root, 0755)
 %{_bindir}/complytime
-%defattr(-,root,root,644)
 %license LICENSE
-%doc docs/man/complytime.1
-%attr(0777,root,root) %{_datadir}/%{name}
-%attr(0644,root,root) %{_datadir}/%{name}/samples
-%attr(0755,root,root) %{_libexecdir}/%{name}
-%attr(0777,root,root) %{_sysconfdir}/%{name}
+%doc %{_mandir}/man1/complytime.1*
+%{_datadir}/%{name}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json}
+%{_datadir}/%{name}/{plugins,bundles,controls}
+%{_sysconfdir}/%{name}/config.d
 
 %files          openscap-plugin
 %{_libexecdir}/%{name}/plugins/openscap-plugin
-%doc docs/man/c2p-openscap-manifest.5
+%doc %{_mandir}/man5/c2p-openscap-manifest.5*
 
 %changelog
 * Tue May 6 2025 Qingmin Duanmu <qduanmu@redhat.com>
