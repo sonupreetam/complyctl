@@ -41,9 +41,9 @@ rm -rf /usr/bin/go
 go_mod="https://raw.githubusercontent.com/complytime/complytime/main/go.mod"
 go_version=$(curl -s $go_mod | grep '^go' | awk '{print $2}')
 go_tar_file=go$go_version.linux-amd64.tar.gz
-wget https://go.dev/dl/$go_tar_file
-tar -C /usr/local -xvzf $go_tar_file
-rm -rf $go_tar_file
+wget "https://go.dev/dl/$go_tar_file"
+tar -C /usr/local -xvzf "$go_tar_file"
+rm -rf "$go_tar_file"
 export PATH=$PATH:/usr/local/go/bin
 source ~/.bash_profile
 
@@ -51,7 +51,7 @@ source ~/.bash_profile
 echo "Cloning the Complytime repository..."
 complytimerepo="${REPO:-"https://github.com/complytime/complytime"}"
 complytimebranch="${BRANCH:-"main"}"
-git clone -b ${complytimebranch} ${complytimerepo}
+git clone -b "${complytimebranch}" "${complytimerepo}"
 cd complytime && make build && cp ./bin/complytime /usr/local/bin
 echo "Complytime installed successfully!"
 # Run complytime list to create the workspace
