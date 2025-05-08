@@ -49,7 +49,9 @@ source ~/.bash_profile
 
 # Install and build complytime
 echo "Cloning the Complytime repository..."
-git clone https://github.com/complytime/complytime.git
+complytimerepo="${REPO:-"https://github.com/complytime/complytime"}"
+complytimebranch="${BRANCH:-"main"}"
+git clone -b ${complytimebranch} ${complytimerepo}
 cd complytime && make build && cp ./bin/complytime /usr/local/bin
 echo "Complytime installed successfully!"
 # Run complytime list to create the workspace
