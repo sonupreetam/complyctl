@@ -48,13 +48,13 @@
               {
                 "name": "Framework_Short_Name",
                 "ns": "https://oscal-compass.github.io/compliance-trestle/schemas/oscal/cd",
-                "value": "example"
+                "value": "anssi_bp28_minimal"
               }
             ],
             "implemented-requirements": [
               {
                 "uuid": "ed2ac4e9-d16a-4fc5-bd3a-13484b6d8fef",
-                "control-id": "most_important_requirement",
+                "control-id": "r1",
                 "description": "My example implemented requirement.",
                 "props": [
                   {

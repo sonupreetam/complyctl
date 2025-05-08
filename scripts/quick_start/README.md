@@ -46,7 +46,7 @@ sh quick_start.sh
 Now you could explore Complytime CLIs:
 ```bash
 complytime list
-complytime plan example
+complytime plan anssi_bp28_minimal
 complytime generate
 complytime scan
 ```
