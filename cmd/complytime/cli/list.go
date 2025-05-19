@@ -4,8 +4,13 @@ package cli
 
 import (
 	"fmt"
+	"io"
+	"sort"
+	"strings"
 
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
@@ -52,12 +57,87 @@ func runList(opts *listOptions) error {
 	}
 
 	if opts.plain {
-		terminal.ShowDefinitionTable(opts.Out, frameworks)
+		showDefinitionTable(opts.Out, frameworks)
 	} else {
-		model := terminal.ShowPrettyDefinitionTable(frameworks)
+		model := showPrettyDefinitionTable(frameworks)
 		if _, err := tea.NewProgram(model, tea.WithOutput(opts.Out)).Run(); err != nil {
 			return fmt.Errorf("failed to display component list: %w", err)
 		}
 	}
 	return nil
+}
+
+// ShowDefinitionTable prints a plain table with given framework data.
+func showDefinitionTable(writer io.Writer, frameworks []complytime.Framework) {
+	columns, rows := getDefinitionColumnsAndRows(frameworks)
+	for _, col := range columns {
+		_, _ = fmt.Fprintf(writer, "%-*s", col.Width, col.Title)
+	}
+	_, _ = fmt.Fprintln(writer)
+	for _, row := range rows {
+		for i, cell := range row {
+			_, _ = fmt.Fprintf(writer, "%-*s", columns[i].Width, cell)
+		}
+		_, _ = fmt.Fprintln(writer)
+	}
+
+}
+
+// ShowPrettyDefinitionTable returns a Model to be used with a `bubbletea` Program that
+// renders a table with given Framework data.
+func showPrettyDefinitionTable(frameworks []complytime.Framework) terminal.Model {
+	columns, rows := getDefinitionColumnsAndRows(frameworks)
+	tbl := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(7),
+	)
+
+	tableStyle := table.DefaultStyles()
+	tableStyle.Header = tableStyle.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(false)
+	tableStyle.Cell = tableStyle.Cell.
+		Foreground(lipgloss.Color("250")).
+		Bold(true)
+	tbl.SetStyles(tableStyle)
+
+	return terminal.Model{
+		Table:   tbl,
+		HelpMsg: "Choose an option from the Framework ID column to use with complytime plan.",
+	}
+}
+
+// getDefinitionColumnsAndRows returns populate columns and row for printing tables.
+func getDefinitionColumnsAndRows(frameworks []complytime.Framework) ([]table.Column, []table.Row) {
+	var rows []table.Row
+	for _, framework := range frameworks {
+		row := table.Row{framework.Title, framework.ID, strings.Join(framework.SupportedComponents, ", ")}
+		rows = append(rows, row)
+	}
+	// Sort the rows slice by the framework short name
+	sort.SliceStable(rows, func(i, j int) bool { return rows[i][1] < rows[j][1] })
+
+	// Set columns with default widths
+	columns := []table.Column{
+		{Title: "Title", Width: 30},
+		{Title: "Framework ID", Width: 20},
+		{Title: "Supported Components", Width: 30},
+	}
+
+	// Calculate column width based on rows
+	if len(rows) > 0 {
+		for _, row := range rows {
+			for i, cell := range row {
+				if len(cell) > columns[i].Width {
+					columns[i].Width = len(cell)
+				}
+			}
+		}
+	}
+
+	return columns, rows
 }
