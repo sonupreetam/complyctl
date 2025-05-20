@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
@@ -57,18 +57,10 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		return err
 	}
 
-	planSettings, err := getPlanSettings(opts.complyTimeOpts, ap)
+	inputContext, err := complytime.ActionsContextFromPlan(ap)
 	if err != nil {
 		return err
 	}
-
-	// Set the framework ID from state (assessment plan)
-	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *ap.Metadata.Props)
-	if !valid {
-		return fmt.Errorf("error reading framework property from assessment plan")
-	}
-	opts.complyTimeOpts.FrameworkID = frameworkProp.Value
-	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
 
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
@@ -77,7 +69,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
 
-	cfg, err := complytime.Config(appDir, validator)
+	cfg, err := complytime.Config(appDir)
 	if err != nil {
 		return err
 	}
@@ -90,8 +82,17 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
 	}
 
+	// Determine what profile to load from framework information captured
+	// from state (assessment plan). This is required to populate complyTime required plugin options.
+	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *ap.Metadata.Props)
+	if !valid {
+		return fmt.Errorf("error reading framework property from assessment plan")
+	}
+	opts.complyTimeOpts.FrameworkID = frameworkProp.Value
+	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
+
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
-	plugins, cleanup, err := complytime.Plugins(manager, pluginOptions)
+	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -100,56 +101,54 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	}
 	logger.Info(fmt.Sprintf("Successfully loaded %v plugin(s).", len(plugins)))
 
-	allResults, err := manager.AggregateResults(cmd.Context(), plugins, planSettings)
+	allResults, err := actions.AggregateResults(cmd.Context(), inputContext, plugins)
 	if err != nil {
 		return err
 	}
 
 	// Collect results in a single report
-	r, err := framework.NewReporter(cfg)
-	if err != nil {
-		return err
-	}
-
-	var allImplementations []oscalTypes.ControlImplementationSet
-	var profileHref string
-	for _, compDef := range cfg.ComponentDefinitions {
-		for _, component := range *compDef.Components {
-			if component.ControlImplementations == nil {
-				continue
-			}
-			for _, implementation := range *component.ControlImplementations {
-				frameworkShortName, found := settings.GetFrameworkShortName(implementation)
-				// If the framework property value match the assessment plan framework property values
-				// this is the correct control source.
-				if found && frameworkShortName == frameworkProp.Value {
-					profileHref = implementation.Source
-					// The implementations would have been filtered later in settings.Framework, but no need to add extra
-					// implementations that are not needed to the slice.
-					allImplementations = append(allImplementations, *component.ControlImplementations...)
-				}
-			}
-		}
-	}
-
-	implementationSettings, err := settings.Framework(opts.complyTimeOpts.FrameworkID, allImplementations)
-	if err != nil {
-		return err
-	}
-
 	planHref := fmt.Sprintf("file://%s", apCleanedPath)
-	assessmentResults, err := r.GenerateAssessmentResults(cmd.Context(), planHref, implementationSettings, allResults)
+	assessmentResults, err := actions.Report(cmd.Context(), inputContext, planHref, *ap, allResults)
 	if err != nil {
 		return err
 	}
 	arJsonPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationJson)
-	err = complytime.WriteAssessmentResults(&assessmentResults, arJsonPath)
+	err = complytime.WriteAssessmentResults(assessmentResults, arJsonPath)
 	if err != nil {
 		return err
 	}
 	logger.Info(fmt.Sprintf("The assessment results in JSON were successfully written to %v.", arJsonPath))
+
 	outputFlag, _ := cmd.Flags().GetBool("with-md")
 	if outputFlag {
+		var profileHref string
+		compDefs, err := complytime.FindComponentDefinitions(appDir.BundleDir(), validator)
+		if err != nil {
+			return err
+		}
+		for _, compDef := range compDefs {
+			if compDef.Components == nil {
+				continue
+			}
+			for _, component := range *compDef.Components {
+				if component.ControlImplementations == nil {
+					continue
+				}
+				for _, implementation := range *component.ControlImplementations {
+					frameworkShortName, found := settings.GetFrameworkShortName(implementation)
+					// If the framework property value match the assessment plan framework property values
+					// this is the correct control source.
+					if found && frameworkShortName == frameworkProp.Value {
+						profileHref = implementation.Source
+						break
+					}
+				}
+				if profileHref != "" {
+					break
+				}
+			}
+		}
+
 		profile, err := complytime.LoadProfile(appDir, profileHref, validator)
 		if err != nil {
 			return err
@@ -163,7 +162,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 			return err
 		}
 		arMarkdownPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
-		templateValues, err := framework.CreateResultsValues(*catalog, *ap, assessmentResults)
+		templateValues, err := framework.CreateResultsValues(*catalog, *ap, *assessmentResults)
 		if err != nil {
 			return err
 		}

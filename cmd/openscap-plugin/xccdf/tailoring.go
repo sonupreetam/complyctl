@@ -147,27 +147,27 @@ func updateTailoringValues(tailoringValues, dsProfileValues []xccdf.SetValueElem
 	varsMap := make(map[string]bool)
 
 	for _, rule := range oscalPolicy {
-		if rule.Rule.Parameter == nil {
-			continue
-		}
-		varAlreadyInDsProfile := false
-		for _, dsVar := range dsProfileValues {
-			dsVarID := removePrefix(dsVar.IDRef, varIDPrefix)
-			if rule.Rule.Parameter.ID == dsVarID {
-				if rule.Rule.Parameter.Value == dsVar.Value {
-					varAlreadyInDsProfile = true
+		for _, prm := range rule.Rule.Parameters {
+			varAlreadyInDsProfile := false
+			for _, dsVar := range dsProfileValues {
+				dsVarID := removePrefix(dsVar.IDRef, varIDPrefix)
+				if prm.ID == dsVarID {
+					if prm.Value == dsVar.Value {
+						varAlreadyInDsProfile = true
+					}
+					break
 				}
-				break
+			}
+			varID := getDsVarID(prm.ID)
+			if !varAlreadyInDsProfile && !varsMap[varID] {
+				varsMap[varID] = true
+				tailoringValues = append(tailoringValues, xccdf.SetValueElement{
+					IDRef: varID,
+					Value: prm.Value,
+				})
 			}
 		}
-		varID := getDsVarID(rule.Rule.Parameter.ID)
-		if !varAlreadyInDsProfile && !varsMap[varID] {
-			varsMap[varID] = true
-			tailoringValues = append(tailoringValues, xccdf.SetValueElement{
-				IDRef: varID,
-				Value: rule.Rule.Parameter.Value,
-			})
-		}
+
 	}
 	return tailoringValues
 }
@@ -180,11 +180,10 @@ func getTailoringValues(oscalPolicy policy.Policy, dsProfile *xccdf.ProfileEleme
 
 	// All OSCAL policy variables should be present in the Datastream
 	for _, rule := range oscalPolicy {
-		if rule.Rule.Parameter == nil {
-			continue
-		}
-		if !validateVariableExistence(rule.Rule.Parameter.ID, dsVariables) {
-			return nil, fmt.Errorf("variable %s not found in datastream: %s", rule.Rule.Parameter.ID, dsPath)
+		for _, prm := range rule.Rule.Parameters {
+			if !validateVariableExistence(prm.ID, dsVariables) {
+				return nil, fmt.Errorf("variable %s not found in datastream: %s", prm.ID, dsPath)
+			}
 		}
 	}
 

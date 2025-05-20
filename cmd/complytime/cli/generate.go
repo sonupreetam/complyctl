@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
@@ -46,17 +47,10 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 		return err
 	}
 
-	planSettings, err := getPlanSettings(opts.complyTimeOpts, ap)
+	inputContext, err := complytime.ActionsContextFromPlan(ap)
 	if err != nil {
 		return err
 	}
-
-	// Set the framework ID from state (assessment plan)
-	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *ap.Metadata.Props)
-	if !valid {
-		return fmt.Errorf("error reading framework property from assessment plan")
-	}
-	opts.complyTimeOpts.FrameworkID = frameworkProp.Value
 
 	// Create the application directory if it does not exist
 	appDir, err := complytime.NewApplicationDirectory(true)
@@ -64,7 +58,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 		return err
 	}
 	logger.Debug(fmt.Sprintf("Using application directory: %s", appDir.AppDir()))
-	cfg, err := complytime.Config(appDir, validator)
+	cfg, err := complytime.Config(appDir)
 	if err != nil {
 		return err
 	}
@@ -78,8 +72,16 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 		return fmt.Errorf("error initializing plugin manager: %w", err)
 	}
 
+	// Set the framework ID from state (assessment plan). This is required to populate complyTime required plugin options.
+	frameworkProp, valid := extensions.GetTrestleProp(extensions.FrameworkProp, *ap.Metadata.Props)
+	if !valid {
+		return fmt.Errorf("error reading framework property from assessment plan")
+	}
+	opts.complyTimeOpts.FrameworkID = frameworkProp.Value
+	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
+
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
-	plugins, cleanup, err := complytime.Plugins(manager, pluginOptions)
+	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -87,10 +89,11 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 		return fmt.Errorf("errors launching plugins: %w", err)
 	}
 
-	err = manager.GeneratePolicy(cmd.Context(), plugins, planSettings)
+	err = actions.GeneratePolicy(cmd.Context(), inputContext, plugins)
 	if err != nil {
 		return err
 	}
+
 	logger.Info("Policy generation process completed for available plugins.")
 	return nil
 }

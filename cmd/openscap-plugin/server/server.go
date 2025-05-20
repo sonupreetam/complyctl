@@ -128,7 +128,7 @@ func (s PluginServer) GetResults(oscalPolicy policy.Policy) (policy.PVPResult, e
 				return policy.PVPResult{}, err
 			}
 			observation := policy.ObservationByCheck{
-				Title:     ruleIDRef,
+				Title:     ovalCheck,
 				Methods:   []string{"AUTOMATED"},
 				Collected: time.Now(),
 				CheckID:   ovalCheck,

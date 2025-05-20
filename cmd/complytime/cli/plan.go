@@ -8,8 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
-	"github.com/oscal-compass/oscal-sdk-go/settings"
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/oscal-compass/oscal-sdk-go/transformers"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
@@ -94,16 +93,4 @@ func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTy
 		return nil, "", err
 	}
 	return assessmentPlan, apCleanedPath, nil
-}
-
-// getPlanSettings is a thin wrapper on complytime.PlanSettings for consistent error messages in the CLI.
-func getPlanSettings(opts *option.ComplyTime, assessmentPlan *oscalTypes.AssessmentPlan) (settings.Settings, error) {
-	planSettings, err := complytime.PlanSettings(assessmentPlan)
-	if err != nil {
-		if errors.Is(err, complytime.ErrNoActivities) {
-			return settings.Settings{}, fmt.Errorf("assessment plan in %q workspace does not have associated activities: %w", opts.UserWorkspace, err)
-		}
-		return settings.Settings{}, err
-	}
-	return planSettings, nil
 }

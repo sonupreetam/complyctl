@@ -24,10 +24,7 @@ func TestPlansInWorkspace(t *testing.T) {
 	require.EqualError(t, gotErr, wantErr)
 
 	testOpts.UserWorkspace = "testdata"
-	plan, gotPath, err := loadPlan(testOpts, validation.NoopValidator{})
+	_, gotPath, err := loadPlan(testOpts, validation.NoopValidator{})
 	require.NoError(t, err)
 	require.Equal(t, "testdata/assessment-plan.json", gotPath)
-	wantErr = "assessment plan in \"testdata\" workspace does not have associated activities: no local activities detected"
-	_, gotErr = getPlanSettings(testOpts, plan)
-	require.EqualError(t, gotErr, wantErr)
 }

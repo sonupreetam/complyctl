@@ -235,10 +235,10 @@ github.com/openshift/library-go v0.0.0-20231102154438-cfcf2b4fbc87 h1:GcaI98ric0
 github.com/openshift/library-go v0.0.0-20231102154438-cfcf2b4fbc87/go.mod h1:8UzmrBMCn7+GzouL8DVYkL9COBQTB1Ggd13/mHJQCUg=
 github.com/openshift/machine-config-operator v0.0.1-0.20230815171034-c2bb862bc08a h1:3KR43D0bbEi3IYSS6b7abKWbj93RJyuxoHImmYaiWZU=
 github.com/openshift/machine-config-operator v0.0.1-0.20230815171034-c2bb862bc08a/go.mod h1:kP51fbL8QBSY/mAkFicoF73x0QSraPrX4BjWIdzFPio=
-github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0-20250429014154-dd056d874e9f h1:kh3q9aX2HQbr1i7SayEhLhMicn7XmaA4+3kVv8hKKNA=
-github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0-20250429014154-dd056d874e9f/go.mod h1:gwW/5pPvW7dYOKQ5aUUgVbfrcBxVc9c8j6qzFpBi56s=
-github.com/oscal-compass/oscal-sdk-go v0.0.0-20250313133319-add7970ddf13 h1:Es8SOzynf2rMlccC9xMZ31cZo+hpkoNN2LMHc9LYbnE=
-github.com/oscal-compass/oscal-sdk-go v0.0.0-20250313133319-add7970ddf13/go.mod h1:ms2FUrHqqlVJ6K8RwaJNXfbyfOucOH96lt14HeRq/5w=
+github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0-20250506125517-e51adaf0a7a0 h1:A4SpSrRBmj68KkUw+ep05oPHPBDs7w1utgDCokZQC/g=
+github.com/oscal-compass/compliance-to-policy-go/v2 v2.0.0-20250506125517-e51adaf0a7a0/go.mod h1:d53hvVy9ldi7sGp3lVO/+iWTsqN40GsHexsGyJWDc0k=
+github.com/oscal-compass/oscal-sdk-go v0.0.2 h1:Lemt0o+9MIWhNj5uif8ZzKyVWuUxyMXsMgX9Kmv8zBQ=
+github.com/oscal-compass/oscal-sdk-go v0.0.2/go.mod h1:D75S58qemUznO4weI2F1/RhxDc+VJc9FI3m9wHjHBXU=
 github.com/pjbgf/sha1cd v0.3.0 h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=
 github.com/pjbgf/sha1cd v0.3.0/go.mod h1:nZ1rrWOcGJ5uZgEEVL1VUM9iRQiZvWdbZjkKyFzPPsI=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

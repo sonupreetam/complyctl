@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-2"
+	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
+	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/models"
+	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
@@ -49,16 +51,14 @@ func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation
 }
 
 // ReadPlan reads an assessment plans from a given file path.
-func ReadPlan(assessmentPlanPath string, _ validation.Validator) (*oscalTypes.AssessmentPlan, error) {
+func ReadPlan(assessmentPlanPath string, validator validation.Validator) (*oscalTypes.AssessmentPlan, error) {
 	file, err := os.Open(assessmentPlanPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	// FIXME: This should be resolved in v0.0.2 of oscal-sdk-go
-	// compliance-to-policy-go needs to be updated to OSCAL v1.1.3 before we can bump that dependency
-	plan, err := models.NewAssessmentPlan(file, validation.NoopValidator{})
+	plan, err := models.NewAssessmentPlan(file, validator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load assessment plan from %s: %w", assessmentPlanPath, err)
 	}
@@ -74,4 +74,26 @@ func PlanSettings(plan *oscalTypes.AssessmentPlan) (settings.Settings, error) {
 		return settings.NewAssessmentActivitiesSettings(*plan.LocalDefinitions.Activities), nil
 	}
 	return settings.Settings{}, ErrNoActivities
+}
+
+// ActionsContextFromPlan returns a new actions.InputContext from a given OSCAL AssessmentPlan.
+func ActionsContextFromPlan(plan *oscalTypes.AssessmentPlan) (*actions.InputContext, error) {
+	if plan.AssessmentAssets.Components == nil {
+		return nil, errors.New("assessment plan has no assessment components")
+	}
+	var allComponents []components.Component
+	for _, component := range *plan.AssessmentAssets.Components {
+		compAdapter := components.NewSystemComponentAdapter(component)
+		allComponents = append(allComponents, compAdapter)
+	}
+	inputContext, err := actions.NewContext(allComponents)
+	if err != nil {
+		return nil, fmt.Errorf("error generating context from plan %s: %w", plan.Metadata.Title, err)
+	}
+	apSettings, err := PlanSettings(plan)
+	if err != nil {
+		return nil, fmt.Errorf("cannot extract settings from plan %s: %w", plan.Metadata.Title, err)
+	}
+	inputContext.Settings = apSettings
+	return inputContext, nil
 }
