@@ -1,0 +1,62 @@
+name: Dependabot Auto-Review and Label
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+
+permissions:
+  pull-requests: write # Needed for auto-approving
+  contents: write      # Needed for github/labeler to add labels if not already present
+  issues: write        # Explicitly grant write access to issues for labeling
+
+jobs:
+  auto-approve-and-label:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Classify Dependabot PR
+        id: classify_pr
+        run: |
+          if [[ "${{ github.event.pull_request.title }}" =~ "bump" ]]; then
+            versions=$(echo "${{ github.event.pull_request.title }}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+            read -r current new <<< "$versions"
+            IFS='.' read -r c_major c_minor c_patch <<< "$current"
+            IFS='.' read -r n_major n_minor n_patch <<< "$new"
+            if [[ "$c_major" -eq "$n_major" && "$c_minor" -eq "$n_minor" ]]; then
+              echo "Patch update detected. Safe to auto-approve."
+              echo "RISK=low" >> $GITHUB_ENV
+            else if [[ "$c_major" -eq "$n_major" && "$c_minor" -lt "$n_minor" ]]; then
+              echo "Minor update detected. Safe to auto-approve but requires maintainer review."
+              echo "RISK=medium" >> $GITHUB_ENV
+            else
+              echo "Major update detected. Requires manual review."
+              echo "RISK=high" >> $GITHUB_ENV
+            fi
+          else
+            echo "No version bump detected. Defaulting to high risk."
+            echo "RISK=high" >> $GITHUB_ENV
+          fi
+
+      - name: Auto-approve Dependabot PR
+        id: auto_approve_pr
+        # Only auto-approve if the risk is low or medium
+        if: ${{ env.RISK != 'high' }}
+        uses: actions/github-script@26f1c243f728c0b568f97b198103c800b46487e5 # v7.0.1
+        with:
+          script: |
+            github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              event: 'APPROVE',
+              body: 'Automatically approved by GitHub Action for Dependabot PRs.'
+            });
+            console.log('Dependabot PR approved successfully.');
+
+      - name: Add labels if necessary
+        uses: github/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sync-labels: true
