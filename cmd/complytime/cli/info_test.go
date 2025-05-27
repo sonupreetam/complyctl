@@ -97,7 +97,7 @@ func TestGetControlListColumnsAndRows(t *testing.T) {
 					},
 				},
 			},
-			expectedColumnTitles: []string{"Control ID", "Control Title", "Implementation Status", "Plugins Used"},
+			expectedColumnTitles: []string{"Control ID", "Control Title", "Status", "Plugins Used"},
 			expectedRows: []table.Row{
 				{"test-control-id", "Test Control Title", "implemented", "plugin-1, plugin-2"},
 			},
@@ -122,19 +122,17 @@ func TestGetRuleParametersColumnsAndRows(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		ruleInfo             RuleInfo
+		ruleInfo             Rule
 		setParameters        map[string][]string
 		expectedColumnTitles []string
 		expectedRows         []table.Row
 	}{
 		{
 			name: "Valid/RuleParametersList",
-			ruleInfo: RuleInfo{
-				ID:               "rule-1",
-				Description:      "Rule 1",
-				CheckID:          "check-1",
-				CheckDescription: "Check 1",
-				Parameters:       []string{"param-1", "param-2"},
+			ruleInfo: Rule{
+				ID:          "rule-1",
+				Description: "Rule 1",
+				Parameters:  []string{"param-1", "param-2"},
 			},
 			setParameters: map[string][]string{
 				"param-1": []string{"param-1-value"},
@@ -184,6 +182,42 @@ func TestRemoveDuplicates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			outputSlice := removeDuplicates(tt.inputSlice)
 			require.Equal(t, outputSlice, tt.expectedSlice)
+		})
+	}
+}
+
+func TestCalculateRowLimit(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		rowLimit         int
+		availableRows    int
+		expectedRowLimit int
+	}{
+		{
+			name:             "Valid/DefaultRowLimit",
+			rowLimit:         0,
+			availableRows:    10,
+			expectedRowLimit: 11,
+		},
+		{
+			name:             "Valid/RowLimitLessThanAvailable",
+			rowLimit:         5,
+			availableRows:    10,
+			expectedRowLimit: 6,
+		},
+		{
+			name:             "Valid/RowLimitGreaterThanAvailable",
+			rowLimit:         15,
+			availableRows:    10,
+			expectedRowLimit: 11,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rowLimit := calculateRowLimit(tt.rowLimit, tt.availableRows)
+			require.Equal(t, rowLimit, tt.expectedRowLimit)
 		})
 	}
 }

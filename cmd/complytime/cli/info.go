@@ -25,7 +25,6 @@ import (
 )
 
 const (
-	defaultTableLimit      = 10
 	colWidthControlID      = 12
 	colWidthControlTitle   = 40
 	colWidthImplStatus     = 21
@@ -65,8 +64,10 @@ var (
 // Rule represents details about a rule for easy
 // mapping of rules to plugins.
 type Rule struct {
-	ID     string
-	Plugin string
+	ID          string
+	Plugin      string
+	Description string
+	Parameters  []string
 }
 
 // Control repsents details about a control across
@@ -77,15 +78,6 @@ type Control struct {
 	Description         string
 	ImplemenationStatus string
 	Rules               []Rule
-}
-
-// RuleInfo represents details about a rule
-type RuleInfo struct {
-	ID               string
-	Description      string
-	CheckID          string
-	CheckDescription string
-	Parameters       []string
 }
 
 type infoOptions struct {
@@ -116,7 +108,7 @@ func infoCmd(common *option.Common) *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&infoOpts.controlID, "control", "c", "", "show info for a specific control ID")
 	cmd.Flags().StringVarP(&infoOpts.ruleID, "rule", "r", "", "show info for a specific rule ID")
-	cmd.Flags().IntVarP(&infoOpts.limit, "limit", "l", 10, fmt.Sprintf("limit the number of table rows (default is %d)", defaultTableLimit))
+	cmd.Flags().IntVarP(&infoOpts.limit, "limit", "l", 0, fmt.Sprintf("limit the number of table rows"))
 	cmd.Flags().BoolVarP(&infoOpts.plain, "plain", "p", false, "print the table with minimal formatting")
 	infoOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
@@ -196,9 +188,13 @@ func processControlImplementations(compDefs []oscalTypes.DefinedComponent, appDi
 
 					if ir.Props != nil {
 						for _, p := range *ir.Props {
-							if p.Name == "Rule_Id" && p.Value != "" {
-								controlDetails.Rules = append(controlDetails.Rules, Rule{ID: p.Value, Plugin: pluginForComponent})
-							} else if p.Name == "implementation-status" && p.Value != "" {
+							switch p.Name {
+							case "Rule_Id":
+								rule := extractRuleDetails(*ir.Props)
+								rule.ID = p.Value
+								rule.Plugin = pluginForComponent
+								controlDetails.Rules = append(controlDetails.Rules, rule)
+							case "implementation-status":
 								controlDetails.ImplemenationStatus = p.Value
 							}
 						}
@@ -303,16 +299,12 @@ func filterFrameworkComponents(componentDefinitions []oscalTypes.ComponentDefini
 }
 
 // extractRuleDetails parses properties to fill a RuleInfo struct.
-func extractRuleDetails(props []oscalTypes.Property) RuleInfo {
-	info := RuleInfo{}
+func extractRuleDetails(props []oscalTypes.Property) Rule {
+	info := Rule{}
 	for _, prop := range props {
 		switch prop.Name {
 		case "Rule_Description":
 			info.Description = prop.Value
-		case "Check_Id":
-			info.CheckID = prop.Value
-		case "Check_Description":
-			info.CheckDescription = prop.Value
 		case "Parameter_Id":
 			info.Parameters = append(info.Parameters, prop.Value)
 		}
@@ -384,7 +376,7 @@ func getControlRulesColumnsAndRows(control Control) ([]table.Column, []table.Row
 }
 
 // getRuleParametersColumnsAndRows prepares columns and rows for the rule parameters table.
-func getRuleParametersColumnsAndRows(ruleDetails RuleInfo, setParameters map[string][]string) ([]table.Column, []table.Row) {
+func getRuleParametersColumnsAndRows(ruleDetails Rule, setParameters map[string][]string) ([]table.Column, []table.Row) {
 	var rows []table.Row
 
 	// Sort parameters by ID for consistent ordering in the table
@@ -447,7 +439,7 @@ func getControlListColumnsAndRows(controls []Control) ([]table.Column, []table.R
 	columns := []table.Column{
 		{Title: "Control ID", Width: colWidthControlID},
 		{Title: "Control Title", Width: colWidthControlTitle},
-		{Title: "Implementation Status", Width: colWidthImplStatus},
+		{Title: "Status", Width: colWidthImplStatus},
 		{Title: "Plugins Used", Width: colWidthPluginsUsed},
 	}
 
@@ -474,7 +466,7 @@ func newControlInfoModel(control Control, rowLimit int) terminal.Model {
 	headerFields := strings.Join([]string{
 		renderKeyValuePair("Control ID", control.ID),
 		renderKeyValuePair("Title", control.Title),
-		renderKeyValuePair("Implementation Status", control.ImplemenationStatus),
+		renderKeyValuePair("Status", control.ImplemenationStatus),
 		keyStyle.Render("Description") + ":\n" + valueStyle.Render(wrappedDescription),
 	}, "\n")
 
@@ -482,16 +474,13 @@ func newControlInfoModel(control Control, rowLimit int) terminal.Model {
 
 	columns, rows := getControlRulesColumnsAndRows(control)
 
-	effectiveRuleLimit := rowLimit
-	if effectiveRuleLimit > len(control.Rules) {
-		effectiveRuleLimit = len(control.Rules)
-	}
+	tableHeight := calculateRowLimit(rowLimit, len(rows))
 
 	tbl := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(effectiveRuleLimit+1), // +1 for header row
+		table.WithHeight(tableHeight),
 	)
 
 	tbl.SetStyles(table.Styles{
@@ -502,18 +491,16 @@ func newControlInfoModel(control Control, rowLimit int) terminal.Model {
 	return terminal.Model{
 		Table:     tbl,
 		HeaderMsg: finalHeaderOutput,
-		HelpMsg:   fmt.Sprintf("Showing %d of %d available rules. Use --limit to change max table rows.", effectiveRuleLimit, len(control.Rules)),
+		HelpMsg:   fmt.Sprintf("Showing %d of %d available rules. Use --limit to limit table rows.", tableHeight-1, len(rows)),
 	}
 }
 
 // newRuleInfoModel creates a Bubble Tea model for displaying specific rule details.
-func newRuleInfoModel(ruleDetails RuleInfo, setParameters map[string][]string, rowLimit int) terminal.Model {
+func newRuleInfoModel(ruleDetails Rule, setParameters map[string][]string, rowLimit int) terminal.Model {
 
 	headerFields := strings.Join([]string{
 		renderKeyValuePair("Rule ID", ruleDetails.ID),
 		renderKeyValuePair("Rule Description", ruleDetails.Description),
-		renderKeyValuePair("Check ID", ruleDetails.CheckID),
-		renderKeyValuePair("Check Description", ruleDetails.CheckDescription),
 	}, "\n")
 
 	finalHeaderOutput := infoContainerStyle.Render(headerFields)
@@ -521,16 +508,13 @@ func newRuleInfoModel(ruleDetails RuleInfo, setParameters map[string][]string, r
 	// Prepare the parameters table
 	columns, rows := getRuleParametersColumnsAndRows(ruleDetails, setParameters)
 
-	effectiveParamLimit := rowLimit
-	if effectiveParamLimit > len(rows) {
-		effectiveParamLimit = len(rows)
-	}
+	tableHeight := calculateRowLimit(rowLimit, len(rows))
 
 	tbl := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(effectiveParamLimit+1), // +1 for header row
+		table.WithHeight(tableHeight), // +1 for header row
 	)
 
 	tbl.SetStyles(table.Styles{
@@ -538,7 +522,7 @@ func newRuleInfoModel(ruleDetails RuleInfo, setParameters map[string][]string, r
 		Cell:   tableCellStyle,
 	})
 
-	helpMsg := fmt.Sprintf("Showing %d of %d available parameters. Use --limit to change max table rows.", effectiveParamLimit, len(rows))
+	helpMsg := fmt.Sprintf("Showing %d of %d available parameters. Use --limit to limit table rows.", tableHeight-1, len(rows))
 	if len(rows) == 0 {
 		helpMsg = "No parameters found for this rule."
 	}
@@ -554,17 +538,13 @@ func newRuleInfoModel(ruleDetails RuleInfo, setParameters map[string][]string, r
 func newControlListModel(controls []Control, rowLimit int) terminal.Model {
 	columns, rows := getControlListColumnsAndRows(controls)
 
-	// Ensure row limit does not exceed the total length of the controls list
-	effectiveRowLimit := rowLimit
-	if effectiveRowLimit > len(controls) {
-		effectiveRowLimit = len(controls)
-	}
+	tableHeight := calculateRowLimit(rowLimit, len(rows))
 
 	tbl := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(effectiveRowLimit+1), // +1 for header row
+		table.WithHeight(tableHeight),
 	)
 
 	tbl.SetStyles(table.Styles{
@@ -574,7 +554,7 @@ func newControlListModel(controls []Control, rowLimit int) terminal.Model {
 
 	return terminal.Model{
 		Table:   tbl,
-		HelpMsg: fmt.Sprintf("Showing %d of %d available controls. Use --limit to change max table rows.", effectiveRowLimit, len(controls)),
+		HelpMsg: fmt.Sprintf("Showing %d of %d available contorls . Use --limit to limit table rows.", tableHeight-1, len(rows)),
 	}
 }
 
@@ -590,7 +570,7 @@ func displayControlInfo(opts *infoOptions, controlMap map[string]Control) error 
 
 		_, _ = fmt.Fprintf(opts.Out, "Control ID: %s \n", control.ID)
 		_, _ = fmt.Fprintf(opts.Out, "Title: %s \n", control.Title)
-		_, _ = fmt.Fprintf(opts.Out, "Implementation Status: %s \n", control.ImplemenationStatus)
+		_, _ = fmt.Fprintf(opts.Out, "Status: %s \n", control.ImplemenationStatus)
 		_, _ = fmt.Fprintf(opts.Out, "Description: %s \n", control.Description)
 		_, _ = fmt.Fprintln(opts.Out)
 		terminal.ShowPlainTable(opts.Out, cols, rows)
@@ -620,8 +600,6 @@ func displayRuleInfo(opts *infoOptions, ruleID string, ruleRemarksMap map[string
 	if opts.plain {
 		_, _ = fmt.Fprintf(opts.Out, "Rule ID: %s \n", ruleDetails.ID)
 		_, _ = fmt.Fprintf(opts.Out, "Rule Description: %s \n", ruleDetails.Description)
-		_, _ = fmt.Fprintf(opts.Out, "Check ID: %s \n", ruleDetails.CheckID)
-		_, _ = fmt.Fprintf(opts.Out, "Check Description: %s \n", ruleDetails.CheckDescription)
 		_, _ = fmt.Fprintln(opts.Out)
 		cols, rows := getRuleParametersColumnsAndRows(ruleDetails, setParameters)
 		terminal.ShowPlainTable(opts.Out, cols, rows)
@@ -647,5 +625,20 @@ func displayAllControls(opts *infoOptions, controlMap map[string]Control) error 
 	} else {
 		model := newControlListModel(controls, opts.limit)
 		return runBubbleTeaProgram(model, opts.Out)
+	}
+}
+
+// calculateRowLimit determines how many rows should be displayed based
+// on the number of rows availabe and the limit set by the user.
+func calculateRowLimit(rowLimit int, availableRows int) int {
+
+	if rowLimit > 0 {
+		if rowLimit > availableRows {
+			return availableRows + 1 // +1 for header row
+		} else {
+			return rowLimit + 1
+		}
+	} else {
+		return availableRows + 1
 	}
 }
