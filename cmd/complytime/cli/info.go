@@ -585,8 +585,21 @@ func displayControlInfo(opts *infoOptions, controlMap map[string]Control) error 
 		return fmt.Errorf("control '%s' does not exist in workspace", opts.controlID)
 	}
 
-	model := newControlInfoModel(control, opts.limit)
-	return runBubbleTeaProgram(model, opts.Out)
+	if opts.plain {
+		cols, rows := getControlRulesColumnsAndRows(control)
+
+		_, _ = fmt.Fprintf(opts.Out, "Control ID: %s \n", control.ID)
+		_, _ = fmt.Fprintf(opts.Out, "Title: %s \n", control.Title)
+		_, _ = fmt.Fprintf(opts.Out, "Implementation Status: %s \n", control.ImplemenationStatus)
+		_, _ = fmt.Fprintf(opts.Out, "Description: %s \n", control.Description)
+		_, _ = fmt.Fprintln(opts.Out)
+		terminal.ShowPlainTable(opts.Out, cols, rows)
+		return nil
+	} else {
+		model := newControlInfoModel(control, opts.limit)
+		return runBubbleTeaProgram(model, opts.Out)
+	}
+
 }
 
 // displayRuleInfo handles displaying information for a specific rule.
@@ -604,8 +617,20 @@ func displayRuleInfo(opts *infoOptions, ruleID string, ruleRemarksMap map[string
 	ruleDetails := extractRuleDetails(propsForRule)
 	ruleDetails.ID = ruleID // Ensure ID is set for consistency
 
-	model := newRuleInfoModel(ruleDetails, setParameters, opts.limit)
-	return runBubbleTeaProgram(model, opts.Out)
+	if opts.plain {
+		_, _ = fmt.Fprintf(opts.Out, "Rule ID: %s \n", ruleDetails.ID)
+		_, _ = fmt.Fprintf(opts.Out, "Rule Description: %s \n", ruleDetails.Description)
+		_, _ = fmt.Fprintf(opts.Out, "Check ID: %s \n", ruleDetails.CheckID)
+		_, _ = fmt.Fprintf(opts.Out, "Check Description: %s \n", ruleDetails.CheckDescription)
+		_, _ = fmt.Fprintln(opts.Out)
+		cols, rows := getRuleParametersColumnsAndRows(ruleDetails, setParameters)
+		terminal.ShowPlainTable(opts.Out, cols, rows)
+		return nil
+	} else {
+		model := newRuleInfoModel(ruleDetails, setParameters, opts.limit)
+		return runBubbleTeaProgram(model, opts.Out)
+	}
+
 }
 
 // displayAllControls handles displaying a list controls in the framework.
@@ -614,6 +639,13 @@ func displayAllControls(opts *infoOptions, controlMap map[string]Control) error 
 	for _, control := range controlMap {
 		controls = append(controls, control)
 	}
-	model := newControlListModel(controls, opts.limit)
-	return runBubbleTeaProgram(model, opts.Out)
+
+	if opts.plain {
+		cols, rows := getControlListColumnsAndRows(controls)
+		terminal.ShowPlainTable(opts.Out, cols, rows)
+		return nil
+	} else {
+		model := newControlListModel(controls, opts.limit)
+		return runBubbleTeaProgram(model, opts.Out)
+	}
 }

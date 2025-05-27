@@ -70,17 +70,7 @@ func runList(opts *listOptions) error {
 // ShowDefinitionTable prints a plain table with given framework data.
 func showDefinitionTable(writer io.Writer, frameworks []complytime.Framework) {
 	columns, rows := getDefinitionColumnsAndRows(frameworks)
-	for _, col := range columns {
-		_, _ = fmt.Fprintf(writer, "%-*s", col.Width, col.Title)
-	}
-	_, _ = fmt.Fprintln(writer)
-	for _, row := range rows {
-		for i, cell := range row {
-			_, _ = fmt.Fprintf(writer, "%-*s", columns[i].Width, cell)
-		}
-		_, _ = fmt.Fprintln(writer)
-	}
-
+	terminal.ShowPlainTable(writer, columns, rows)
 }
 
 // ShowPrettyDefinitionTable returns a Model to be used with a `bubbletea` Program that
