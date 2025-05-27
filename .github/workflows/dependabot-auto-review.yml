@@ -7,23 +7,36 @@ on:
       - main
 
 permissions:
-  pull-requests: write # Needed for auto-approving
-  contents: write      # Needed for github/labeler to add labels if not already present
+  contents: read
   issues: write        # Explicitly grant write access to issues for labeling
+  pull-requests: write # Needed for auto-approving
 
 jobs:
   auto-approve-and-label:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Get Versions From Commit Message
+        id: commit_msg
+        run: |
+          COMMIT_SHA=$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")
+          COMMIT_MSG=$(git log --format=%s -n 1 $COMMIT_SHA)
+
+          versions=$(echo "$COMMIT_MSG" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+          read -r current new <<< "$versions"
+          echo "CURRENT_VERSION=$current" >> $GITHUB_ENV
+          echo "NEW_VERSION=$new" >> $GITHUB_ENV
+
       - name: Classify Dependabot PR
         id: classify_pr
         run: |
-          if [[ "${{ github.event.pull_request.title }}" =~ "bump" ]]; then
-            versions=$(echo "${{ github.event.pull_request.title }}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
-            read -r current new <<< "$versions"
-            IFS='.' read -r c_major c_minor c_patch <<< "$current"
-            IFS='.' read -r n_major n_minor n_patch <<< "$new"
+          if [[ -z "${{ env.CURRENT_VERSION }}" || -z "${{ env.NEW_VERSION }}" ]]; then
+            echo "No version information found in commit message. Defaulting to high risk."
+            echo "RISK=high" >> $GITHUB_ENV
+            exit 0
+          else
+            IFS='.' read -r c_major c_minor c_patch <<< "${{ env.CURRENT_VERSION }}"
+            IFS='.' read -r n_major n_minor n_patch <<< "${{ env.NEW_VERSION }}"
             if [[ "$c_major" -eq "$n_major" && "$c_minor" -eq "$n_minor" ]]; then
               echo "Patch update detected. Safe to auto-approve."
               echo "RISK=low" >> $GITHUB_ENV
@@ -34,9 +47,6 @@ jobs:
               echo "Major update detected. Requires manual review."
               echo "RISK=high" >> $GITHUB_ENV
             fi
-          else
-            echo "No version bump detected. Defaulting to high risk."
-            echo "RISK=high" >> $GITHUB_ENV
           fi
 
       - name: Auto-approve Dependabot PR
@@ -58,5 +68,4 @@ jobs:
       - name: Add labels if necessary
         uses: github/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true
