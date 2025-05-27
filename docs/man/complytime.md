@@ -37,6 +37,9 @@ Display help about any command.
 **list**
 List information about supported frameworks and components.
 
+**info**
+Display information about a framework's controls and rules.
+
 **plan**
 Generate a new assessment plan for a given compliance framework ID.
 
