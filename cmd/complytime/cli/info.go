@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
+	"github.com/oscal-compass/oscal-sdk-go/extensions"
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/settings"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
@@ -61,24 +62,37 @@ var (
 				Width(90) // Fixed width for consistent formatting
 )
 
-// Rule represents details about a rule for easy
-// mapping of rules to plugins.
-type Rule struct {
+// rule represents details about a rule for easy mapping of rules to plugins.
+type rule struct {
 	ID          string
 	Plugin      string
 	Description string
 	Parameters  []string
 }
 
-// Control repsents details about a control across
-// component sources.
-type Control struct {
-	ID                  string
-	Title               string
-	Description         string
-	ImplemenationStatus string
-	Rules               []Rule
+// control repsents details about a control across component sources.
+type control struct {
+	ID                   string
+	Title                string
+	Description          string
+	ImplementationStatus string
+	Rules                []rule
 }
+
+// rulePluginMap maps a Rule ID to the plugin that implements it.
+type rulePluginMap map[string]string
+
+// ruleRemarksMap maps a Rule ID to its associated remarks value.
+type ruleRemarksMap map[string]string
+
+// remarksPropertiesMap maps a remarks value to a list of properties.
+type remarksPropertiesMap map[string][]oscalTypes.Property
+
+// indexedControls holds extracted details for Controls, indexed by Control ID.
+type indexedControls map[string]control
+
+// indexedSetParameters maps a Parameter ID to its list of set values.
+type indexedSetParameters map[string][]string
 
 type infoOptions struct {
 	*option.Common
@@ -96,7 +110,7 @@ func infoCmd(common *option.Common) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:     "info <framework-id> [flags]",
-		Short:   "Import OSCAL data from API",
+		Short:   "Show information about a framework's controls and rules",
 		Example: " complytime info anssi_bp28_minimal\n complytime info anssi_bp28_minimal --control r31\n complytime info anssi_bp28_minimal --rule enable_authselect",
 		Args:    cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -108,13 +122,13 @@ func infoCmd(common *option.Common) *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&infoOpts.controlID, "control", "c", "", "show info for a specific control ID")
 	cmd.Flags().StringVarP(&infoOpts.ruleID, "rule", "r", "", "show info for a specific rule ID")
-	cmd.Flags().IntVarP(&infoOpts.limit, "limit", "l", 0, fmt.Sprintf("limit the number of table rows"))
+	cmd.Flags().IntVarP(&infoOpts.limit, "limit", "l", 0, "limit the number of table rows")
 	cmd.Flags().BoolVarP(&infoOpts.plain, "plain", "p", false, "print the table with minimal formatting")
 	infoOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
 
-// runInfo executes the info command using the provided optoions.
+// runInfo executes the info command using the provided options.
 func runInfo(opts *infoOptions) error {
 
 	appDir, err := complytime.NewApplicationDirectory(true)
@@ -130,72 +144,82 @@ func runInfo(opts *infoOptions) error {
 		return fmt.Errorf("failed to find component definitions: %w", err)
 	}
 
-	components := filterFrameworkComponents(compDefs, opts.complyTimeOpts.FrameworkID)
-	if len(components) == 0 {
+	frameworkComponents, validationComponents := loadComponents(compDefs, opts.complyTimeOpts.FrameworkID)
+	if len(frameworkComponents) == 0 {
 		return fmt.Errorf("no components found for framework ID '%s'", opts.complyTimeOpts.FrameworkID)
 	}
 
-	// Use maps for easy lookups of data extracted from component definitions
-	ruleRemarksMap, remarksPropsMap := processComponentProperties(components)
-	controlMap, setParameters := processControlImplementations(components, appDir, validator)
+	rulePlugins := extractRulePluginMapping(validationComponents)
+
+	ruleRemarks, remarksProps := processComponentProperties(frameworkComponents)
+
+	indexedControls, indexedSetParameters := processControlImplementations(frameworkComponents, rulePlugins, appDir, validator)
 
 	// Display info based on controlID or ruleID flag being passed at CLI
 	if opts.controlID != "" {
-		return displayControlInfo(opts, controlMap)
+		return displayControlInfo(opts, indexedControls)
 	} else if opts.ruleID != "" {
-		return displayRuleInfo(opts, opts.ruleID, ruleRemarksMap, remarksPropsMap, setParameters)
+		return displayRuleInfo(opts, opts.ruleID, ruleRemarks, remarksProps, indexedSetParameters)
 	} else {
-		return displayAllControls(opts, controlMap)
+		return displayAllControls(opts, indexedControls)
 	}
+}
 
+// extractRulePluginMapping builds map of rule -> plugins from a list of validation components.
+func extractRulePluginMapping(validationComponents []oscalTypes.DefinedComponent) rulePluginMap {
+	var pluginsForRule = make(rulePluginMap)
+
+	for _, comp := range validationComponents {
+		for _, prop := range *comp.Props {
+			if prop.Name == extensions.RuleIdProp {
+				pluginsForRule[prop.Value] = comp.Title
+			}
+		}
+	}
+	return pluginsForRule
 }
 
 // processControlImplementations extracts control details and set parameters from component definitions.
-func processControlImplementations(compDefs []oscalTypes.DefinedComponent, appDir complytime.ApplicationDirectory, validator *validation.SchemaValidator) (
-	map[string]Control,
-	map[string][]string, // setParameters: maps param ID to its values
-) {
-	controlMap := make(map[string]Control)
-	setParameters := make(map[string][]string)
+func processControlImplementations(components []oscalTypes.DefinedComponent, rulePluginsMap rulePluginMap, appDir complytime.ApplicationDirectory, validator *validation.SchemaValidator) (indexedControls, indexedSetParameters) {
+	controlMap := make(indexedControls)
+	setParameters := make(indexedSetParameters)
 
-	for _, comp := range compDefs {
-		pluginForComponent := comp.Title // Using Title as plugin name
+	for _, comp := range components {
 
 		if comp.ControlImplementations == nil {
 			continue
 		}
 
-		for _, ci := range *comp.ControlImplementations {
-			// Process implemented requirements
-			if ci.ImplementedRequirements != nil {
-				for _, ir := range ci.ImplementedRequirements {
+		for _, controlImp := range *comp.ControlImplementations {
+			if controlImp.ImplementedRequirements != nil {
+				for _, ir := range controlImp.ImplementedRequirements {
 					controlDetails, ok := controlMap[ir.ControlId]
 					if !ok {
 						// Initialize controlDetails if not already present
-						controlTitle, err := getControlTitle(ir.ControlId, ci, appDir, validator)
+						controlTitle, err := getControlTitle(ir.ControlId, controlImp, appDir, validator)
 						if err != nil {
 							logger.Warn("could not get title for control %s: %v", ir.ControlId, err)
 							controlTitle = "N/A"
 						}
 
-						controlDetails = Control{
+						controlDetails = control{
 							ID:          ir.ControlId,
 							Title:       controlTitle,
 							Description: ir.Description,
-							Rules:       []Rule{},
+							Rules:       []rule{},
 						}
 					}
 
 					if ir.Props != nil {
 						for _, p := range *ir.Props {
 							switch p.Name {
-							case "Rule_Id":
+							case extensions.RuleIdProp:
 								rule := extractRuleDetails(*ir.Props)
 								rule.ID = p.Value
-								rule.Plugin = pluginForComponent
+								rule.Plugin = rulePluginsMap[rule.ID]
 								controlDetails.Rules = append(controlDetails.Rules, rule)
 							case "implementation-status":
-								controlDetails.ImplemenationStatus = p.Value
+								controlDetails.ImplementationStatus = p.Value
 							}
 						}
 					}
@@ -204,8 +228,8 @@ func processControlImplementations(compDefs []oscalTypes.DefinedComponent, appDi
 			}
 
 			// Process set parameters
-			if ci.SetParameters != nil {
-				for _, sp := range *ci.SetParameters {
+			if controlImp.SetParameters != nil {
+				for _, sp := range *controlImp.SetParameters {
 					if sp.ParamId != "" && len(sp.Values) > 0 {
 						setParameters[sp.ParamId] = sp.Values
 					}
@@ -217,10 +241,10 @@ func processControlImplementations(compDefs []oscalTypes.DefinedComponent, appDi
 }
 
 // processComponentProperties extracts rule and property information from
-// component definitions info a maps for easy lookups.
-func processComponentProperties(compDefs []oscalTypes.DefinedComponent) (map[string]string, map[string][]oscalTypes.Property) {
-	ruleRemarksMap := make(map[string]string)                 // maps rule ID to its remarks value
-	remarksPropsMap := make(map[string][]oscalTypes.Property) // maps remarks value to list of properties
+// component definitions into indexed maps.
+func processComponentProperties(compDefs []oscalTypes.DefinedComponent) (ruleRemarksMap, remarksPropertiesMap) {
+	ruleRemarksMap := make(ruleRemarksMap)
+	remarksPropsMap := make(remarksPropertiesMap)
 
 	for _, comp := range compDefs {
 		if comp.Props == nil {
@@ -228,7 +252,6 @@ func processComponentProperties(compDefs []oscalTypes.DefinedComponent) (map[str
 		}
 		for _, prop := range *comp.Props {
 			remarksPropsMap[prop.Remarks] = append(remarksPropsMap[prop.Remarks], prop)
-			// only populate ruleRemarksMap if both Value and Remarks are present
 			if prop.Name == "Rule_Id" && prop.Value != "" && prop.Remarks != "" {
 				ruleRemarksMap[prop.Value] = prop.Remarks
 			}
@@ -271,8 +294,10 @@ func getControlTitle(controlID string, controlImplementation oscalTypes.ControlI
 	return "", fmt.Errorf("title for control '%s' not found in catalog", controlID)
 }
 
-// filterFrameworkComponents filters component definitions by framework ID.
-func filterFrameworkComponents(componentDefinitions []oscalTypes.ComponentDefinition, frameworkID string) []oscalTypes.DefinedComponent {
+// loadComponents retrieves components from component definitions by framework ID.
+func loadComponents(componentDefinitions []oscalTypes.ComponentDefinition, frameworkID string) ([]oscalTypes.DefinedComponent, []oscalTypes.DefinedComponent) {
+
+	var frameworkComponents []oscalTypes.DefinedComponent
 	var validationComponents []oscalTypes.DefinedComponent
 
 	for _, compDef := range componentDefinitions {
@@ -282,25 +307,27 @@ func filterFrameworkComponents(componentDefinitions []oscalTypes.ComponentDefini
 
 		for _, component := range *compDef.Components {
 			if component.Type == string(components.Validation) {
+				validationComponents = append(validationComponents, component)
+			} else {
 				if component.ControlImplementations == nil {
 					continue
 				}
 				for _, controlImp := range *component.ControlImplementations {
 					framework, ok := settings.GetFrameworkShortName(controlImp)
 					if ok && framework == frameworkID {
-						validationComponents = append(validationComponents, component)
-						break // Component belongs to this framework, move to next compDef
+						frameworkComponents = append(frameworkComponents, component)
+						break // Component belongs to this framework, move to next component
 					}
 				}
 			}
 		}
 	}
-	return validationComponents
+	return frameworkComponents, validationComponents
 }
 
 // extractRuleDetails parses properties to fill a RuleInfo struct.
-func extractRuleDetails(props []oscalTypes.Property) Rule {
-	info := Rule{}
+func extractRuleDetails(props []oscalTypes.Property) rule {
+	info := rule{}
 	for _, prop := range props {
 		switch prop.Name {
 		case "Rule_Description":
@@ -341,7 +368,7 @@ func renderKeyValuePair(key, value string) string {
 }
 
 // getControlRulesColumnsAndRows prepares columns and rows for a specific control's rules table.
-func getControlRulesColumnsAndRows(control Control) ([]table.Column, []table.Row) {
+func getControlRulesColumnsAndRows(control control) ([]table.Column, []table.Row) {
 	// Sort rules by ID for logical ordering in the table
 	sort.Slice(control.Rules, func(i, j int) bool {
 		return control.Rules[i].ID < control.Rules[j].ID
@@ -376,7 +403,7 @@ func getControlRulesColumnsAndRows(control Control) ([]table.Column, []table.Row
 }
 
 // getRuleParametersColumnsAndRows prepares columns and rows for the rule parameters table.
-func getRuleParametersColumnsAndRows(ruleDetails Rule, setParameters map[string][]string) ([]table.Column, []table.Row) {
+func getRuleParametersColumnsAndRows(ruleDetails rule, setParameters indexedSetParameters) ([]table.Column, []table.Row) {
 	var rows []table.Row
 
 	// Sort parameters by ID for consistent ordering in the table
@@ -414,7 +441,7 @@ func getRuleParametersColumnsAndRows(ruleDetails Rule, setParameters map[string]
 	return columns, rows
 }
 
-func getControlListColumnsAndRows(controls []Control) ([]table.Column, []table.Row) {
+func getControlListColumnsAndRows(controls []control) ([]table.Column, []table.Row) {
 	// Sort controls by ID for logical ordering in the table
 	sort.Slice(controls, func(i, j int) bool {
 		return controls[i].ID < controls[j].ID
@@ -430,7 +457,7 @@ func getControlListColumnsAndRows(controls []Control) ([]table.Column, []table.R
 		row := table.Row{
 			control.ID,
 			control.Title,
-			control.ImplemenationStatus,
+			control.ImplementationStatus,
 			strings.Join(removeDuplicates(plugins), ", "),
 		}
 		rows = append(rows, row)
@@ -460,13 +487,13 @@ func getControlListColumnsAndRows(controls []Control) ([]table.Column, []table.R
 }
 
 // newControlInfoModel creates a Tea model for displaying specific control details.
-func newControlInfoModel(control Control, rowLimit int) terminal.Model {
+func newControlInfoModel(control control, rowLimit int) terminal.Model {
 	// Prepare the header message with control details
 	wrappedDescription := terminal.WrapText(control.Description, 60)
 	headerFields := strings.Join([]string{
 		renderKeyValuePair("Control ID", control.ID),
 		renderKeyValuePair("Title", control.Title),
-		renderKeyValuePair("Status", control.ImplemenationStatus),
+		renderKeyValuePair("Status", control.ImplementationStatus),
 		keyStyle.Render("Description") + ":\n" + valueStyle.Render(wrappedDescription),
 	}, "\n")
 
@@ -496,7 +523,7 @@ func newControlInfoModel(control Control, rowLimit int) terminal.Model {
 }
 
 // newRuleInfoModel creates a Bubble Tea model for displaying specific rule details.
-func newRuleInfoModel(ruleDetails Rule, setParameters map[string][]string, rowLimit int) terminal.Model {
+func newRuleInfoModel(ruleDetails rule, setParameters indexedSetParameters, rowLimit int) terminal.Model {
 
 	headerFields := strings.Join([]string{
 		renderKeyValuePair("Rule ID", ruleDetails.ID),
@@ -535,7 +562,7 @@ func newRuleInfoModel(ruleDetails Rule, setParameters map[string][]string, rowLi
 }
 
 // newControlListModel creates a Bubble Tea model for displaying the list of controls.
-func newControlListModel(controls []Control, rowLimit int) terminal.Model {
+func newControlListModel(controls []control, rowLimit int) terminal.Model {
 	columns, rows := getControlListColumnsAndRows(controls)
 
 	tableHeight := calculateRowLimit(rowLimit, len(rows))
@@ -554,12 +581,12 @@ func newControlListModel(controls []Control, rowLimit int) terminal.Model {
 
 	return terminal.Model{
 		Table:   tbl,
-		HelpMsg: fmt.Sprintf("Showing %d of %d available contorls . Use --limit to limit table rows.", tableHeight-1, len(rows)),
+		HelpMsg: fmt.Sprintf("Showing %d of %d available controls. Use --limit to limit table rows.", tableHeight-1, len(rows)),
 	}
 }
 
 // displayControlInfo handles displaying information for a specific control.
-func displayControlInfo(opts *infoOptions, controlMap map[string]Control) error {
+func displayControlInfo(opts *infoOptions, controlMap indexedControls) error {
 	control, ok := controlMap[opts.controlID]
 	if !ok {
 		return fmt.Errorf("control '%s' does not exist in workspace", opts.controlID)
@@ -570,7 +597,7 @@ func displayControlInfo(opts *infoOptions, controlMap map[string]Control) error 
 
 		_, _ = fmt.Fprintf(opts.Out, "Control ID: %s \n", control.ID)
 		_, _ = fmt.Fprintf(opts.Out, "Title: %s \n", control.Title)
-		_, _ = fmt.Fprintf(opts.Out, "Status: %s \n", control.ImplemenationStatus)
+		_, _ = fmt.Fprintf(opts.Out, "Status: %s \n", control.ImplementationStatus)
 		_, _ = fmt.Fprintf(opts.Out, "Description: %s \n", control.Description)
 		_, _ = fmt.Fprintln(opts.Out)
 		terminal.ShowPlainTable(opts.Out, cols, rows)
@@ -583,10 +610,10 @@ func displayControlInfo(opts *infoOptions, controlMap map[string]Control) error 
 }
 
 // displayRuleInfo handles displaying information for a specific rule.
-func displayRuleInfo(opts *infoOptions, ruleID string, ruleRemarksMap map[string]string, remarksPropsMap map[string][]oscalTypes.Property, setParameters map[string][]string) error {
+func displayRuleInfo(opts *infoOptions, ruleID string, ruleRemarksMap ruleRemarksMap, remarksPropsMap remarksPropertiesMap, setParameters indexedSetParameters) error {
 	remarksForRule, ok := ruleRemarksMap[ruleID]
 	if !ok || remarksForRule == "" {
-		return fmt.Errorf("rule '%s' remarks not found in workspace", ruleID)
+		return fmt.Errorf("rule '%s' remarks not found", ruleID)
 	}
 
 	propsForRule, ok := remarksPropsMap[remarksForRule]
@@ -612,9 +639,9 @@ func displayRuleInfo(opts *infoOptions, ruleID string, ruleRemarksMap map[string
 }
 
 // displayAllControls handles displaying a list controls in the framework.
-func displayAllControls(opts *infoOptions, controlMap map[string]Control) error {
-	var controls []Control
-	for _, control := range controlMap {
+func displayAllControls(opts *infoOptions, indexedControls indexedControls) error {
+	var controls []control
+	for _, control := range indexedControls {
 		controls = append(controls, control)
 	}
 

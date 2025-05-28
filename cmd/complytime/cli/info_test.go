@@ -40,15 +40,15 @@ func TestGetControlRulesColumnsAndRows(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		control              Control
+		control              control
 		expectedColumnTitles []string
 		expectedRows         []table.Row
 	}{
 		{
 			name: "Valid/ControlWithRulesList",
-			control: Control{
+			control: control{
 				ID: "test-control-id",
-				Rules: []Rule{
+				Rules: []rule{
 					{ID: "rule-1", Plugin: "Plugin 1"},
 					{ID: "rule-2", Plugin: "Plugin 2"},
 				},
@@ -79,18 +79,18 @@ func TestGetControlListColumnsAndRows(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		controls             []Control
+		controls             []control
 		expectedColumnTitles []string
 		expectedRows         []table.Row
 	}{
 		{
 			name: "Valid/ControlsList",
-			controls: []Control{
+			controls: []control{
 				{
-					ID:                  "test-control-id",
-					Title:               "Test Control Title",
-					ImplemenationStatus: "implemented",
-					Rules: []Rule{
+					ID:                   "test_control_id",
+					Title:                "Test Control Title",
+					ImplementationStatus: "implemented",
+					Rules: []rule{
 						{ID: "rule-1", Plugin: "plugin-1"},
 						{ID: "rule-2", Plugin: "plugin-1"},
 						{ID: "rule-3", Plugin: "plugin-2"},
@@ -99,7 +99,7 @@ func TestGetControlListColumnsAndRows(t *testing.T) {
 			},
 			expectedColumnTitles: []string{"Control ID", "Control Title", "Status", "Plugins Used"},
 			expectedRows: []table.Row{
-				{"test-control-id", "Test Control Title", "implemented", "plugin-1, plugin-2"},
+				{"test_control_id", "Test Control Title", "implemented", "plugin-1, plugin-2"},
 			},
 		},
 	}
@@ -122,14 +122,14 @@ func TestGetRuleParametersColumnsAndRows(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		ruleInfo             Rule
+		ruleInfo             rule
 		setParameters        map[string][]string
 		expectedColumnTitles []string
 		expectedRows         []table.Row
 	}{
 		{
 			name: "Valid/RuleParametersList",
-			ruleInfo: Rule{
+			ruleInfo: rule{
 				ID:          "rule-1",
 				Description: "Rule 1",
 				Parameters:  []string{"param-1", "param-2"},
