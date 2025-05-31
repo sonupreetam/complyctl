@@ -5,10 +5,22 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
-    allow:
-      - dependency-type: "all"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"

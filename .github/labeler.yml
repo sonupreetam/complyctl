@@ -1,0 +1,3 @@
+security-update:
+  - body: 'github.com/advisories/GHSA'
+  - title: '\(Security\)'
