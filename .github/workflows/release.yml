@@ -1,16 +1,13 @@
-name: Full Release
+name: Release
 
 on:
   workflow_dispatch:
-  #push:
-  #  tags:
-  #    - 'v[0-9]+.[0-9]+.[0-9]+' # Matches SemVer tags like v1.2.3
 
 permissions: {}
 
 jobs:
   release:
-    name: Full Release
+    name: Release
     runs-on: ubuntu-latest
 
     permissions:
