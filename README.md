@@ -28,7 +28,18 @@ complytime plan <framework-id>
 ...
 # The file will be written out to assessment-plan.json in the specified workspace.
 # Defaults to current working directory.
+
 cat assessment-plan.json
+# The default assessment-plan.json will be available in the complytime workspace (complytime/assessment-plan.json).
+
+complytime plan <framework-id> --dry-run 
+# See the default contents of the assessment-plan.json.
+
+complytime plan <framework-id> --dry-run --out config.yml
+# Customize the assessment-plan.json with the "out" flag. Updates can be made in the config.yml. 
+
+complytime plan <framework-id> --with-config config.yml
+# The config.yml will be loaded when passing "with-config" to customize the assessment-plan.json. 
 ```
 
 Run the generate command to `generate` policy artifacts in the workspace and run the `scan` command to execute the generated artifacts and get results.
