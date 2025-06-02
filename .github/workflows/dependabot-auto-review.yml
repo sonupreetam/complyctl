@@ -53,7 +53,7 @@ jobs:
         id: auto_approve_pr
         # Only auto-approve if the risk is low or medium
         if: ${{ env.RISK != 'high' }}
-        uses: actions/github-script@26f1c243f728c0b568f97b198103c800b46487e5 # v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             github.rest.pulls.createReview({
