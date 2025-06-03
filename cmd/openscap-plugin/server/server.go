@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-// The code here is still under development and minimally functional for testing purposes.
 
 package server
 
