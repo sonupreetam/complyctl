@@ -24,6 +24,12 @@ complytime list
 ```
 
 ```bash
+complytime info <framework-id>
+...
+# Display information about a framework's controls and rules.
+```
+
+```bash
 complytime plan <framework-id>
 ...
 # The file will be written out to assessment-plan.json in the specified workspace.
