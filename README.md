@@ -44,8 +44,8 @@ complytime plan <framework-id> --dry-run
 complytime plan <framework-id> --dry-run --out config.yml
 # Customize the assessment-plan.json with the "out" flag. Updates can be made in the config.yml.
 
-complytime plan <framework-id> --with-config config.yml
-# The config.yml will be loaded when passing "with-config" to customize the assessment-plan.json.
+complytime plan <framework-id> --scope-config config.yml
+# The config.yml will be loaded when passing "scope-config" to customize the assessment-plan.json.
 ```
 
 Run the generate command to `generate` policy artifacts in the workspace and run the `scan` command to execute the generated artifacts and get results.
