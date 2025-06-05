@@ -15,8 +15,8 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/internal/complytime"
 )
 
 const assessmentResultsLocationJson = "assessment-results.json"
@@ -38,7 +38,7 @@ func scanCmd(common *option.Common) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "scan [flags]",
 		Short:        "Scan environment with assessment plan",
-		Example:      "complytime scan",
+		Example:      "complyctl scan",
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {

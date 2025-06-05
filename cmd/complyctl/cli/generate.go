@@ -11,8 +11,8 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/internal/complytime"
 )
 
 // generateOptions defines options for the "generate" subcommand
@@ -31,7 +31,7 @@ func generateCmd(common *option.Common) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "generate [flags]",
 		Short:   "Generate PVP policy from an assessment plan",
-		Example: "complytime generate",
+		Example: "complyctl generate",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runGenerate(cmd, generateOpts)

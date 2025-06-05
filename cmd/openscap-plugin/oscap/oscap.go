@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
 	"github.com/hashicorp/go-hclog"
 )
 

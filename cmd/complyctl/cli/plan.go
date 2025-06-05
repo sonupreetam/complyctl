@@ -14,9 +14,9 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
-	"github.com/complytime/complytime/internal/complytime/plan"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/internal/complytime"
+	"github.com/complytime/complyctl/internal/complytime/plan"
 )
 
 const assessmentPlanLocation = "assessment-plan.json"

@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/pkg/log"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/pkg/log"
 )
 
 var logger hclog.Logger
@@ -28,11 +28,12 @@ func enableDebug(opts *option.Common) {
 	}
 }
 
-// New creates a new cobra.Command root for ComplyTime
+// New creates a new cobra.Command root for complyctl
 func New() *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:           "complytime [command]",
+		Use:           "complyctl [command]",
+		Aliases:       []string{"complytime"},
 		SilenceErrors: true,
 		SilenceUsage:  false,
 	}

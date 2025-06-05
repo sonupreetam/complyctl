@@ -12,7 +12,7 @@ import (
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
 )
 
 // This is a supporting function to get the profile element from the testing Datastream.

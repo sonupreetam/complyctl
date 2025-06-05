@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
 )
 
 func setupTestFiles() error {

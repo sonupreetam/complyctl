@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/server"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/server"
 
 	hplugin "github.com/hashicorp/go-plugin"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/plugin"

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
-	"github.com/complytime/complytime/cmd/openscap-plugin/oscap"
-	"github.com/complytime/complytime/cmd/openscap-plugin/xccdf"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/oscap"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/xccdf"
 )
 
 func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {

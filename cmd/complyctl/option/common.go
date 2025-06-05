@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/complytime/complytime/internal/complytime"
+	"github.com/complytime/complyctl/internal/complytime"
 )
 
-// Common options for the ComplyTime CLI.
+// Common options for the complytctl CLI.
 type Common struct {
 	Debug bool
 	Output
@@ -30,7 +30,7 @@ func (o *Common) BindFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&o.Debug, "debug", "d", false, "output debug logs")
 }
 
-// ComplyTime options are configurations needed for the ComplyTime CLI to run.
+// ComplyTime options are configurations needed for the complyctl CLI to run.
 // They are less generic the Common options and would only be used in a subset of
 // commands.
 type ComplyTime struct {
