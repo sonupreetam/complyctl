@@ -94,9 +94,8 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Version bump from ${{ env.FROM_VERSION }} to ${{ env.TO_VERSION }}
-            Breaking risk based on semantic versioning: ${{ env.RISK }}
-            Before merging, please ensure:
-            - The update does not introduce breaking changes.
-            - The update has passed in CI tests.
-            - The update is also reviewed by a maintainer.
+            Hey maintainer, I did what I could. Now it's up to you and here are some tips that might help:
+            - The update is classified as **${{ env.RISK }}** risk based on semantic versioning.
+            - Ensure the PR has passed all CI tests. If not, investigate the failures.
+            - Ensure no vulnerabilities are reported by "Dependency Review" test.
+            - Be diligent. If you are unsure, ask another maintainer for additional review.
