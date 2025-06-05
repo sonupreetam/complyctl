@@ -3,7 +3,7 @@
 
 version: 2
 
-project_name: complytime
+project_name: complyctl
 
 before:
   hooks:
@@ -13,18 +13,18 @@ before:
 
 builds:
   - #
-    id: complytime
-    binary: complytime
+    id: complyctl
+    binary: complyctl
     env:
       - CGO_ENABLED=0
     goos:
       - linux
     ldflags:
-      - "-X github.com/complytime/complytime/internal/version.version={{ .Version }}"
-      - "-X github.com/complytime/complytime/internal/version.gitTreeState={{ .GitTreeState }}"
-      - "-X github.com/complytime/complytime/internal/version.commit={{ .Commit }}"
-      - "-X github.com/complytime/complytime/internal/version.buildDate={{ .Date }}"
-    main: ./cmd/complytime/
+      - "-X github.com/complytime/complyctl/internal/version.version={{ .Version }}"
+      - "-X github.com/complytime/complyctl/internal/version.gitTreeState={{ .GitTreeState }}"
+      - "-X github.com/complytime/complyctl/internal/version.commit={{ .Commit }}"
+      - "-X github.com/complytime/complyctl/internal/version.buildDate={{ .Date }}"
+    main: ./cmd/complyctl/
   - #
     id: openscap-plugin
     binary: openscap-plugin

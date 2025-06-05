@@ -18,7 +18,7 @@ permissions: read-all
 
 jobs:
   analysis:
-    if: ${{ github.repository == 'complytime/complytime' }}
+    if: ${{ github.repository == 'complytime/complyctl' }}
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:

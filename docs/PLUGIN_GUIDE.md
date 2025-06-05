@@ -1,19 +1,19 @@
 # Plugin Authoring
 
-ComplyTime can be extended to support desired policy engines (PVPs) by the use of plugins.
-The plugin acts as the integration between ComplyTime and the PVPs native interface.
+Complyctl can be extended to support desired policy engines (PVPs) by the use of plugins.
+The plugin acts as the integration between complyctl and the PVPs native interface.
 Each plugin is responsible for converting the policy content described in OSCAL into the input format expected by the PVP.
-In addition, the plugin converts the raw results provided by the PVP into the schema used by ComplyTime to generate OSCAL output.
+In addition, the plugin converts the raw results provided by the PVP into the schema used by complyctl to generate OSCAL output.
 
-Plugins communicate with ComplyTime via gRPC and can be authored using any preferred language.
-The plugin acts as the gRPC server while the ComplyTime CLI acts as the client.
-When a `complytime` command is run, it invokes the appropriate method served by the plugin.
+Plugins communicate with complyctl via gRPC and can be authored using any preferred language.
+The plugin acts as the gRPC server while the complyctl CLI acts as the client.
+When a `complyctl` command is run, it invokes the appropriate method served by the plugin.
 
-ComplyTime is built on [compliance-to-policy-go](https://github.com/oscal-compass/compliance-to-policy-go/ which provides a flexible plugin framework for leveraging OSCAL with various PVPs. For developers choosing Golang, the same SDK can be used for plugin authoring.
+Complyctl is built on [compliance-to-policy-go](https://github.com/oscal-compass/compliance-to-policy-go/ which provides a flexible plugin framework for leveraging OSCAL with various PVPs. For developers choosing Golang, the same SDK can be used for plugin authoring.
 
 ## Plugin Discovery
 
-ComplyTime performs automated plugin discovery using the compliance-to-policy-go [plugin manager](https://github.com/complytime/compliance-to-policy-go/blob/CPLYTM-272/plugin/discovery.go).
+Complyctl performs automated plugin discovery using the compliance-to-policy-go [plugin manager](https://github.com/complytime/compliance-to-policy-go/blob/CPLYTM-272/plugin/discovery.go).
 Plugins are defined using manifest files placed in the `c2p-plugins` directory.
 The plugin manifest is a JSON file that provides metadata about the plugin.
 Check the quick start [guide](QUICK_START.md) to see an example.
@@ -43,16 +43,16 @@ Check the quick start [guide](QUICK_START.md) to see an example.
 
 ### Directory Naming Conventions
 
-In order to support automated aggregation of output files from multiple plugins the following directory names are expected by ComplyTime:
+In order to support automated aggregation of output files from multiple plugins the following directory names are expected by complyctl :
 
-**Note:** The `workspace` path will be provided by ComplyTime via the [configuration](https://github.com/complytime/complytime/blob/6cf2e92aff852119bba83e579e2c6d8700e4bcec/internal/complytime/plugins.go#L72) and represents the user's desired working directory for all ComplyTime activities.
+**Note:** The `workspace` path will be provided by complyctl via the [configuration](https://github.com/complytime/complyctl/blob/6cf2e92aff852119bba83e579e2c6d8700e4bcec/internal/complytime/plugins.go#L72) and represents the user's desired working directory for all complyctl activities.
 
 - `{workspace}/{plugin name}/results` # files for evidence collection
 - `{workspace}/{plugin name}/remediations` # files for automated remediation
 
 ### Plugin Selection
 
-ComplyTime generates a mapping of plugins to validation components at runtime.
+Complyctl generates a mapping of plugins to validation components at runtime.
 This mapping uses the `title` of the validation component to find a matching plugin with that ID (defined in manifest).
 
 ```json

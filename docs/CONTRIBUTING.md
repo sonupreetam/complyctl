@@ -1,6 +1,6 @@
-# Contributing to ComplyTime
+# Contributing to Complyctl
 
-Thank you for your interest in contributing to ComplyTime! We welcome contributions from the community.
+Thank you for your interest in contributing to complyctl! We welcome contributions from the community.
 
 ## How to Contribute
 
@@ -26,6 +26,6 @@ Please adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interacti
 
 ## Reporting Issues
 
-If you encounter any issues, please [open an issue](https://github.com/complytime/complytime/issues) on GitHub.
+If you encounter any issues, please [open an issue](https://github.com/complytime/complyctl/issues) on GitHub.
 
 Thank you for contributing!

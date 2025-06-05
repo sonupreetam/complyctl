@@ -38,7 +38,7 @@ echo "Installing dependencies..."
 dnf update -y
 dnf install git wget make scap-security-guide -y
 rm -rf /usr/bin/go
-go_mod="https://raw.githubusercontent.com/complytime/complytime/main/go.mod"
+go_mod="https://raw.githubusercontent.com/complytime/complyctl/main/go.mod"
 go_version=$(curl -s $go_mod | grep '^go' | awk '{print $2}')
 go_tar_file=go$go_version.linux-amd64.tar.gz
 wget "https://go.dev/dl/$go_tar_file"
@@ -47,19 +47,19 @@ rm -rf "$go_tar_file"
 export PATH=$PATH:/usr/local/go/bin
 source ~/.bash_profile
 
-# Install and build complytime
-echo "Cloning the Complytime repository..."
-complytimerepo="${REPO:-"https://github.com/complytime/complytime"}"
-complytimebranch="${BRANCH:-"main"}"
-git clone -b "${complytimebranch}" "${complytimerepo}"
-cd complytime && make build && cp ./bin/complytime /usr/local/bin
-echo "Complytime installed successfully!"
-# Run complytime list to create the workspace
+# Install and build complyctl
+echo "Cloning the complyctl repository..."
+complyctlrepo="${REPO:-"https://github.com/complytime/complyctl"}"
+complyctlbranch="${BRANCH:-"main"}"
+git clone -b "${complyctlbranch}" "${complyctlrepo}"
+cd complyctl && make build && cp ./bin/complyctl /usr/local/bin
+echo "complyctl installed successfully!"
+# Run complyctl list to create the workspace
 set +e
 # Running list command that will fail due to no requirements files
-echo "Attempting to run the command complytime list."
-bin/complytime list 2>/dev/null
-echo "An error occurred, but script continues after the complytime list."
+echo "Attempting to run the command complyctl list."
+bin/complyctl list 2>/dev/null
+echo "An error occurred, but script continues after the complyctl list."
 # Copy the artifacts to workspace
 cp docs/samples/sample-component-definition.json ~/.local/share/complytime/bundles
 cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.local/share/complytime/controls
