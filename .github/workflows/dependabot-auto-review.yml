@@ -42,7 +42,7 @@ jobs:
             if [[ "$c_major" -eq "$n_major" && "$c_minor" -eq "$n_minor" ]]; then
               echo "Patch update detected. Safe to auto-approve."
               echo "RISK=low" >> $GITHUB_ENV
-            else if [[ "$c_major" -eq "$n_major" && "$c_minor" -lt "$n_minor" ]]; then
+            elif [[ "$c_major" -eq "$n_major" && "$c_minor" -lt "$n_minor" ]]; then
               echo "Minor update detected. Safe to auto-approve but requires maintainer review."
               echo "RISK=medium" >> $GITHUB_ENV
             else
