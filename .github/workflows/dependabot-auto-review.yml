@@ -24,30 +24,33 @@ jobs:
 
       - name: Get Versions From Commit Message
         run: |
-          COMMIT_SUBJECT=$(git log -1 --format=%s)
-          versions=($(grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' <<< "$COMMIT_SUBJECT"))
-          echo "FROM_VERSION=${versions[0]}" >> $GITHUB_ENV
-          echo "TO_VERSION=${versions[1]}" >> $GITHUB_ENV
+          COMMIT_SUBJECT="$(git log -1 --format=%s)"
+          mapfile -t versions < <(grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' <<< "$COMMIT_SUBJECT")
+
+          if [[ ${#versions[@]} -eq 2 ]]; then
+            echo "FROM_VERSION=${versions[0]}" >> "$GITHUB_ENV"
+            echo "TO_VERSION=${versions[1]}" >> "$GITHUB_ENV"
+          fi
 
       - name: Classify Dependabot PR
         id: classify_pr
         run: |
           if [[ -z "${{ env.FROM_VERSION }}" || -z "${{ env.TO_VERSION }}" ]]; then
             echo "No version information found in commit message. Defaulting to high risk."
-            echo "RISK=high" >> $GITHUB_ENV
+            echo "RISK=high" >> "$GITHUB_ENV"
             exit 0
           else
-            IFS='.' read -r c_major c_minor c_patch <<< "${{ env.FROM_VERSION }}"
-            IFS='.' read -r n_major n_minor n_patch <<< "${{ env.TO_VERSION }}"
+            IFS='.' read -r c_major c_minor _ <<< "${{ env.FROM_VERSION }}"
+            IFS='.' read -r n_major n_minor _ <<< "${{ env.TO_VERSION }}"
             if [[ "$c_major" -eq "$n_major" && "$c_minor" -eq "$n_minor" ]]; then
               echo "Patch update detected. Safe to auto-approve."
-              echo "RISK=low" >> $GITHUB_ENV
+              echo "RISK=low" >> "$GITHUB_ENV"
             elif [[ "$c_major" -eq "$n_major" && "$c_minor" -lt "$n_minor" ]]; then
               echo "Minor update detected. Safe to auto-approve but requires maintainer review."
-              echo "RISK=medium" >> $GITHUB_ENV
+              echo "RISK=medium" >> "$GITHUB_ENV"
             else
               echo "Major update detected. Requires manual review."
-              echo "RISK=high" >> $GITHUB_ENV
+              echo "RISK=high" >> "$GITHUB_ENV"
             fi
           fi
 
@@ -67,19 +70,32 @@ jobs:
             });
             console.log('Dependabot PR approved successfully.');
 
-      - name: Add labels if necessary
-        uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
+      - name: Add "help wanted" label if conditions match
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
-          sync-labels: true
+          script: |
+            const title = context.payload.pull_request.title.toLowerCase();
+            const body = context.payload.pull_request.body?.toLowerCase() || '';
+            const shouldLabel = title.includes('security') || body.includes('github.com/advisories/ghsa');
+
+            if (shouldLabel) {
+              console.log('Condition met, adding label "security-update"...');
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: ['help wanted'],
+              });
+              console.log('Label "help wanted" added successfully.');
+            }
 
       - name: Comment on PR
         uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4.0.0
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Version bump from ${{ env.FROM_VERSION }} to ${{ env.TO_VERSION }}
-            Breaking risk based on semantic versioning: ${{ env.RISK }}
-            Before merging, please ensure:
-            - The update does not introduce breaking changes.
-            - The update has passed in CI tests.
-            - The update is also reviewed by a maintainer.
+            Hey maintainer, I did what I could. Now it's up to you and here are some tips that might help:
+            - The update is classified as **${{ env.RISK }}** risk based on semantic versioning.
+            - Ensure the PR has passed all CI tests. If not, investigate the failures.
+            - Ensure no vulnerabilities are reported by "Dependency Review" test.
+            - Be diligent. If you are unsure, ask another maintainer for additional review.

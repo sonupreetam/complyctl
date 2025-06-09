@@ -18,9 +18,3 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    groups:
-      patch-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "patch"
