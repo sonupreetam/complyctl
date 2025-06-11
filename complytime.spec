@@ -1,37 +1,65 @@
+# SPDX-License-Identifier: Apache-2.0
+
+%global goipath github.com/complytime/complytime
+%global base_url https://%{goipath}
+%global gopath %{_builddir}/go
+
 Name:           complytime
-Version:        0.0.3
-Release:        1%{?dist}
-Summary:        ComplyTime leverages OSCAL to perform compliance assessment activities, using plugins for each stage of the lifecycle.
-
+Version:        0.0.6
+Release:        %autorelease
+Summary:        Tool to perform compliance assessment activities, scaled by plugins
 License:        Apache-2.0
-URL:            https://github.com/complytime/complytime
-Source0:        https://github.com/complytime/complytime/archive/refs/tags/v0.0.3.tar.gz
+URL:            %{base_url}
+Source0:        %{base_url}/archive/refs/tags/v%{version}.tar.gz
 
+# git is temporarily used
+BuildRequires:  git
 BuildRequires:  golang
-BuildRequires:  make
-BuildRequires:  pandoc
+BuildRequires:  go-rpm-macros
+
+%gometa -f
 
 %description
-ComplyTime leverages OSCAL to perform compliance assessment activities, using plugins for each stage of the lifecycle.
+%{name} leverages OSCAL to perform compliance assessment activities, using
+plugins for each stage of the lifecycle.
 
 %package        openscap-plugin
 Summary:        A plugin which extends the ComplyTime capabilities to use OpenSCAP
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       scap-security-guide
 %description    openscap-plugin
-openscap-plugin is a plugin which extends the ComplyTime capabilities to use OpenSCAP. The plugin communicates
-with ComplyTime via gRPC, providing a standard and consistent communication mechanism that gives independence
-for plugin developers to choose their preferred languages.
+openscap-plugin is a plugin which extends the ComplyTime capabilities to use
+OpenSCAP. The plugin communicates with ComplyTime via gRPC, providing a
+standard and consistent communication mechanism that gives independence for
+plugin developers to choose their preferred languages.
 
 %prep
-%setup -q
-
-%undefine _missing_build_ids_terminate_build
-%undefine _debugsource_packages
+%autosetup -n %{name}-%{version}
+mkdir -p %{gopath}/src/github.com/complytime
+ln -s %{_builddir}/%{name}-%{version} %{gopath}/src/github.com/complytime/complytime
 
 %build
-make build
-make man
+BUILD_DATE_GO=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+# Set up environment variables and flags to build properly and securely
+%set_build_flags
+
+# Align GIT_COMMIT and GIT_TAG with version for simplicity
+GO_LD_EXTRAFLAGS="-X %{goipath}/internal/version.version=%{version} \
+                  -X %{goipath}/internal/version.gitTreeState=clean \
+                  -X %{goipath}/internal/version.commit=%{version} \
+                  -X %{goipath}/internal/version.buildDate=${BUILD_DATE_GO}"
+
+# Adapt go env to RPM build environment
+export GO111MODULE=on
+export GOPATH=%{gopath}
+
+# Define and create the output directory for binaries
+GO_BUILD_BINDIR=./bin
+mkdir -p ${GO_BUILD_BINDIR}
+
+# Not calling the macro for better control on go env variables
+go build -o ${GO_BUILD_BINDIR}/ -ldflags="${GO_LD_EXTRAFLAGS}" ./cmd/...
 
 %install
 # Install ComplyTime directories
@@ -42,33 +70,38 @@ install -d -m 0755 %{buildroot}%{_sysconfdir}/%{name}/config.d
 install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5}
 
 # Copy sample data to be consumed by ComplyTime CLI
-cp -r docs/samples %{buildroot}%{_datadir}/%{name}
+cp -rp docs/samples %{buildroot}%{_datadir}/%{name}
 
 # Install files for ComplyTime CLI
-install -m 0755 bin/complytime %{buildroot}%{_bindir}/complytime
-install -m 0644 docs/man/complytime.1 %{buildroot}%{_mandir}/man1/complytime.1
+install -p -m 0755 bin/complytime %{buildroot}%{_bindir}/complytime
+install -p -m 0644 docs/man/complytime.1 %{buildroot}%{_mandir}/man1/complytime.1
 
 # Install files for openscap-plugin package
-install -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{name}/plugins/openscap-plugin
-install -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
+install -p -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{name}/plugins/openscap-plugin
+install -p -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
 
 %check
-make test-unit
+# Run unit tests
+go test -race -v ./...
 
 %files
 %defattr(0644, root, root, 0755)
 %attr(0755, root, root) %{_bindir}/complytime
 %license LICENSE
-%doc %{_mandir}/man1/complytime.1*
+%{_mandir}/man1/complytime.1*
 %{_datadir}/%{name}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json}
 %{_datadir}/%{name}/{plugins,bundles,controls}
 %{_sysconfdir}/%{name}/config.d
 
 %files          openscap-plugin
 %attr(0755, root, root) %{_libexecdir}/%{name}/plugins/openscap-plugin
-%doc %{_mandir}/man5/c2p-openscap-manifest.5*
+%{_mandir}/man5/c2p-openscap-manifest.5*
 
 %changelog
+* Wed Jun 11 2025 Marcus Burghardt <maburgha@redhat.com>
+- Bump to upstream version v0.0.6
+- Align with Fedora Package Guidelines
+
 * Tue May 6 2025 Qingmin Duanmu <qduanmu@redhat.com>
 - Add complytime and openscap plugin man pages
 
