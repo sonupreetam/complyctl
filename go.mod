@@ -3,7 +3,7 @@ module github.com/complytime/complytime
 go 1.24.0
 
 require (
-	github.com/ComplianceAsCode/compliance-operator v1.5.0
+	github.com/ComplianceAsCode/compliance-operator v1.6.2
 	github.com/adrg/xdg v0.5.3
 	github.com/antchfx/xmlquery v1.4.4
 	github.com/charmbracelet/bubbles v0.21.0
@@ -77,8 +77,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/openshift/api v0.0.0-20231117201702-2ea16bbab164 // indirect
-	github.com/openshift/library-go v0.0.0-20231102154438-cfcf2b4fbc87 // indirect
+	github.com/openshift/api v0.0.0-20240830142653-85dc560939ef // indirect
+	github.com/openshift/library-go v0.0.0-20240821135116-ade3966091b1 // indirect
 	github.com/openshift/machine-config-operator v0.0.1-0.20230815171034-c2bb862bc08a // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -116,7 +116,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.33.0 // indirect
 	k8s.io/apimachinery v0.33.0 // indirect
-	k8s.io/apiserver v0.32.1 // indirect
+	k8s.io/apiserver v0.33.0 // indirect
 	k8s.io/client-go v0.33.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
