@@ -25,7 +25,8 @@ const assessmentResultsLocationMd = "assessment-results.md"
 // scanOptions defined options for the scan subcommand.
 type scanOptions struct {
 	*option.Common
-	complyTimeOpts *option.ComplyTime
+	complyTimeOpts   *option.ComplyTime
+	withPluginConfig string
 }
 
 // scanCmd creates a new cobra.Command for the version subcommand.
@@ -44,6 +45,7 @@ func scanCmd(common *option.Common) *cobra.Command {
 			return runScan(cmd, scanOpts)
 		},
 	}
+	cmd.Flags().StringVarP(&scanOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located.")
 	cmd.Flags().BoolP("with-md", "m", false, "If true, assessement-result markdown will be generated")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
@@ -92,6 +94,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
+	pluginOptions.UserConfigRoot = opts.withPluginConfig
 	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
 	if cleanup != nil {
 		defer cleanup()
