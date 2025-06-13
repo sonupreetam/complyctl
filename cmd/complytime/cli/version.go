@@ -17,7 +17,7 @@ func versionCmd(common *option.Common) *cobra.Command {
 		Short: "Print the version",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return version.WriteVersion(common.Output.Out)
+			return version.WriteVersion(common.Out)
 		},
 	}
 }
