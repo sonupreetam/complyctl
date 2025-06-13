@@ -1,10 +1,17 @@
+version: "2"
 linters:
+  default: standard   # https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
-    - errcheck        # Checks for unchecked errors
-    - gosimple        # Finds code simplifications
-    - govet           # Vet checks for various errors
-    - ineffassign     # Finds useless assignments
-    - staticcheck     # Comprehensive static analysis
-    - unused          # Finds unused variables, functions, etc.
     - gosec           # Security checks for Go code
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+formatters:
+  enable:
     - goimports       # Checks import statements are formatted
+  exclusions:
+    generated: lax
