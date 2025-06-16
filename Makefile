@@ -1,12 +1,14 @@
 GO_BUILD_PACKAGES := ./cmd/...
 GO_BUILD_BINDIR :=./bin
-GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
-GIT_TAG :="$(shell git tag | sort -V | tail -1)"
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_TAG ?= $(shell git tag | sort -V | tail -1 2>/dev/null || echo "v0.0.0")
+GIT_TREE_STATE ?= $(shell test -n "`git status --porcelain 2>/dev/null`" && echo "dirty" || echo "clean")
+BUILD_DATE ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-GO_LD_EXTRAFLAGS :=-X github.com/complytime/complytime/internal/version.version="$(GIT_TAG)" \
-				   -X github.com/complytime/complytime/internal/version.gitTreeState=$(shell test -n "`git status --porcelain`" && echo "dirty" || echo "clean") \
-				   -X github.com/complytime/complytime/internal/version.commit="$(GIT_COMMIT)" \
-				   -X github.com/complytime/complytime/internal/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
+GO_LD_EXTRAFLAGS := -X github.com/complytime/complytime/internal/version.version="$(GIT_TAG)" \
+                    -X github.com/complytime/complytime/internal/version.gitTreeState=$(GIT_TREE_STATE) \
+                    -X github.com/complytime/complytime/internal/version.commit="$(GIT_COMMIT)" \
+                    -X github.com/complytime/complytime/internal/version.buildDate="$(BUILD_DATE)"
 
 MAN_COMPLYTIME = docs/man/complytime.md
 MAN_COMPLYTIME_OUTPUT = docs/man/complytime.1
