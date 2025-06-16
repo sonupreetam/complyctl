@@ -162,11 +162,9 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 			return err
 		}
 		arMarkdownPath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentResultsLocationMd)
-		templateValues, err := framework.CreateResultsValues(*catalog, *ap, *assessmentResults)
-		if err != nil {
-			return err
-		}
-		assessmentResultsMd, err := templateValues.GenerateAssessmentResultsMd(arMarkdownPath)
+
+		posture := framework.NewPosture(assessmentResults, catalog, ap, logger)
+		assessmentResultsMd, err := posture.Generate(arMarkdownPath)
 		if err != nil {
 			return err
 		}
