@@ -86,6 +86,32 @@ cat > ~/.local/share/complytime/plugins/c2p-openscap-manifest.json << EOF
 EOF
 ```
 
+## Step 4: Edit plugin configuration (optional)
+```bash
+mkdir -p /etc/complyctl/config.d
+cp ~/.local/share/complytime/plugins/c2p-openscap-manifest.json /etc/complyctl/config.d
+```
+
+Edit `/etc/complyctl/config.d/c2p-openscap-manifest.json` to keep only the desired changes. e.g.:
+```json
+{
+  "configuration": [
+    {
+      "name": "policy",
+      "default": "custom_tailoring_policy.xml",
+    },
+    {
+      "name": "arf",
+      "default": "custom_arf.xml",
+    },
+    {
+      "name": "results",
+      "default": "custom_results.xml",
+    }
+  ]
+}
+```
+
 ### Using with the openscap-plugin
 
 If using the openscap-plugin, there are two prerequisites:
