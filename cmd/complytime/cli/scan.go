@@ -95,7 +95,7 @@ func runScan(cmd *cobra.Command, opts *scanOptions) error {
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
 	pluginOptions.UserConfigRoot = opts.withPluginConfig
-	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
+	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions, logger)
 	if cleanup != nil {
 		defer cleanup()
 	}

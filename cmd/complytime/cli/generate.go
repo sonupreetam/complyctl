@@ -84,7 +84,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
 	pluginOptions.UserConfigRoot = opts.withPluginConfig
-	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
+	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions, logger)
 	if cleanup != nil {
 		defer cleanup()
 	}

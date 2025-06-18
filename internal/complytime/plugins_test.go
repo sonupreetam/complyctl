@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
 )
 
 var testPluginConfigRoot = filepath.Join("testdata", "complytime", "plugins")
 
 func TestPluginOptions(t *testing.T) {
+	testLogger := hclog.NewNullLogger()
 	tests := []struct {
 		name       string
 		selections PluginOptions
@@ -65,7 +67,7 @@ func TestPluginOptions(t *testing.T) {
 				require.EqualError(t, err, c.wantErr)
 			} else {
 				require.NoError(t, err)
-				gotMap, _ := c.selections.ToMap("openscap")
+				gotMap, _ := c.selections.ToMap("openscap", testLogger)
 				require.Equal(t, c.wantMap, gotMap)
 			}
 		})
