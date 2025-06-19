@@ -21,13 +21,14 @@ import (
 )
 
 const (
-	compDefSuffix       = "component-definition.json"
-	ApplicationDir      = "complytime"
-	PluginDir           = "plugins"
-	BundlesDir          = "bundles"
-	ControlsDir         = "controls"
-	DataRootDir         = "/usr/share"
-	PluginBinaryRootDir = "/usr/libexec/"
+	compDefSuffix          = "component-definition.json"
+	ApplicationDir         = "complytime"
+	PluginDir              = "plugins"
+	BundlesDir             = "bundles"
+	ControlsDir            = "controls"
+	DataRootDir            = "/usr/share"
+	PluginBinaryRootDir    = "/usr/libexec/"
+	DefaultPluginConfigDir = "/etc/complytime/config.d/"
 )
 
 // ErrNoComponentDefinitionsFound returns an error indicated the supplied directory

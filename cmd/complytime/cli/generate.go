@@ -18,7 +18,8 @@ import (
 // generateOptions defines options for the "generate" subcommand
 type generateOptions struct {
 	*option.Common
-	complyTimeOpts *option.ComplyTime
+	complyTimeOpts   *option.ComplyTime
+	withPluginConfig string
 }
 
 // generateCmd creates a new cobra.Command for the "generate" subcommand
@@ -36,6 +37,7 @@ func generateCmd(common *option.Common) *cobra.Command {
 			return runGenerate(cmd, generateOpts)
 		},
 	}
+	cmd.Flags().StringVarP(&generateOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located.")
 	generateOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -81,7 +83,8 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	logger.Debug(fmt.Sprintf("Framework property was successfully read from the assessment plan: %v.", frameworkProp))
 
 	pluginOptions := opts.complyTimeOpts.ToPluginOptions()
-	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions)
+	pluginOptions.UserConfigRoot = opts.withPluginConfig
+	plugins, cleanup, err := complytime.Plugins(manager, inputContext, pluginOptions, logger)
 	if cleanup != nil {
 		defer cleanup()
 	}
