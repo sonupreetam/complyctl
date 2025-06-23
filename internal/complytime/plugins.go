@@ -84,11 +84,13 @@ func (p PluginOptions) ToMap(pluginId string, logger hclog.Logger) (map[string]s
 				continue
 			} else {
 				if configOption.Default == nil {
-					if pluginId == "openscap" && configOption.Name == "datastream" {
+					if configOption.Required {
+						return selections, fmt.Errorf("missing default value for required option %s in %s", configOption.Name, configPath)
+					} else {
+						logger.Warn(fmt.Sprintf("Missing default value for %s in %s, it will be set to an empty string", configOption.Name, configPath))
 						selections[configOption.Name] = ""
 						continue
 					}
-					return selections, fmt.Errorf("missing %s default in %s", configOption.Name, configPath)
 				}
 				selections[configOption.Name] = *configOption.Default
 			}
