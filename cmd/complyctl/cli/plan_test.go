@@ -9,7 +9,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
 )
 
 func TestPlansInWorkspace(t *testing.T) {

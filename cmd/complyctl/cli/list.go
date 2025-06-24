@@ -14,9 +14,9 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
-	"github.com/complytime/complytime/internal/terminal"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/internal/complytime"
+	"github.com/complytime/complyctl/internal/terminal"
 )
 
 // listOptions defines options for the "list" subcommand
@@ -35,7 +35,7 @@ func listCmd(common *option.Common) *cobra.Command {
 		Use:          "list [flags]",
 		Short:        "List information about supported frameworks and components.",
 		SilenceUsage: true,
-		Example:      "complytime list",
+		Example:      "complyctl list",
 		Args:         cobra.NoArgs,
 		RunE:         func(_ *cobra.Command, _ []string) error { return runList(listOpts) },
 	}
@@ -97,7 +97,7 @@ func showPrettyDefinitionTable(frameworks []complytime.Framework) terminal.Model
 
 	return terminal.Model{
 		Table:   tbl,
-		HelpMsg: "Choose an option from the Framework ID column to use with complytime plan.",
+		HelpMsg: "Choose an option from the Framework ID column to use with complyctl plan.",
 	}
 }
 

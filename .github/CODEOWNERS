@@ -6,7 +6,7 @@
 # Order is important; the last matching pattern takes the most precedence.
 # Team complytime-approvers will be requested to approve when someone opens
 # a pull request for any change inside `/cmd/complytime` directory
-/cmd/complytime/ @complytime/complytime-approvers
+/cmd/complyctl/ @complytime/complytime-approvers
 
 # Team openscap-plugin-approvers will be requested to approve when someone
 # opens a pull request for any change inside `/cmd/openscap-plugin` directory.

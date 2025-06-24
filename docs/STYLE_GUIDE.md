@@ -27,6 +27,6 @@ To maintain consistency and compliance with the project’s licensing policy, al
 ## Additional Guidelines
 
 - **Empty Line at End of File**: Ensure that all files include an empty line at the end. This helps with version control diffs and adheres to POSIX standards.
-- Other [Go checks](https://github.com/complytime/complytime/blob/main/.golangci.yml) are present in CI/CD and therefore it may be useful to also run them locally before submitting a PR.
+- Other [Go checks](https://github.com/complytime/complyctl/blob/main/.golangci.yml) are present in CI/CD and therefore it may be useful to also run them locally before submitting a PR.
 - The pre-commit and pre-push hooks can be configured by installing [pre-commit](https://pre-commit.com/) and running `make dev-setup`
-- ComplyTime leverages the [charmbracelet/log](https://github.com/charmbracelet/log) library for logging all command and plugin activity. By default, this output is printed to stdout.
+- Complyctl leverages the [charmbracelet/log](https://github.com/charmbracelet/log) library for logging all command and plugin activity. By default, this output is printed to stdout.

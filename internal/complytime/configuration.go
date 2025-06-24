@@ -17,7 +17,7 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 
-	"github.com/complytime/complytime/internal/complytime/plan"
+	"github.com/complytime/complyctl/internal/complytime/plan"
 )
 
 const (

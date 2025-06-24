@@ -17,10 +17,10 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
-	"github.com/complytime/complytime/cmd/openscap-plugin/oscap"
-	"github.com/complytime/complytime/cmd/openscap-plugin/scan"
-	"github.com/complytime/complytime/cmd/openscap-plugin/xccdf"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/oscap"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/scan"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/xccdf"
 )
 
 var (

@@ -4,9 +4,9 @@
 
 NOTE: The development of this plugin is in progress and therefore it should only be used for testing purposes at this point.
 
-**openscap-plugin** is a plugin which extends the **ComplyTime** capabilities to use OpenSCAP. The plugin communicates with **ComplyTime** via gRPC, providing a standard and consistent communication mechanism that gives independence for plugin developers to choose their preferred languages. This plugin is structured to allow modular development, ease of packaging, and maintainability.
+**openscap-plugin** is a plugin which extends the complyctl capabilities to use OpenSCAP. The plugin communicates with complyctl via gRPC, providing a standard and consistent communication mechanism that gives independence for plugin developers to choose their preferred languages. This plugin is structured to allow modular development, ease of packaging, and maintainability.
 
-For now, this plugin is developed together with ComplyTime for better collaboration during this phase of the project. In the future, this plugin may be decoupled into its own repository.
+For now, this plugin is developed together with complyctl for better collaboration during this phase of the project. In the future, this plugin may be decoupled into its own repository.
 
 ## Plugin Structure
 
@@ -21,7 +21,7 @@ openscap-plugin/
 ├── scan/                 # Package to process system scan instructions
 │ ├── scan_test.go        # Tests for functions in scan.go
 │ └── scan.go             # Main code used to process scan instructions
-├── server/               # Package to process server functions. Here is where the plugin communicates with ComplyTime CLI
+├── server/               # Package to process server functions. Here is where the plugin communicates with complyctl CLI
 │ ├── server_test.go      # Tests for functions in server.go
 │ └── server.go           # Main code used to process server functions
 ├── xccdf/                # Package to process SCAP Datastreams
@@ -37,11 +37,11 @@ openscap-plugin/
 ### Configuration
 
 The plugin has some parameters that can be configured via the manifest file. Check the quick start [guide](../../docs/QUICK_START.md) to see an example.
-ComplyTime process the manifest file and send the configuration values to the plugin.
+Complyctl processes the manifest file and send the configuration values to the plugin.
 
 These are the configuration used by openscap-plugin:
-- **workspace**:  Directory used to read the tailoring file and to save oscap files generated during the scan. This configuration can also be set by ComplyTime CLI.
-- **profile**:    Is the FrameworkID informed by ComplyTime. This FrameworkID corresponds to a profile ID in the Datastream.
+- **workspace**:  Directory used to read the tailoring file and to save oscap files generated during the scan. This configuration can also be set by complyctl.
+- **profile**:    Is the FrameworkID informed by complyctl. This FrameworkID corresponds to a profile ID in the Datastream.
 - **datastream**: Datastream file to be used by `generate` and `scan` commands.
 - **policy**:     File name for the tailoring file created by the `generate` command and consumed by the `scan` command.
 - **arf**:        File name to save the `oscap` ARF results during the `scan` command.
@@ -53,7 +53,7 @@ In exception cases, it is possible to manually define the desired Datastream pat
 
 ### Generate
 
-When the plugin receives the `generate` command from ComplyTime, it will use the informed Datastream and FrameworkID in combination with the `assessment-plan.json` file to:
+When the plugin receives the `generate` command from complyctl, it will use the informed Datastream and FrameworkID in combination with the `assessment-plan.json` file to:
 * Process the `openscap` validation component from the `assessment-plan.json`
 * Validate if all rules and variables in `assessment-plan.json` are valid in the Datastream
 * Compare the rules, variables and variables values between the `assessment-plan.json` and the Datastream profile (FrameworkID)
@@ -61,11 +61,11 @@ When the plugin receives the `generate` command from ComplyTime, it will use the
   * The tailoring file will extend the Datastream profile by overriding rules and variables values as defined in the `assessment-plan.json` file
 
 ### Scan
-When the plugin receives the `scan` command from ComplyTime, it will use the informed Datastream and FrameworkID to:
+When the plugin receives the `scan` command from complyctl, it will use the informed Datastream and FrameworkID to:
 * Validate the Datastream and Policy (tailoring file created by `generate` command) files.
 * Assembly the `oscap` command
 * Scan the system saving `oscap` results in ARF and results files according to the values defined in the plugin manifest file
-* Process the results and return observations to ComplyTime so an `assessment-results.json` file can be created by `ComplyTime`
+* Process the results and return observations to complyctl so an `assessment-results.json` file can be created by `complyctl`
 
 ## Installation
 
@@ -78,13 +78,13 @@ When the plugin receives the `scan` command from ComplyTime, it will use the inf
 ### Clone the repository
 
 ```bash
-git clone https://github.com/complytime/complytime.git
-cd complytime
+git clone https://github.com/complytime/complyctl.git
+cd complyctl
 ```
 
 ## Build Instructions
 
-To compile complytime and openscap-plugin:
+To compile complyctl and openscap-plugin:
 
 ```bash
 make build
@@ -92,7 +92,7 @@ make build
 
 ### Running
 
-To use the plugin with `complytime`, see the quick start [guide](../../docs/QUICK_START.md).
+To use the plugin with `complyctl`, see the quick start [guide](../../docs/QUICK_START.md).
 
 ### Testing
 

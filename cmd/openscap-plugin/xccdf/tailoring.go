@@ -11,7 +11,7 @@ import (
 	"github.com/ComplianceAsCode/compliance-operator/pkg/xccdf"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/policy"
 
-	"github.com/complytime/complytime/cmd/openscap-plugin/config"
+	"github.com/complytime/complyctl/cmd/openscap-plugin/config"
 )
 
 const (

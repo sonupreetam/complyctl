@@ -1,4 +1,4 @@
-module github.com/complytime/complytime
+module github.com/complytime/complyctl
 
 go 1.24.0
 

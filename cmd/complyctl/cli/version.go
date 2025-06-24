@@ -5,9 +5,9 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
 
-	"github.com/complytime/complytime/internal/version"
+	"github.com/complytime/complyctl/internal/version"
 )
 
 // versionCmd creates a new cobra.Command for the version subcommand.

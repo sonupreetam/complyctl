@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/complytime/complytime/internal/complytime"
+	"github.com/complytime/complyctl/internal/complytime"
 )
 
 func TestShowDefinitionTable(t *testing.T) {
@@ -98,7 +98,7 @@ var (
 │                                                                                      │
 │                                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-Choose an option from the Framework ID column to use with complytime plan.
+Choose an option from the Framework ID column to use with complyctl plan.
 `
 	populatedTable = `┌──────────────────────────────────────────────────────────────────────────────────────┐
 │ Title                           Framework ID          Supported Components           │
@@ -110,7 +110,7 @@ Choose an option from the Framework ID column to use with complytime plan.
 │                                                                                      │
 │                                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-Choose an option from the Framework ID column to use with complytime plan.
+Choose an option from the Framework ID column to use with complyctl plan.
 `
 
 	longTitle = `┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -123,7 +123,7 @@ Choose an option from the Framework ID column to use with complytime plan.
 │                                                                                                      │
 │                                                                                                      │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────┘
-Choose an option from the Framework ID column to use with complytime plan.
+Choose an option from the Framework ID column to use with complyctl plan.
 `
 
 	plainTable = "Title                         Framework ID        Supported Components          \n" +

@@ -5,13 +5,13 @@ GIT_TAG ?= $(shell git tag | sort -V | tail -1 2>/dev/null || echo "v0.0.0")
 GIT_TREE_STATE ?= $(shell test -n "`git status --porcelain 2>/dev/null`" && echo "dirty" || echo "clean")
 BUILD_DATE ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-GO_LD_EXTRAFLAGS := -X github.com/complytime/complytime/internal/version.version="$(GIT_TAG)" \
-                    -X github.com/complytime/complytime/internal/version.gitTreeState=$(GIT_TREE_STATE) \
-                    -X github.com/complytime/complytime/internal/version.commit="$(GIT_COMMIT)" \
-                    -X github.com/complytime/complytime/internal/version.buildDate="$(BUILD_DATE)"
+GO_LD_EXTRAFLAGS := -X github.com/complytime/complyctl/internal/version.version="$(GIT_TAG)" \
+                    -X github.com/complytime/complyctl/internal/version.gitTreeState=$(GIT_TREE_STATE) \
+                    -X github.com/complytime/complyctl/internal/version.commit="$(GIT_COMMIT)" \
+                    -X github.com/complytime/complyctl/internal/version.buildDate="$(BUILD_DATE)"
 
-MAN_COMPLYTIME = docs/man/complytime.md
-MAN_COMPLYTIME_OUTPUT = docs/man/complytime.1
+MAN_COMPLYCTL = docs/man/complyctl.md
+MAN_COMPLYCTL_OUTPUT = docs/man/complytctl.1
 MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
 MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
 
@@ -27,8 +27,8 @@ build: prep-build-dir ## compile
 ##@ Packaging
 
 man: ## generate man pages
-	mkdir -p $(dir $(MAN_COMPLYTIME_OUTPUT)) $(dir $(MAN_OPENSCAP_CONF_OUTPUT))
-	pandoc -s -t man $(MAN_COMPLYTIME) -o $(MAN_COMPLYTIME_OUTPUT)
+	mkdir -p $(dir $(MAN_COMPLYCTL_OUTPUT)) $(dir $(MAN_OPENSCAP_CONF_OUTPUT))
+	pandoc -s -t man $(MAN_COMPLYCTL) -o $(MAN_COMPLYCTL_OUTPUT)
 	pandoc -s -t man $(MAN_OPENSCAP_CONF) -o $(MAN_OPENSCAP_CONF_OUTPUT)
 
 ##@ Environment
@@ -52,7 +52,7 @@ vendor: ## go mod sync
 
 clean:
 	@rm -rf ./$(GO_BUILD_BINDIR)/*
-	rm -f $(MAN_COMPLYTIME_OUTPUT) $(MAN_OPENSCAP_CONF_OUTPUT)
+	rm -f $(MAN_COMPLYCTL_OUTPUT) $(MAN_OPENSCAP_CONF_OUTPUT)
 .PHONY: clean
 
 ##@ Testing

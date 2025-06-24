@@ -20,9 +20,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/complytime/complytime/cmd/complytime/option"
-	"github.com/complytime/complytime/internal/complytime"
-	"github.com/complytime/complytime/internal/terminal"
+	"github.com/complytime/complyctl/cmd/complyctl/option"
+	"github.com/complytime/complyctl/internal/complytime"
+	"github.com/complytime/complyctl/internal/terminal"
 )
 
 const (
@@ -111,7 +111,7 @@ func infoCmd(common *option.Common) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "info <framework-id> [flags]",
 		Short:   "Show information about a framework's controls and rules",
-		Example: " complytime info anssi_bp28_minimal\n complytime info anssi_bp28_minimal --control r31\n complytime info anssi_bp28_minimal --rule enable_authselect",
+		Example: " complyctl info anssi_bp28_minimal\n complyctl info anssi_bp28_minimal --control r31\n complyctl info anssi_bp28_minimal --rule enable_authselect",
 		Args:    cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if len(args) == 1 {
