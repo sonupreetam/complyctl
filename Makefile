@@ -21,7 +21,7 @@ all: clean vendor test-unit build ## compile from scratch
 .PHONY: all
 
 build: prep-build-dir ## compile
-	go build -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
+	go build -mod=vendor -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
 .PHONY: build
 
 ##@ Packaging
