@@ -11,7 +11,7 @@ GO_LD_EXTRAFLAGS := -X github.com/complytime/complyctl/internal/version.version=
                     -X github.com/complytime/complyctl/internal/version.buildDate="$(BUILD_DATE)"
 
 MAN_COMPLYCTL = docs/man/complyctl.md
-MAN_COMPLYCTL_OUTPUT = docs/man/complytctl.1
+MAN_COMPLYCTL_OUTPUT = docs/man/complyctl.1
 MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
 MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
 
