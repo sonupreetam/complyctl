@@ -11,7 +11,7 @@ GO_LD_EXTRAFLAGS := -X github.com/complytime/complyctl/internal/version.version=
                     -X github.com/complytime/complyctl/internal/version.buildDate="$(BUILD_DATE)"
 
 MAN_COMPLYCTL = docs/man/complyctl.md
-MAN_COMPLYCTL_OUTPUT = docs/man/complytctl.1
+MAN_COMPLYCTL_OUTPUT = docs/man/complyctl.1
 MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
 MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
 
@@ -21,7 +21,7 @@ all: clean vendor test-unit build ## compile from scratch
 .PHONY: all
 
 build: prep-build-dir ## compile
-	go build -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
+	go build -mod=vendor -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
 .PHONY: build
 
 ##@ Packaging

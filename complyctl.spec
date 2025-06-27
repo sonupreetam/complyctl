@@ -35,8 +35,6 @@ plugin developers to choose their preferred languages.
 
 %prep
 %autosetup -n %{name}-%{version}
-mkdir -p %{gopath}/src/github.com/complytime
-ln -s %{_builddir}/%{name}-%{version} %{gopath}/src/github.com/complytime/complyctl
 
 %build
 BUILD_DATE_GO=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -52,14 +50,13 @@ GO_LD_EXTRAFLAGS="-X %{goipath}/internal/version.version=%{version} \
 
 # Adapt go env to RPM build environment
 export GO111MODULE=on
-export GOPATH=%{gopath}
 
 # Define and create the output directory for binaries
 GO_BUILD_BINDIR=./bin
 mkdir -p ${GO_BUILD_BINDIR}
 
-# Not calling the macro for better control on go env variables
-go build -o ${GO_BUILD_BINDIR}/ -ldflags="${GO_LD_EXTRAFLAGS}" ./cmd/...
+# Not calling the macro for more control on go env variables
+go build -mod=vendor -o ${GO_BUILD_BINDIR}/ -ldflags="${GO_LD_EXTRAFLAGS}" ./cmd/...
 
 %install
 # Install complyctl directories
@@ -73,7 +70,7 @@ install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5}
 cp -rp docs/samples %{buildroot}%{_datadir}/%{name}
 
 # Install files for complyctl CLI
-install -p -m 0755 bin/complytime %{buildroot}%{_bindir}/complyctl
+install -p -m 0755 bin/complyctl %{buildroot}%{_bindir}/complyctl
 install -p -m 0644 docs/man/complyctl.1 %{buildroot}%{_mandir}/man1/complyctl.1
 
 # Install files for openscap-plugin package
@@ -82,7 +79,7 @@ install -p -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/
 
 %check
 # Run unit tests
-go test -race -v ./...
+go test -mod=vendor -race -v ./...
 
 %files
 %defattr(0644, root, root, 0755)
