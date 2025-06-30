@@ -11,15 +11,21 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
 )
 
+// ControlEntry represents a control in the assessment scope
+type ControlEntry struct {
+	ControlID string   `yaml:"controlId"`
+	Rules     []string `yaml:"includeRules"`
+}
+
 // AssessmentScope sets up the yaml mapping type for writing to config file.
 // Formats testdata as go struct.
 type AssessmentScope struct {
 	// FrameworkID is the identifier for the control set
 	// in the Assessment Plan.
-	FrameworkID string `yaml:"frameworkID"`
+	FrameworkID string `yaml:"frameworkId"`
 	// IncludeControls defines controls that are in scope
 	// of an assessment.
-	IncludeControls []string `yaml:"IncludeControls"`
+	IncludeControls []ControlEntry `yaml:"includeControls"`
 }
 
 // NewAssessmentScope creates an AssessmentScope struct for a given framework id.
@@ -64,9 +70,16 @@ func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDe
 		}
 	}
 
-	scope.IncludeControls = includeControls.All()
+	controlIDs := includeControls.All()
+	scope.IncludeControls = make([]ControlEntry, len(controlIDs))
+	for i, id := range controlIDs {
+		scope.IncludeControls[i] = ControlEntry{
+			ControlID: id,
+			Rules:     []string{"*"}, // by default, include all rules
+		}
+	}
 	sort.Slice(scope.IncludeControls, func(i, j int) bool {
-		return scope.IncludeControls[i] < scope.IncludeControls[j]
+		return scope.IncludeControls[i].ControlID < scope.IncludeControls[j].ControlID
 	})
 
 	return scope, nil
@@ -86,8 +99,8 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 	// "Any control specified within exclude-controls must first be within a range of explicitly
 	// included controls, via include-controls or include-all."
 	includedControls := includeControlsSet{}
-	for _, id := range a.IncludeControls {
-		includedControls.Add(id)
+	for _, entry := range a.IncludeControls {
+		includedControls.Add(entry.ControlID)
 	}
 	logger.Debug("Found included controls", "count", len(includedControls))
 
