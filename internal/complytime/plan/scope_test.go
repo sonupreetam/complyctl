@@ -42,8 +42,11 @@ func TestNewAssessmentScopeFromCDs(t *testing.T) {
 	}
 
 	wantScope := AssessmentScope{
-		FrameworkID:     "example",
-		IncludeControls: []string{"control-1", "control-2"},
+		FrameworkID: "example",
+		IncludeControls: []ControlEntry{
+			{ControlID: "control-1", Rules: []string{"*"}},
+			{ControlID: "control-2", Rules: []string{"*"}},
+		},
 	}
 	scope, err := NewAssessmentScopeFromCDs("example", cd)
 	require.NoError(t, err)
@@ -107,8 +110,10 @@ func TestAssessmentScope_ApplyScope(t *testing.T) {
 				},
 			},
 			scope: AssessmentScope{
-				FrameworkID:     "test",
-				IncludeControls: []string{"example-2"},
+				FrameworkID: "test",
+				IncludeControls: []ControlEntry{
+					{ControlID: "example-2", Rules: []string{"*"}},
+				},
 			},
 			wantSelections: []oscalTypes.AssessedControls{
 				{
@@ -162,8 +167,11 @@ func TestAssessmentScope_ApplyScope(t *testing.T) {
 				},
 			},
 			scope: AssessmentScope{
-				FrameworkID:     "test",
-				IncludeControls: []string{"example-1", "example-2"},
+				FrameworkID: "test",
+				IncludeControls: []ControlEntry{
+					{ControlID: "example-1", Rules: []string{"*"}},
+					{ControlID: "example-2", Rules: []string{"*"}},
+				},
 			},
 			wantSelections: []oscalTypes.AssessedControls{
 				{
