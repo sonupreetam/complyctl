@@ -76,6 +76,20 @@ install -p -m 0644 docs/man/complyctl.1 %{buildroot}%{_mandir}/man1/complyctl.1
 install -p -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{app_dir}/plugins/openscap-plugin
 install -p -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
 
+%post openscap-plugin
+plugin_path=%{_libexecdir}/%{app_dir}/plugins/openscap-plugin
+manifest_in=%{_datadir}/%{app_dir}/samples/c2p-openscap-manifest.json
+manifest_out=%{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
+
+# Use sed to replace placeholders in manifest file for openscap-plugin
+if [ -f "$plugin_path" ] && [ -f "$manifest_in" ]; then
+    checksum=$(sha256sum "$plugin_path" | awk '{ print $1 }')
+    version="%{version}"
+    sed -e "s|checksum_placeholder|$checksum|" \
+        -e "s|version_placeholder|$version|" \
+        "$manifest_in" > "$manifest_out"
+fi
+
 %check
 # Run unit tests
 go test -mod=vendor -race -v ./...
@@ -90,14 +104,19 @@ go test -mod=vendor -race -v ./...
 %dir %{_libexecdir}/%{app_dir}/plugins
 %dir %{_sysconfdir}/%{app_dir}
 %dir %{_sysconfdir}/%{app_dir}/config.d
-%{_datadir}/%{app_dir}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json}
+%{_datadir}/%{app_dir}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json,c2p-openscap-manifest.json}
 
 %files          openscap-plugin
 %attr(0755, root, root) %{_libexecdir}/%{app_dir}/plugins/openscap-plugin
 %license LICENSE
 %{_mandir}/man5/c2p-openscap-manifest.5*
+%ghost %{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
 
 %changelog
+* Mon Jul 8 2025 Marcus Burghardt <maburgha@redhat.com>
+- Bump to upstream version v0.0.7
+- Include manifest file for openscap-plugin
+
 * Mon Jun 16 2025 George Vauter <gvauter@redhat.com>
 - Update package name to complyctl
 
