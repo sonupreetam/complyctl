@@ -2,18 +2,17 @@
 
 %global goipath github.com/complytime/complyctl
 %global base_url https://%{goipath}
+%global app_dir complytime
 %global gopath %{_builddir}/go
 
 Name:           complyctl
-Version:        0.0.6
+Version:        0.0.7
 Release:        %autorelease
 Summary:        Tool to perform compliance assessment activities, scaled by plugins
 License:        Apache-2.0
 URL:            %{base_url}
 Source0:        %{base_url}/archive/refs/tags/v%{version}.tar.gz
 
-# git is temporarily used
-BuildRequires:  git
 BuildRequires:  golang
 BuildRequires:  go-rpm-macros
 
@@ -21,7 +20,7 @@ BuildRequires:  go-rpm-macros
 
 %description
 %{name} leverages OSCAL to perform compliance assessment activities, using
-plugins for each stage of the lifecycle.
+plugins for each stage of the life-cycle.
 
 %package        openscap-plugin
 Summary:        A plugin which extends complyctl capabilities to use OpenSCAP
@@ -29,12 +28,12 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       scap-security-guide
 %description    openscap-plugin
 openscap-plugin is a plugin which extends the complyctl capabilities to use
-OpenSCAP. The plugin communicates with complyctl via gRPC, providing a
-standard and consistent communication mechanism that gives independence for
-plugin developers to choose their preferred languages.
+OpenSCAP. The plugin communicates with complyctl using Remote Procedure Calls,
+providing a standard and consistent communication mechanism that allows plugin
+developers to use their preferred programming languages.
 
 %prep
-%autosetup -n %{name}-%{version}
+%goprep -k
 
 %build
 BUILD_DATE_GO=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -56,45 +55,68 @@ GO_BUILD_BINDIR=./bin
 mkdir -p ${GO_BUILD_BINDIR}
 
 # Not calling the macro for more control on go env variables
-go build -mod=vendor -o ${GO_BUILD_BINDIR}/ -ldflags="${GO_LD_EXTRAFLAGS}" ./cmd/...
+go build -buildmode=pie -o ${GO_BUILD_BINDIR}/ -ldflags="${GO_LD_EXTRAFLAGS}" ./cmd/...
 
 %install
 # Install complyctl directories
 install -d %{buildroot}%{_bindir}
-install -d -m 0755 %{buildroot}%{_datadir}/%{name}/{plugins,bundles,controls}
-install -d -m 0755 %{buildroot}%{_libexecdir}/%{name}/plugins
-install -d -m 0755 %{buildroot}%{_sysconfdir}/%{name}/config.d
+install -d -m 0755 %{buildroot}%{_datadir}/%{app_dir}/{plugins,bundles,controls}
+install -d -m 0755 %{buildroot}%{_libexecdir}/%{app_dir}/plugins
+install -d -m 0755 %{buildroot}%{_sysconfdir}/%{app_dir}/config.d
 install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5}
 
 # Copy sample data to be consumed by complyctl CLI
-cp -rp docs/samples %{buildroot}%{_datadir}/%{name}
+cp -rp docs/samples %{buildroot}%{_datadir}/%{app_dir}
 
 # Install files for complyctl CLI
 install -p -m 0755 bin/complyctl %{buildroot}%{_bindir}/complyctl
 install -p -m 0644 docs/man/complyctl.1 %{buildroot}%{_mandir}/man1/complyctl.1
 
 # Install files for openscap-plugin package
-install -p -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{name}/plugins/openscap-plugin
+install -p -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{app_dir}/plugins/openscap-plugin
 install -p -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
+
+%post openscap-plugin
+plugin_path=%{_libexecdir}/%{app_dir}/plugins/openscap-plugin
+manifest_in=%{_datadir}/%{app_dir}/samples/c2p-openscap-manifest.json
+manifest_out=%{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
+
+# Use sed to replace placeholders in manifest file for openscap-plugin
+if [ -f "$plugin_path" ] && [ -f "$manifest_in" ]; then
+    checksum=$(sha256sum "$plugin_path" | awk '{ print $1 }')
+    version="%{version}"
+    sed -e "s|checksum_placeholder|$checksum|" \
+        -e "s|version_placeholder|$version|" \
+        "$manifest_in" > "$manifest_out"
+fi
 
 %check
 # Run unit tests
 go test -mod=vendor -race -v ./...
 
 %files
-%defattr(0644, root, root, 0755)
 %attr(0755, root, root) %{_bindir}/complyctl
 %license LICENSE
 %{_mandir}/man1/complyctl.1*
-%{_datadir}/%{name}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json}
-%{_datadir}/%{name}/{plugins,bundles,controls}
-%{_sysconfdir}/%{name}/config.d
+%dir %{_datadir}/%{app_dir}
+%dir %{_datadir}/%{app_dir}/{plugins,bundles,controls,samples}
+%dir %{_libexecdir}/%{app_dir}
+%dir %{_libexecdir}/%{app_dir}/plugins
+%dir %{_sysconfdir}/%{app_dir}
+%dir %{_sysconfdir}/%{app_dir}/config.d
+%{_datadir}/%{app_dir}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json,c2p-openscap-manifest.json}
 
 %files          openscap-plugin
-%attr(0755, root, root) %{_libexecdir}/%{name}/plugins/openscap-plugin
+%attr(0755, root, root) %{_libexecdir}/%{app_dir}/plugins/openscap-plugin
+%license LICENSE
 %{_mandir}/man5/c2p-openscap-manifest.5*
+%ghost %{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
 
 %changelog
+* Mon Jul 8 2025 Marcus Burghardt <maburgha@redhat.com>
+- Bump to upstream version v0.0.7
+- Include manifest file for openscap-plugin
+
 * Mon Jun 16 2025 George Vauter <gvauter@redhat.com>
 - Update package name to complyctl
 
