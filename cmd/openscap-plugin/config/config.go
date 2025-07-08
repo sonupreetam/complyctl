@@ -319,13 +319,11 @@ func findMatchingDatastream() (string, error) {
 						return filepath.SkipDir
 					}
 				}
-				if distroVersions == nil {
-					// In case of non-versioned or rolling release
-					pattern := fmt.Sprintf("ssg-%s-ds.xml", distroIds[id])
-					if info.Name() == pattern {
-						foundFile = path
-						return filepath.SkipDir
-					}
+				// In case of non-versioned or rolling release
+				pattern := fmt.Sprintf("ssg-%s-ds.xml", distroIds[id])
+				if info.Name() == pattern {
+					foundFile = path
+					return filepath.SkipDir
 				}
 			}
 		}
