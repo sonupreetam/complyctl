@@ -33,57 +33,11 @@ cp docs/samples/sample-profile.json docs/samples/sample-catalog.json ~/.local/sh
 Each plugin requires a plugin manifest. For more information about plugin discovery see [PLUGIN_GUIDE.md](PLUGIN_GUIDE.md).
 
 ```bash
-cp bin/openscap-plugin ~/.local/share/complytime/plugins
-checksum=$(sha256sum ~/.local/share/complytime/plugins/openscap-plugin| cut -d ' ' -f 1 )
-cat > ~/.local/share/complytime/plugins/c2p-openscap-manifest.json << EOF
-{
-  "metadata": {
-    "id": "openscap",
-    "description": "My openscap plugin",
-    "version": "0.0.1",
-    "types": [
-      "pvp"
-    ]
-  },
-  "executablePath": "openscap-plugin",
-  "sha256": "$checksum",
-  "configuration": [
-    {
-      "name": "workspace",
-      "description": "Directory for writing plugin artifacts",
-      "required": true
-    },
-    {
-      "name": "profile",
-      "description": "The OpenSCAP profile to run for assessment",
-      "required": true
-    },
-    {
-      "name": "datastream",
-      "description": "The OpenSCAP datastream to use. If not set, the plugin will try to determine it based on system information",
-      "required": false
-    },
-    {
-      "name": "policy",
-      "description": "The name of the generated tailoring file",
-      "default": "tailoring_policy.xml",
-      "required": false
-    },
-    {
-      "name": "arf",
-      "description": "The name of the generated ARF file",
-      "default": "arf.xml",
-      "required": false
-    },
-    {
-      "name": "results",
-      "description": "The name of the generated results file",
-      "default": "results.xml",
-      "required": false
-    }
-  ]
-}
-EOF
+plugin_dir="$HOME/.local/share/complytime/plugins"
+cp "bin/openscap-plugin" "docs/samples/c2p-openscap-manifest.json" "$plugin_dir"
+checksum=$(sha256sum ~/.local/share/complytime/plugins/openscap-plugin | awk '{ print $1 }' )
+version=$(bin/complyctl version | head -n1 | awk '{ print $2 }' | sed -E 's/^v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+sed -i -e "s|checksum_placeholder|$checksum|" -e "s|version_placeholder|$version|" "$plugin_dir/c2p-openscap-manifest.json"
 ```
 
 ## Step 4: Edit plugin configuration (optional)
