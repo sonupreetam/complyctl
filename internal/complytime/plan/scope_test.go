@@ -290,13 +290,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Activities: &[]oscalTypes.Activity{
 						{
 							Title: "rule-1",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-1",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -314,13 +307,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 						},
 						{
 							Title: "rule-2",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-2",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -346,13 +332,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 			wantActivities: &[]oscalTypes.Activity{
 				{
 					Title: "rule-1",
-					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-1",
-							Ns:    extensions.TrestleNameSpace,
-						},
-					},
 					RelatedControls: &oscalTypes.ReviewedControls{
 						ControlSelections: []oscalTypes.AssessedControls{
 							{
@@ -367,13 +346,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				},
 				{
 					Title: "rule-2",
-					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-2",
-							Ns:    extensions.TrestleNameSpace,
-						},
-					},
 					RelatedControls: &oscalTypes.ReviewedControls{
 						ControlSelections: []oscalTypes.AssessedControls{
 							{
@@ -395,13 +367,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Activities: &[]oscalTypes.Activity{
 						{
 							Title: "rule-1",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-1",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -416,13 +381,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 						},
 						{
 							Title: "rule-2",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-2",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -450,11 +408,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-1",
-							Ns:    extensions.TrestleNameSpace,
-						},
-						{
 							Name:  "skipped",
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
@@ -464,13 +417,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				},
 				{
 					Title: "rule-2",
-					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-2",
-							Ns:    extensions.TrestleNameSpace,
-						},
-					},
 					RelatedControls: &oscalTypes.ReviewedControls{
 						ControlSelections: []oscalTypes.AssessedControls{
 							{
@@ -492,13 +438,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Activities: &[]oscalTypes.Activity{
 						{
 							Title: "rule-1",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-1",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -513,13 +452,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 						},
 						{
 							Title: "rule-2",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-2",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -546,11 +478,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-1",
-							Ns:    extensions.TrestleNameSpace,
-						},
-						{
 							Name:  "skipped",
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
@@ -560,13 +487,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				},
 				{
 					Title: "rule-2",
-					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-2",
-							Ns:    extensions.TrestleNameSpace,
-						},
-					},
 					RelatedControls: &oscalTypes.ReviewedControls{
 						ControlSelections: []oscalTypes.AssessedControls{
 							{
@@ -588,13 +508,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Activities: &[]oscalTypes.Activity{
 						{
 							Title: "rule-1",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-1",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -609,13 +522,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 						},
 						{
 							Title: "rule-2",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-2",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -642,11 +548,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-1",
-							Ns:    extensions.TrestleNameSpace,
-						},
-						{
 							Name:  "skipped",
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
@@ -657,11 +558,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				{
 					Title: "rule-2",
 					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-2",
-							Ns:    extensions.TrestleNameSpace,
-						},
 						{
 							Name:  "skipped",
 							Value: "true",
@@ -679,13 +575,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Activities: &[]oscalTypes.Activity{
 						{
 							Title: "rule-1",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-1",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -700,13 +589,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 						},
 						{
 							Title: "rule-2",
-							Props: &[]oscalTypes.Property{
-								{
-									Name:  extensions.RuleIdProp,
-									Value: "rule-2",
-									Ns:    extensions.TrestleNameSpace,
-								},
-							},
 							RelatedControls: &oscalTypes.ReviewedControls{
 								ControlSelections: []oscalTypes.AssessedControls{
 									{
@@ -734,11 +616,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-1",
-							Ns:    extensions.TrestleNameSpace,
-						},
-						{
 							Name:  "skipped",
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
@@ -748,13 +625,6 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				},
 				{
 					Title: "rule-2",
-					Props: &[]oscalTypes.Property{
-						{
-							Name:  extensions.RuleIdProp,
-							Value: "rule-2",
-							Ns:    extensions.TrestleNameSpace,
-						},
-					},
 					RelatedControls: &oscalTypes.ReviewedControls{
 						ControlSelections: []oscalTypes.AssessedControls{
 							{

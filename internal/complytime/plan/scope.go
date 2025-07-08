@@ -130,36 +130,6 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 						}
 					}
 				}
-
-				if activity.Steps != nil {
-					for stepI := range *activity.Steps {
-						step := &(*activity.Steps)[stepI]
-						if step.ReviewedControls == nil {
-							continue
-						}
-						if step.ReviewedControls.ControlSelections == nil {
-							continue
-						}
-						controlSelections := step.ReviewedControls.ControlSelections
-						for controlSelectionI := range controlSelections {
-							controlSelection := &controlSelections[controlSelectionI]
-							filterControlSelection(controlSelection, includedControls)
-							if controlSelection.IncludeControls == nil {
-								activity.RelatedControls.ControlSelections = nil
-								step.ReviewedControls = nil
-								if step.Props == nil {
-									step.Props = &[]oscalTypes.Property{}
-								}
-								skipped := oscalTypes.Property{
-									Name:  "skipped",
-									Value: "true",
-									Ns:    extensions.TrestleNameSpace,
-								}
-								*step.Props = append(*step.Props, skipped)
-							}
-						}
-					}
-				}
 			}
 		}
 	}
@@ -210,17 +180,17 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 			for activityI := range *assessmentPlan.LocalDefinitions.Activities {
 				activity := &(*assessmentPlan.LocalDefinitions.Activities)[activityI]
 
-				// Get the rules this activity implements
-				activityRules := a.getActivityRules(activity)
-				if len(activityRules) == 0 {
-					continue // No rules to filter
+				// If the activity has no title it cannot be mapped to a rule
+				if activity.Title == "" {
+					logger.Debug("Activity is missing title, skipping", "activity", activity.UUID)
+					continue
 				}
 
 				if activity.RelatedControls != nil && activity.RelatedControls.ControlSelections != nil {
 					controlSelections := activity.RelatedControls.ControlSelections
 					for controlSelectionI := range controlSelections {
 						controlSelection := &controlSelections[controlSelectionI]
-						a.filterControlSelectionByRules(controlSelection, activityRules, controlRuleConfig, globalExcludeRules, logger, activity.Title)
+						a.filterControlSelectionByRule(controlSelection, activity.Title, controlRuleConfig, globalExcludeRules, logger, activity.Title)
 						if controlSelection.IncludeControls == nil {
 							activity.RelatedControls = nil
 							if activity.Props == nil {
@@ -248,7 +218,7 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 						controlSelections := step.ReviewedControls.ControlSelections
 						for controlSelectionI := range controlSelections {
 							controlSelection := &controlSelections[controlSelectionI]
-							a.filterControlSelectionByRules(controlSelection, activityRules, controlRuleConfig, globalExcludeRules, logger, activity.Title)
+							a.filterControlSelectionByRule(controlSelection, activity.Title, controlRuleConfig, globalExcludeRules, logger, activity.Title)
 							if controlSelection.IncludeControls == nil {
 								activity.RelatedControls.ControlSelections = nil
 								step.ReviewedControls = nil
@@ -300,45 +270,10 @@ func filterControlSelection(controlSelection *oscalTypes.AssessedControls, inclu
 	}
 }
 
-// getActivityRules extracts rule IDs from an activity's properties and step properties
-func (a AssessmentScope) getActivityRules(activity *oscalTypes.Activity) []string {
-	var rules []string
-	ruleSet := make(map[string]struct{}) // For deduplication
-
-	// Check activity-level properties for Rule_Id
-	if activity.Props != nil {
-		for _, prop := range *activity.Props {
-			if prop.Name == extensions.RuleIdProp {
-				if _, exists := ruleSet[prop.Value]; !exists {
-					rules = append(rules, prop.Value)
-					ruleSet[prop.Value] = struct{}{}
-				}
-			}
-		}
-	}
-
-	// Check step-level properties for Rule_Id
-	if activity.Steps != nil {
-		for _, step := range *activity.Steps {
-			if step.Props != nil {
-				for _, prop := range *step.Props {
-					if prop.Name == extensions.RuleIdProp {
-						if _, exists := ruleSet[prop.Value]; !exists {
-							rules = append(rules, prop.Value)
-							ruleSet[prop.Value] = struct{}{}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return rules
-}
-
-// filterControlSelectionByRules removes controls from a selection if the activity's rules should be excluded for those controls
-func (a AssessmentScope) filterControlSelectionByRules(controlSelection *oscalTypes.AssessedControls, activityRules []string, controlRuleConfig map[string]ControlEntry, globalExcludeRules map[string]struct{}, logger hclog.Logger, activityTitle string) {
+// filterControlSelectionByRule removes controls from a selection if the activity's rule should be excluded for those controls
+func (a AssessmentScope) filterControlSelectionByRule(controlSelection *oscalTypes.AssessedControls, activityRuleID string, controlRuleConfig map[string]ControlEntry, globalExcludeRules map[string]struct{}, logger hclog.Logger, activityTitle string) {
 	if controlSelection.IncludeControls == nil {
+		logger.Debug("No controls to filter for activity", "activity", activityTitle)
 		return
 	}
 
@@ -353,34 +288,23 @@ func (a AssessmentScope) filterControlSelectionByRules(controlSelection *oscalTy
 		}
 
 		shouldKeepControl := true
-		for _, ruleID := range activityRules {
-			// Check global exclude rules first (highest priority)
-			if _, isGloballyExcluded := globalExcludeRules[ruleID]; isGloballyExcluded {
-				shouldKeepControl = false
-				logger.Debug("Removing control from activity due to globally excluded rule", "control", control.ControlId, "rule", ruleID, "activity", activityTitle)
-				break
-			}
 
+		// Check global exclude rules first (highest priority)
+		if _, isGloballyExcluded := globalExcludeRules[activityRuleID]; isGloballyExcluded {
+			shouldKeepControl = false
+			logger.Debug("Removing control from activity due to globally excluded rule", "control", control.ControlId, "rule", activityRuleID)
+		} else if _, isAllGloballyExcluded := globalExcludeRules["*"]; isAllGloballyExcluded {
 			// Check if "*" is globally excluded (exclude all rules)
-			if _, isAllGloballyExcluded := globalExcludeRules["*"]; isAllGloballyExcluded {
-				shouldKeepControl = false
-				logger.Debug("Removing control from activity due to global exclude all rules", "control", control.ControlId, "rule", ruleID, "activity", activityTitle)
-				break
-			}
-
+			shouldKeepControl = false
+			logger.Debug("Removing control from activity due to global exclude all rules", "control", control.ControlId, "rule", activityRuleID)
+		} else if a.isRuleInList(activityRuleID, controlEntry.ExcludeRules) {
 			// Check if rule is in control-specific exclude list
-			if a.isRuleInList(ruleID, controlEntry.ExcludeRules) {
-				shouldKeepControl = false
-				logger.Debug("Removing control from activity due to control-specific excluded rule", "control", control.ControlId, "rule", ruleID, "activity", activityTitle)
-				break
-			}
-
+			shouldKeepControl = false
+			logger.Debug("Removing control from activity due to control-specific excluded rule", "control", control.ControlId, "rule", activityRuleID)
+		} else if !a.isRuleInList("*", controlEntry.IncludeRules) && !a.isRuleInList(activityRuleID, controlEntry.IncludeRules) {
 			// Check if rule should be included (if not using wildcard)
-			if !a.isRuleInList("*", controlEntry.IncludeRules) && !a.isRuleInList(ruleID, controlEntry.IncludeRules) {
-				shouldKeepControl = false
-				logger.Debug("Removing control from activity due to rule not in include list", "control", control.ControlId, "rule", ruleID, "activity", activityTitle)
-				break
-			}
+			shouldKeepControl = false
+			logger.Debug("Removing control from activity due to rule not in include list", "control", control.ControlId, "rule", activityRuleID)
 		}
 
 		if shouldKeepControl {
