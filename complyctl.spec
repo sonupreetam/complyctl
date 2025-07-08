@@ -113,7 +113,7 @@ go test -mod=vendor -race -v ./...
 %ghost %{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
 
 %changelog
-* Mon Jul 8 2025 Marcus Burghardt <maburgha@redhat.com>
+* Tue Jul 8 2025 Marcus Burghardt <maburgha@redhat.com>
 - Bump to upstream version v0.0.7
 - Include manifest file for openscap-plugin
 
