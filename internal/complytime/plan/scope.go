@@ -264,6 +264,10 @@ func filterControlSelection(controlSelection *oscalTypes.AssessedControls, inclu
 		}
 	}
 	if newIncludedControls != nil {
+		// Sort newIncludedControls by ControlId to ensure consistency after filtering
+		sort.Slice(newIncludedControls, func(i, j int) bool {
+			return newIncludedControls[i].ControlId < newIncludedControls[j].ControlId
+		})
 		controlSelection.IncludeControls = &newIncludedControls
 	} else {
 		controlSelection.IncludeControls = nil
