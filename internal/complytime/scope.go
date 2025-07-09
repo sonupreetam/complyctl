@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package plan
+package complytime
 
 import (
 	"fmt"
@@ -9,11 +9,13 @@ import (
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
 // ControlEntry represents a control in the assessment scope
 type ControlEntry struct {
 	ControlID    string   `yaml:"controlId"`
+	ControlTitle string   `yaml:"controlTitle"`
 	IncludeRules []string `yaml:"includeRules"`
 	ExcludeRules []string `yaml:"excludeRules,omitempty"`
 }
@@ -39,8 +41,9 @@ func NewAssessmentScope(frameworkID string) AssessmentScope {
 
 // NewAssessmentScopeFromCDs creates and populates an AssessmentScope struct for a given framework id and set of
 // OSCAL Component Definitions.
-func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDefinition) (AssessmentScope, error) {
+func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, validator validation.Validator, cds ...oscalTypes.ComponentDefinition) (AssessmentScope, error) {
 	includeControls := make(includeControlsSet)
+	controlTitles := make(map[string]string)
 	scope := NewAssessmentScope(frameworkId)
 	if cds == nil {
 		return AssessmentScope{}, fmt.Errorf("no component definitions found")
@@ -65,6 +68,23 @@ func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDe
 					for _, ir := range ci.ImplementedRequirements {
 						if ir.ControlId != "" {
 							includeControls.Add(ir.ControlId)
+
+							// Getting control title
+							if validator != nil {
+								if _, exists := controlTitles[ir.ControlId]; !exists {
+									title, err := GetControlTitle(ir.ControlId, ci.Source, appDir, validator)
+									if err != nil {
+										// Use empty string if title isn't available
+										controlTitles[ir.ControlId] = ""
+									} else {
+										// Use the retrieved title
+										controlTitles[ir.ControlId] = title
+									}
+								}
+							} else {
+								// If title isn't available, use empty string
+								controlTitles[ir.ControlId] = ""
+							}
 						}
 					}
 				}
@@ -77,6 +97,7 @@ func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDe
 	for i, id := range controlIDs {
 		scope.IncludeControls[i] = ControlEntry{
 			ControlID:    id,
+			ControlTitle: controlTitles[id],
 			IncludeRules: []string{"*"}, // by default, include all rules
 		}
 	}
@@ -106,7 +127,16 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 		includedControls.Add(entry.ControlID)
 	}
 	logger.Debug("Found included controls", "count", len(includedControls))
-
+	for _, controlT := range assessmentPlan.ReviewedControls.ControlSelections {
+		if controlT.IncludeControls != nil {
+			if controlT.Props != nil {
+				for _, control := range *controlT.Props {
+					// process control properties
+					_ = control.Name
+				}
+			}
+		}
+	}
 	if assessmentPlan.LocalDefinitions != nil {
 		if assessmentPlan.LocalDefinitions.Activities != nil {
 			for activityI := range *assessmentPlan.LocalDefinitions.Activities {

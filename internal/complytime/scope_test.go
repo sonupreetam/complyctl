@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-package plan
+package complytime
 
 import (
 	"testing"
@@ -7,11 +7,15 @@ import (
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewAssessmentScopeFromCDs(t *testing.T) {
-	_, err := NewAssessmentScopeFromCDs("example")
+	testAppDir := ApplicationDirectory{}
+	validator := validation.NoopValidator{}
+
+	_, err := NewAssessmentScopeFromCDs("example", testAppDir, validator)
 	require.EqualError(t, err, "no component definitions found")
 
 	cd := oscalTypes.ComponentDefinition{
@@ -44,11 +48,11 @@ func TestNewAssessmentScopeFromCDs(t *testing.T) {
 	wantScope := AssessmentScope{
 		FrameworkID: "example",
 		IncludeControls: []ControlEntry{
-			{ControlID: "control-1", IncludeRules: []string{"*"}},
-			{ControlID: "control-2", IncludeRules: []string{"*"}},
+			{ControlID: "control-1", ControlTitle: "", IncludeRules: []string{"*"}},
+			{ControlID: "control-2", ControlTitle: "", IncludeRules: []string{"*"}},
 		},
 	}
-	scope, err := NewAssessmentScopeFromCDs("example", cd)
+	scope, err := NewAssessmentScopeFromCDs("example", testAppDir, validator, cd)
 	require.NoError(t, err)
 	require.Equal(t, wantScope, scope)
 
@@ -77,7 +81,7 @@ func TestNewAssessmentScopeFromCDs(t *testing.T) {
 	}
 	*cd.Components = append(*cd.Components, anotherComponent)
 
-	scope, err = NewAssessmentScopeFromCDs("example", cd)
+	scope, err = NewAssessmentScopeFromCDs("example", testAppDir, validator, cd)
 	require.NoError(t, err)
 	require.Equal(t, wantScope, scope)
 }
