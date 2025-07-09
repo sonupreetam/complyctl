@@ -199,7 +199,7 @@ func processControlImplementations(components []oscalTypes.DefinedComponent, rul
 						controlTitle, err := complytime.GetControlTitle(ir.ControlId, controlImp.Source, appDir, validator)
 						if err != nil {
 							logger.Warn("could not get title for control %s: %v", ir.ControlId, err)
-							controlTitle = "N/A"
+							controlTitle = ""
 						}
 
 						controlDetails = control{

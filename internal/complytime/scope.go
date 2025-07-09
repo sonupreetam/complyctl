@@ -45,9 +45,14 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 	includeControls := make(includeControlsSet)
 	controlTitles := make(map[string]string)
 	scope := NewAssessmentScope(frameworkId)
+
 	if cds == nil {
 		return AssessmentScope{}, fmt.Errorf("no component definitions found")
 	}
+
+	// Map to store control titles by source to avoid loading the same source multiple times
+	controlTitlesBySource := make(map[string]map[string]string)
+
 	for _, componentDef := range cds {
 		if componentDef.Components == nil {
 			continue
@@ -65,24 +70,39 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 					if !found || frameworkProp.Value != scope.FrameworkID {
 						continue
 					}
+
+					// Checking once for control titles from source on the control implementation
+					if validator != nil {
+						// Check if source was already loaded
+						if _, sourceLoaded := controlTitlesBySource[ci.Source]; !sourceLoaded {
+							// Load all titles from this source
+							loadedTitles, err := loadControlTitlesFromSource(ci.Source, appDir, validator)
+							if err != nil {
+								// Empty map if source can't be loaded
+								controlTitlesBySource[ci.Source] = make(map[string]string)
+							} else {
+								controlTitlesBySource[ci.Source] = loadedTitles
+							}
+						}
+					}
+
 					for _, ir := range ci.ImplementedRequirements {
 						if ir.ControlId != "" {
 							includeControls.Add(ir.ControlId)
 
-							// Getting control title
+							// Getting control title for id from map lookup
 							if validator != nil {
 								if _, exists := controlTitles[ir.ControlId]; !exists {
-									title, err := GetControlTitle(ir.ControlId, ci.Source, appDir, validator)
-									if err != nil {
-										// Use empty string if title isn't available
-										controlTitles[ir.ControlId] = ""
-									} else {
-										// Use the retrieved title
+									// Get the title from the loaded source
+									if title, found := controlTitlesBySource[ci.Source][ir.ControlId]; found {
 										controlTitles[ir.ControlId] = title
+									} else {
+										// Empty string if title isn't available
+										controlTitles[ir.ControlId] = ""
 									}
 								}
 							} else {
-								// If title isn't available, use empty string
+								// Empty string if title isn't available
 								controlTitles[ir.ControlId] = ""
 							}
 						}

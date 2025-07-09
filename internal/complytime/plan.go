@@ -74,17 +74,20 @@ func Settings(plan *oscalTypes.AssessmentPlan) (settings.Settings, error) {
 	return settings.Settings{}, ErrNoActivities
 }
 
-// GetControlTitle retrieves the title for a control from the catalog
-func GetControlTitle(controlID string, controlSource string, appDir ApplicationDirectory, validator validation.Validator) (string, error) {
+// loadControlTitlesFromSource loads all control titles from a source and returns them as a map
+func loadControlTitlesFromSource(controlSource string, appDir ApplicationDirectory, validator validation.Validator) (map[string]string, error) {
 	profile, err := LoadProfile(appDir, controlSource, validator)
 	if err != nil {
-		return "", fmt.Errorf("failed to load profile from source '%s': %w", controlSource, err)
+		return nil, fmt.Errorf("failed to load profile from source '%s': %w", controlSource, err)
 	}
 
 	if profile.Imports == nil {
-		return "", fmt.Errorf("profile '%s' has no imports", controlSource)
+		return nil, fmt.Errorf("profile '%s' has no imports", controlSource)
 	}
 
+	controlTitles := make(map[string]string)
+
+	// Load all control titles from all imported catalogs
 	for _, imp := range profile.Imports {
 		catalog, err := LoadCatalogSource(appDir, imp.Href, validator)
 		if err != nil {
@@ -98,11 +101,26 @@ func GetControlTitle(controlID string, controlSource string, appDir ApplicationD
 				continue
 			}
 			for _, control := range *group.Controls {
-				if control.ID == controlID && control.Title != "" {
-					return control.Title, nil
+				if control.ID != "" && control.Title != "" {
+					controlTitles[control.ID] = control.Title
 				}
 			}
 		}
 	}
+
+	return controlTitles, nil
+}
+
+// GetControlTitle retrieves the title for a specific control from the catalog
+func GetControlTitle(controlID string, controlSource string, appDir ApplicationDirectory, validator validation.Validator) (string, error) {
+	controlTitles, err := loadControlTitlesFromSource(controlSource, appDir, validator)
+	if err != nil {
+		return "", err
+	}
+
+	if title, found := controlTitles[controlID]; found {
+		return title, nil
+	}
+
 	return "", fmt.Errorf("title for control '%s' not found in catalog", controlID)
 }

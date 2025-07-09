@@ -163,10 +163,12 @@ func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output
 	}
 	validator := validation.NewSchemaValidator()
 
+	logger.Debug("Loading control titles for framework", "frameworkId", frameworkId)
 	scope, err := complytime.NewAssessmentScopeFromCDs(frameworkId, appDir, validator, cds...)
 	if err != nil {
 		return fmt.Errorf("error creating assessment scope for %s: %w", frameworkId, err)
 	}
+	logger.Debug("Assessment scope created", "controls", len(scope.IncludeControls))
 	data, err := yaml.Marshal(&scope)
 	if err != nil {
 		return fmt.Errorf("error marshalling yaml content: %v", err)
