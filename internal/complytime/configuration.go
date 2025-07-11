@@ -16,8 +16,6 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/models"
 	"github.com/oscal-compass/oscal-sdk-go/models/components"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
-
-	"github.com/complytime/complyctl/internal/complytime/plan"
 )
 
 const (
@@ -192,7 +190,7 @@ func ActionsContextFromPlan(assessmentPlan *oscalTypes.AssessmentPlan) (*actions
 	if err != nil {
 		return nil, fmt.Errorf("error generating context from plan %s: %w", assessmentPlan.Metadata.Title, err)
 	}
-	apSettings, err := plan.Settings(assessmentPlan)
+	apSettings, err := Settings(assessmentPlan)
 	if err != nil {
 		return nil, fmt.Errorf("cannot extract settings from plan %s: %w", assessmentPlan.Metadata.Title, err)
 	}

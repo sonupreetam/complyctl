@@ -16,7 +16,6 @@ import (
 
 	"github.com/complytime/complyctl/cmd/complyctl/option"
 	"github.com/complytime/complyctl/internal/complytime"
-	"github.com/complytime/complyctl/internal/complytime/plan"
 )
 
 const assessmentPlanLocation = "assessment-plan.json"
@@ -121,7 +120,7 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 		if err != nil {
 			return fmt.Errorf("error reading assessment plan: %w", err)
 		}
-		assessmentScope := plan.AssessmentScope{}
+		assessmentScope := complytime.AssessmentScope{}
 		if err := yaml.Unmarshal(configBytes, &assessmentScope); err != nil {
 			return fmt.Errorf("error unmarshaling assessment plan: %w", err)
 		}
@@ -131,7 +130,7 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 	filePath := filepath.Join(opts.complyTimeOpts.UserWorkspace, assessmentPlanLocation)
 	cleanedPath := filepath.Clean(filePath)
 
-	if err := plan.WritePlan(assessmentPlan, opts.complyTimeOpts.FrameworkID, cleanedPath); err != nil {
+	if err := complytime.WritePlan(assessmentPlan, opts.complyTimeOpts.FrameworkID, cleanedPath); err != nil {
 		return fmt.Errorf("error writing assessment plan to %s: %w", cleanedPath, err)
 	}
 	logger.Info(fmt.Sprintf("Assessment plan written to %s\n", cleanedPath))
@@ -142,7 +141,7 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTypes.AssessmentPlan, string, error) {
 	apPath := filepath.Join(opts.UserWorkspace, assessmentPlanLocation)
 	apCleanedPath := filepath.Clean(apPath)
-	assessmentPlan, err := plan.ReadPlan(apCleanedPath, validator)
+	assessmentPlan, err := complytime.ReadPlan(apCleanedPath, validator)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, "", fmt.Errorf("error: assessment plan does not exist in workspace %s: %w\n\nDid you run the plan command?",
@@ -157,10 +156,19 @@ func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTy
 // planDryRun leverages the AssessmentScope structure to populate tailoring config.
 // The config is written to stdout.
 func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output string) error {
-	scope, err := plan.NewAssessmentScopeFromCDs(frameworkId, cds...)
+	// Create application directory and validator to get control titles
+	appDir, err := complytime.NewApplicationDirectory(true)
 	if err != nil {
-		return fmt.Errorf("error creating assessment scope for %s", frameworkId)
+		return fmt.Errorf("failed to initialize application directory: %w", err)
 	}
+	validator := validation.NewSchemaValidator()
+
+	logger.Debug("Loading control titles for framework", "frameworkId", frameworkId)
+	scope, err := complytime.NewAssessmentScopeFromCDs(frameworkId, appDir, validator, cds...)
+	if err != nil {
+		return fmt.Errorf("error creating assessment scope for %s: %w", frameworkId, err)
+	}
+	logger.Debug("Assessment scope created", "controls", len(scope.IncludeControls))
 	data, err := yaml.Marshal(&scope)
 	if err != nil {
 		return fmt.Errorf("error marshalling yaml content: %v", err)

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package plan
+package complytime
 
 import (
 	"fmt"
@@ -9,11 +9,13 @@ import (
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/extensions"
+	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
 // ControlEntry represents a control in the assessment scope
 type ControlEntry struct {
 	ControlID    string   `yaml:"controlId"`
+	ControlTitle string   `yaml:"controlTitle"`
 	IncludeRules []string `yaml:"includeRules"`
 	ExcludeRules []string `yaml:"excludeRules,omitempty"`
 }
@@ -39,12 +41,18 @@ func NewAssessmentScope(frameworkID string) AssessmentScope {
 
 // NewAssessmentScopeFromCDs creates and populates an AssessmentScope struct for a given framework id and set of
 // OSCAL Component Definitions.
-func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDefinition) (AssessmentScope, error) {
+func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, validator validation.Validator, cds ...oscalTypes.ComponentDefinition) (AssessmentScope, error) {
 	includeControls := make(includeControlsSet)
+	controlTitles := make(map[string]string)
 	scope := NewAssessmentScope(frameworkId)
+
 	if cds == nil {
 		return AssessmentScope{}, fmt.Errorf("no component definitions found")
 	}
+
+	// Map to store control titles by source to avoid loading the same source multiple times
+	controlTitlesBySource := make(map[string]map[string]string)
+
 	for _, componentDef := range cds {
 		if componentDef.Components == nil {
 			continue
@@ -62,9 +70,41 @@ func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDe
 					if !found || frameworkProp.Value != scope.FrameworkID {
 						continue
 					}
+
+					// Checking once for control titles from source on the control implementation
+					if validator != nil {
+						// Check if source was already loaded
+						if _, sourceLoaded := controlTitlesBySource[ci.Source]; !sourceLoaded {
+							// Load all titles from this source
+							loadedTitles, err := loadControlTitlesFromSource(ci.Source, appDir, validator)
+							if err != nil {
+								// Empty map if source can't be loaded
+								controlTitlesBySource[ci.Source] = make(map[string]string)
+							} else {
+								controlTitlesBySource[ci.Source] = loadedTitles
+							}
+						}
+					}
+
 					for _, ir := range ci.ImplementedRequirements {
 						if ir.ControlId != "" {
 							includeControls.Add(ir.ControlId)
+
+							// Getting control title for id from map lookup
+							if validator != nil {
+								if _, exists := controlTitles[ir.ControlId]; !exists {
+									// Get the title from the loaded source
+									if title, found := controlTitlesBySource[ci.Source][ir.ControlId]; found {
+										controlTitles[ir.ControlId] = title
+									} else {
+										// Empty string if title isn't available
+										controlTitles[ir.ControlId] = ""
+									}
+								}
+							} else {
+								// Empty string if title isn't available
+								controlTitles[ir.ControlId] = ""
+							}
 						}
 					}
 				}
@@ -77,6 +117,7 @@ func NewAssessmentScopeFromCDs(frameworkId string, cds ...oscalTypes.ComponentDe
 	for i, id := range controlIDs {
 		scope.IncludeControls[i] = ControlEntry{
 			ControlID:    id,
+			ControlTitle: controlTitles[id],
 			IncludeRules: []string{"*"}, // by default, include all rules
 		}
 	}
@@ -106,7 +147,16 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 		includedControls.Add(entry.ControlID)
 	}
 	logger.Debug("Found included controls", "count", len(includedControls))
-
+	for _, controlT := range assessmentPlan.ReviewedControls.ControlSelections {
+		if controlT.IncludeControls != nil {
+			if controlT.Props != nil {
+				for _, control := range *controlT.Props {
+					// process control properties
+					_ = control.Name
+				}
+			}
+		}
+	}
 	if assessmentPlan.LocalDefinitions != nil {
 		if assessmentPlan.LocalDefinitions.Activities != nil {
 			for activityI := range *assessmentPlan.LocalDefinitions.Activities {

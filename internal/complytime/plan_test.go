@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package plan
+package complytime
 
 import (
 	"path/filepath"
