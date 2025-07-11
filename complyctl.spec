@@ -63,7 +63,7 @@ install -d %{buildroot}%{_bindir}
 install -d -m 0755 %{buildroot}%{_datadir}/%{app_dir}/{plugins,bundles,controls}
 install -d -m 0755 %{buildroot}%{_libexecdir}/%{app_dir}/plugins
 install -d -m 0755 %{buildroot}%{_sysconfdir}/%{app_dir}/config.d
-install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5}
+install -d -m 0755 %{buildroot}%{_mandir}/{man1,man3,man5}
 
 # Copy sample data to be consumed by complyctl CLI
 cp -rp docs/samples %{buildroot}%{_datadir}/%{app_dir}
@@ -74,6 +74,7 @@ install -p -m 0644 docs/man/complyctl.1 %{buildroot}%{_mandir}/man1/complyctl.1
 
 # Install files for openscap-plugin package
 install -p -m 0755 bin/openscap-plugin %{buildroot}%{_libexecdir}/%{app_dir}/plugins/openscap-plugin
+install -p -m 0644 docs/man/openscap-plugin.3 %{buildroot}%{_mandir}/man3/openscap-plugin.3
 install -p -m 0644 docs/man/c2p-openscap-manifest.5 %{buildroot}%{_mandir}/man5/c2p-openscap-manifest.5
 
 %post openscap-plugin
@@ -109,6 +110,7 @@ go test -mod=vendor -race -v ./...
 %files          openscap-plugin
 %attr(0755, root, root) %{_libexecdir}/%{app_dir}/plugins/openscap-plugin
 %license LICENSE
+%{_mandir}/man3/openscap-plugin.3*
 %{_mandir}/man5/c2p-openscap-manifest.5*
 %ghost %{_datadir}/%{app_dir}/plugins/c2p-openscap-manifest.json
 
