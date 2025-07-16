@@ -140,7 +140,7 @@ fedpkg update
 ```
 Or via web interface on [Bodhi](https://bodhi.fedoraproject.org).
 
-The new updates enter in `testing` state and are moved to stable after 7 day, or sooner if it receives 3 positive "karmas".
+The new updates enter in `testing` state and are moved to stable after 7 days, or sooner if it receives 3 positive "karmas".
 After moving to `stable` state the update is signed and awaits to be pushed to the repositories by the Release Engineering Team.
 
 Check the package update status in the following links:
