@@ -37,7 +37,7 @@ Once a new release is out, the [Fedora Package](https://src.fedoraproject.org/rp
 
 ### Preparation
 
-To update a Fedora package it is ultimately necessary to be a member of Fedora Packager group.
+To update a Fedora package, it is ultimately necessary to be a member of Fedora Packager group.
 Here is the main documentation on how to become a Fedora Packager:
 - [Joining the Package Maintainers](https://docs.fedoraproject.org/en-US/package-maintainers/Joining_the_Package_Maintainers/)
 
@@ -132,7 +132,7 @@ fedpkg build
 
 ### Submit Fedora updates
 
-After the build is done an update must be submitted to [Bodhi](https://bodhi.fedoraproject.org).
+After the build is done, an update must be submitted to [Bodhi](https://bodhi.fedoraproject.org).
 
 Updates for `rawhide` builds are submitted automatically, but updates for any branched version needs to be submitted manually.
 ```bash
@@ -141,7 +141,7 @@ fedpkg update
 Or via web interface on [Bodhi](https://bodhi.fedoraproject.org).
 
 The new updates enter in `testing` state and are moved to stable after 7 days, or sooner if it receives 3 positive "karmas".
-After moving to `stable` state the update is signed and awaits to be pushed to the repositories by the Release Engineering Team.
+After moving to `stable` state, the update is signed and awaits to be pushed to the repositories by the Release Engineering Team.
 
 Check the package update status in the following links:
   - [Updates Status](https://bodhi.fedoraproject.org/updates/?packages=complyctl)
