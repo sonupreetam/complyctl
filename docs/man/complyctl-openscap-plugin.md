@@ -12,9 +12,9 @@ The plugin is not meant to be executed directly, it communicates with complyctl 
 
 When the plugin receives the **generate** command from complyctl, it will generate a tailing policy file and remediation files for bash, ansible, and imagebuilder. The generated files are placed in the **openscap** directory under user workspace.
 
-When the plugin receives the **scan** command from complyctl, it will scan the system with **oscap** and return the observations to complyctl.
+When the plugin receives the **scan** command from complyctl, it will scan the system with **oscap** and return the observations to complyctl based on **oscap** results.
 
-The generated remediation files from complyctl are based on the whole policy, it's not targeted to remediate specific findings. **oscap** could be used to manually generate remediation scripts containing only remediation for failed rules based on complyctl scan result.
+The generated remediation files from complyctl are based on the whole policy, it's not targeted to remediate specific findings. **oscap** could be used to manually generate remediation artifacts only for failed rules based on **oscap** scan result.
 
 # FILES
 
