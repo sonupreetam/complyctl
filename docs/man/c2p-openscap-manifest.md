@@ -166,6 +166,6 @@ This is an example of a drop-in file modifying the openscap files.
 
 # SEE ALSO
 
-complyctl(1), openscap-plugin(3)
+complyctl(1), complyctl-openscap-plugin(7)
 
 See the Upstream project at https://github.com/complytime/complyctl for more detailed documentation.

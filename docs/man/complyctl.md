@@ -61,7 +61,7 @@ Run **complyctl [command] --help** for more information about a specific command
 
 # SEE ALSO
 
-openscap-plugin(3)
+complyctl-openscap-plugin(7)
 
 See the Upstream project at https://github.com/complytime/complyctl for more detailed documentation.
 
