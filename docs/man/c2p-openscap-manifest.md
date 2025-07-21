@@ -71,6 +71,7 @@ Each entry includes:
 - default (optional): The default value if not specified
 
 # CONFIGURATION OPTIONS
+
 ## workspace (required)
 Directory for writing plugin artifacts. The value is inherited from complyctl and cannot be modified.
 
@@ -90,6 +91,7 @@ The name of the generated ARF file.
 The name of the generated tailoring file.
 
 # EXAMPLES
+
 This is an example of a manifest including all information.
 
 ```json
@@ -163,6 +165,7 @@ This is an example of a drop-in file modifying the openscap files.
 ```
 
 # SEE ALSO
-complyctl(1)
+
+complyctl(1), complyctl-openscap-plugin(7)
 
 See the Upstream project at https://github.com/complytime/complyctl for more detailed documentation.

@@ -61,6 +61,8 @@ Run **complyctl [command] --help** for more information about a specific command
 
 # SEE ALSO
 
+complyctl-openscap-plugin(7)
+
 See the Upstream project at https://github.com/complytime/complyctl for more detailed documentation.
 
 See https://github.com/oscal-compass/compliance-to-policy-go project.
