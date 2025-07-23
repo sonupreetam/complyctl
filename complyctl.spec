@@ -67,6 +67,8 @@ install -d -m 0755 %{buildroot}%{_mandir}/{man1,man5,man7}
 
 # Copy sample data to be consumed by complyctl CLI
 cp -rp docs/samples %{buildroot}%{_datadir}/%{app_dir}
+install -p -m 0644 docs/samples/sample-{catalog,profile}.json %{buildroot}%{_datadir}/%{app_dir}/controls
+install -p -m 0644 docs/samples/sample-component-definition.json %{buildroot}%{_datadir}/%{app_dir}/bundles
 
 # Install files for complyctl CLI
 install -p -m 0755 bin/complyctl %{buildroot}%{_bindir}/complyctl
@@ -106,6 +108,8 @@ go test -mod=vendor -race -v ./...
 %dir %{_sysconfdir}/%{app_dir}
 %dir %{_sysconfdir}/%{app_dir}/config.d
 %{_datadir}/%{app_dir}/samples/{sample-catalog.json,sample-component-definition.json,sample-profile.json,c2p-openscap-manifest.json}
+%{_datadir}/%{app_dir}/controls/{sample-catalog.json,sample-profile.json}
+%{_datadir}/%{app_dir}/bundles/sample-component-definition.json
 
 %files          openscap-plugin
 %attr(0755, root, root) %{_libexecdir}/%{app_dir}/plugins/openscap-plugin
