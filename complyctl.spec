@@ -4,6 +4,7 @@
 %global base_url https://%{goipath}
 %global app_dir complytime
 %global gopath %{_builddir}/go
+%global debug_package %{nil}
 
 Name:           complyctl
 Version:        0.0.8

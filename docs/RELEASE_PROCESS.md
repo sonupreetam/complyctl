@@ -35,7 +35,13 @@ Releases are currently expected every three weeks. Project maintainers always di
 
 Once a new release is out, the [Fedora Package](https://src.fedoraproject.org/rpms/complyctl) also needs to be updated.
 
-### Preparation
+The process is automated by [Packit](https://packit.dev/docs/fedora-releases-guide) according to [.packit.yaml](https://github.com/complytime/complyctl/blob/main/.packit.yaml) configuration file and should only demand a PR review from a Fedora package [maintainer](https://src.fedoraproject.org/rpms/complyctl)
+
+This automation will create PRs for the specified branches. Once the PRs are reviewed and merged:
+- [Koji builds](https://koji.fedoraproject.org/koji/packageinfo?packageID=42298) will be created
+- [Bodhi updates](https://bodhi.fedoraproject.org/updates/?packages=complyctl) will be submitted
+
+### Preparation (only necessary for Manual Process)
 
 To update a Fedora package, it is ultimately necessary to be a member of Fedora Packager group.
 Here is the main documentation on how to become a Fedora Packager:
