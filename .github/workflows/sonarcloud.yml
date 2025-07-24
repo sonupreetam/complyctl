@@ -45,4 +45,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.go.coverage.reportPaths=coverage.out -Dsonar.projectKey=rh-psce_complytime -Dsonar.organization=rh-psce
+            -Dsonar.go.coverage.reportPaths=coverage.out -Dsonar.projectKey=rh-psce_complyctl -Dsonar.organization=rh-psce
