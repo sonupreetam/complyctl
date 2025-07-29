@@ -153,6 +153,14 @@ Check the package update status in the following links:
   - [Updates Status](https://bodhi.fedoraproject.org/updates/?packages=complyctl)
   - [Package Overview](https://src.fedoraproject.org/rpms/complyctl)
 
+#### Troubleshooting
+
+If tests fail due to external issues, they can be restarted once the external issues are solved.
+For example, if some tests in [FEDORA-2025-2b39abfa99](https://bodhi.fedoraproject.org/updates/FEDORA-2025-2b39abfa99) failed due to infrastructure issues, they could be restarted by the following command:
+```bash
+bodhi updates trigger-tests FEDORA-2025-2b39abfa99
+```
+
 ### More information
 - [Fedora Package Guidelines](https://docs.fedoraproject.org/en-US/packaging-guidelines/)
 - [Package Maintenance Guide](https://docs.fedoraproject.org/en-US/package-maintainers/Package_Maintenance_Guide)
