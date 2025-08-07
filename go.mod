@@ -3,7 +3,7 @@ module github.com/complytime/complyctl
 go 1.24.0
 
 require (
-	github.com/ComplianceAsCode/compliance-operator v1.6.2
+	github.com/ComplianceAsCode/compliance-operator v1.7.0
 	github.com/adrg/xdg v0.5.3
 	github.com/antchfx/xmlquery v1.4.4
 	github.com/charmbracelet/bubbles v0.21.0
@@ -78,9 +78,9 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/openshift/api v0.0.0-20240830142653-85dc560939ef // indirect
-	github.com/openshift/library-go v0.0.0-20240821135116-ade3966091b1 // indirect
-	github.com/openshift/machine-config-operator v0.0.1-0.20230815171034-c2bb862bc08a // indirect
+	github.com/onsi/ginkgo/v2 v2.22.2 // indirect
+	github.com/openshift/api v0.0.0-20250320115527-3aa9dd5b9002 // indirect
+	github.com/openshift/library-go v0.0.0-20250129210218-fe56c2cf5d70 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -96,6 +96,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
