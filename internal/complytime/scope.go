@@ -5,6 +5,7 @@ package complytime
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/hashicorp/go-hclog"
@@ -12,12 +13,19 @@ import (
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 )
 
+// ParameterEntry represents a parameter with its name and value
+type ParameterEntry struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
 // ControlEntry represents a control in the assessment scope
 type ControlEntry struct {
-	ControlID    string   `yaml:"controlId"`
-	ControlTitle string   `yaml:"controlTitle"`
-	IncludeRules []string `yaml:"includeRules"`
-	ExcludeRules []string `yaml:"excludeRules,omitempty"`
+	ControlID        string           `yaml:"controlId"`
+	ControlTitle     string           `yaml:"controlTitle"`
+	IncludeRules     []string         `yaml:"includeRules"`
+	ExcludeRules     []string         `yaml:"excludeRules,omitempty"`
+	SelectParameters []ParameterEntry `yaml:"selectParameters,omitempty"`
 }
 
 // AssessmentScope sets up the yaml mapping type for writing to config file.
@@ -42,13 +50,16 @@ func NewAssessmentScope(frameworkID string) AssessmentScope {
 // NewAssessmentScopeFromCDs creates and populates an AssessmentScope struct for a given framework id and set of
 // OSCAL Component Definitions.
 func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, validator validation.Validator, cds ...oscalTypes.ComponentDefinition) (AssessmentScope, error) {
-	includeControls := make(includeControlsSet)
-	controlTitles := make(map[string]string)
 	scope := NewAssessmentScope(frameworkId)
 
 	if cds == nil {
 		return AssessmentScope{}, fmt.Errorf("no component definitions found")
 	}
+
+	// Process control implementations and build control relationships
+	includeControls := make(includeControlsSet)
+	controlTitles := make(map[string]string)
+	controlParameters := make(map[string]map[string][]string) // control -> parameter -> values
 
 	// Map to store control titles by source to avoid loading the same source multiple times
 	controlTitlesBySource := make(map[string]map[string]string)
@@ -67,7 +78,7 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 				}
 				if ci.Props != nil {
 					frameworkProp, found := extensions.GetTrestleProp(extensions.FrameworkProp, *ci.Props)
-					if !found || frameworkProp.Value != scope.FrameworkID {
+					if !found || frameworkProp.Value != frameworkId {
 						continue
 					}
 
@@ -107,18 +118,94 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 							}
 						}
 					}
+
+					// Process set parameters - match by remarks groups with control rules
+					if ci.SetParameters != nil {
+						// Create map of available set parameters
+						implementedSetParams := make(map[string][]string)
+						for _, sp := range *ci.SetParameters {
+							if sp.ParamId != "" && len(sp.Values) > 0 {
+								implementedSetParams[sp.ParamId] = sp.Values
+							}
+						}
+
+						remarksProps := extractRemarksProperties(cds)
+
+						// For each control, find parameters used by included rules in controls
+						for _, ir := range ci.ImplementedRequirements {
+							if ir.ControlId != "" && ir.Props != nil {
+								controlRules := make(map[string]bool)
+								for _, prop := range *ir.Props {
+									if prop.Name == extensions.RuleIdProp {
+										controlRules[prop.Value] = true
+									}
+								}
+
+								// Find parameters used by rules in control
+								for _, props := range remarksProps {
+									var ruleID string
+									var parametersInGroup []string
+
+									for _, prop := range props {
+										if prop.Name == extensions.RuleIdProp {
+											ruleID = prop.Value
+										}
+										if prop.Name == extensions.ParameterIdProp || strings.HasPrefix(prop.Name, extensions.ParameterIdProp+"_") {
+											parametersInGroup = append(parametersInGroup, prop.Value)
+										}
+									}
+
+									if ruleID != "" && controlRules[ruleID] {
+										for _, paramID := range parametersInGroup {
+											if paramValues, hasSetParam := implementedSetParams[paramID]; hasSetParam {
+												if controlParameters[ir.ControlId] == nil {
+													controlParameters[ir.ControlId] = make(map[string][]string)
+												}
+												controlParameters[ir.ControlId][paramID] = paramValues
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
 				}
 			}
 		}
 	}
 
+	// Build control entries from extracted data
 	controlIDs := includeControls.All()
 	scope.IncludeControls = make([]ControlEntry, len(controlIDs))
 	for i, id := range controlIDs {
+		// Create parameter entries only for used parameters
+		var parameterSelections []ParameterEntry
+		if controlParams, exists := controlParameters[id]; exists {
+			for paramID, values := range controlParams {
+				// Use set parameter values as the default value
+				paramValue := ""
+				if len(values) > 0 {
+					paramValue = values[0]
+				}
+
+				parameterSelections = append(parameterSelections, ParameterEntry{
+					Name:  paramID,
+					Value: paramValue,
+				})
+			}
+		}
+
+		// If no specific parameters found, add N/A
+		if len(parameterSelections) == 0 {
+			parameterSelections = []ParameterEntry{{Name: "N/A", Value: "N/A"}}
+		}
+
 		scope.IncludeControls[i] = ControlEntry{
-			ControlID:    id,
-			ControlTitle: controlTitles[id],
-			IncludeRules: []string{"*"}, // by default, include all rules
+			ControlID:        id,
+			ControlTitle:     controlTitles[id],
+			IncludeRules:     []string{"*"}, // by default, include all rules
+			SelectParameters: parameterSelections,
 		}
 	}
 	sort.Slice(scope.IncludeControls, func(i, j int) bool {
@@ -289,7 +376,6 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 		}
 	}
 }
-
 func filterControlSelection(controlSelection *oscalTypes.AssessedControls, includedControls includeControlsSet) {
 	// The new included controls should be the intersection of
 	// the originally included controls and the newly included controls.
@@ -382,6 +468,28 @@ func (a AssessmentScope) isRuleInList(ruleID string, ruleList []string) bool {
 		}
 	}
 	return false
+}
+
+// extractRemarksProperties extracts remarks-grouped properties
+func extractRemarksProperties(componentDefs []oscalTypes.ComponentDefinition) map[string][]oscalTypes.Property {
+	remarksProps := make(map[string][]oscalTypes.Property)
+
+	for _, compDef := range componentDefs {
+		if compDef.Components == nil {
+			continue
+		}
+		for _, component := range *compDef.Components {
+			if component.Props != nil {
+				for _, prop := range *component.Props {
+					if prop.Remarks != "" {
+						remarksProps[prop.Remarks] = append(remarksProps[prop.Remarks], prop)
+					}
+				}
+			}
+		}
+	}
+
+	return remarksProps
 }
 
 type includeControlsSet map[string]struct{}
