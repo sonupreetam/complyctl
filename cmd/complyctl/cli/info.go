@@ -36,30 +36,30 @@ const (
 
 var (
 	tableHeaderStyle = table.DefaultStyles().Header.
-				BorderStyle(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("240")). // Light grey border
-				BorderBottom(true).
-				Bold(false)
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")). // Light grey border
+		BorderBottom(true).
+		Bold(false)
 
 	tableCellStyle = table.DefaultStyles().Cell.
-			Foreground(lipgloss.Color("250")). // Very light grey text
-			Bold(true)
+		Foreground(lipgloss.Color("250")). // Very light grey text
+		Bold(true)
 
 	// Style for key-value pair keys
 	keyStyle = lipgloss.NewStyle().
-			PaddingRight(1)
+		PaddingRight(1)
 
 	// Style for key-value pairs values
 	valueStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("250")).
-			Bold(true)
+		Foreground(lipgloss.Color("250")).
+		Bold(true)
 
 	// Container style for key-value information blocks
 	infoContainerStyle = lipgloss.NewStyle().
-				Border(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("240")). // Light grey border for containers
-				Padding(0, 1).
-				Width(90) // Fixed width for consistent formatting
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")). // Light grey border for containers
+		Padding(0, 1).
+		Width(90) // Fixed width for consistent formatting
 )
 
 // parameter represents details about a parameter for easy mapping of parameters to set values.
@@ -77,7 +77,7 @@ type rule struct {
 	Parameters  []parameter
 }
 
-// control repsents details about a control across component sources.
+// control represents details about a control across component sources.
 type control struct {
 	ID                   string
 	Title                string
@@ -263,7 +263,7 @@ func processComponentProperties(compDefs []oscalTypes.DefinedComponent) (ruleRem
 		}
 		for _, prop := range *comp.Props {
 			remarksPropsMap[prop.Remarks] = append(remarksPropsMap[prop.Remarks], prop)
-			if prop.Name == "Rule_Id" && prop.Value != "" && prop.Remarks != "" {
+			if prop.Name == extensions.RuleIdProp && prop.Value != "" && prop.Remarks != "" {
 				ruleRemarksMap[prop.Value] = prop.Remarks
 			}
 		}
@@ -333,20 +333,10 @@ func extractRuleDetails(props []oscalTypes.Property) rule {
 	info := rule{}
 	for _, prop := range props {
 		switch prop.Name {
-		case "Rule_Description":
+		case extensions.RuleDescriptionProp:
 			info.Description = prop.Value
-		case "Parameter_Id":
-			param := parameter{
-				ID: prop.Value,
-			}
-			// Look for description in the same property set
-			for _, otherProp := range props {
-				if otherProp.Name == extensions.ParameterDescriptionProp && otherProp.Remarks == prop.Remarks {
-					param.Description = otherProp.Value
-					break
-				}
-			}
-			info.Parameters = append(info.Parameters, param)
+		case extensions.ParameterIdProp:
+			info.Parameters = append(info.Parameters, prop.Value)
 		}
 	}
 	return info
@@ -606,8 +596,8 @@ func newControlInfoModel(control control, rowLimit int) terminal.Model {
 func newRuleInfoModel(ruleDetails rule, setParameters indexedSetParameters, rowLimit int) terminal.Model {
 
 	headerFields := strings.Join([]string{
-		renderKeyValuePair("Rule ID", ruleDetails.ID),
-		renderKeyValuePair("Rule Description", ruleDetails.Description),
+		renderKeyValuePair(extensions.RuleIdProp, ruleDetails.ID),
+		renderKeyValuePair(extensions.RuleDescriptionProp, ruleDetails.Description),
 	}, "\n")
 
 	finalHeaderOutput := infoContainerStyle.Render(headerFields)
