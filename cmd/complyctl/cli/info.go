@@ -263,7 +263,7 @@ func processComponentProperties(compDefs []oscalTypes.DefinedComponent) (ruleRem
 		}
 		for _, prop := range *comp.Props {
 			remarksPropsMap[prop.Remarks] = append(remarksPropsMap[prop.Remarks], prop)
-			if prop.Name == "Rule_Id" && prop.Value != "" && prop.Remarks != "" {
+			if prop.Name == extensions.RuleIdProp && prop.Value != "" && prop.Remarks != "" {
 				ruleRemarksMap[prop.Value] = prop.Remarks
 			}
 		}
@@ -284,7 +284,7 @@ func findRulesUsingParameter(parameterID string, ruleRemarks ruleRemarksMap, rem
 			if isParameterIdProperty(prop.Name) && prop.Value == parameterID {
 				hasParameter = true
 			}
-			if prop.Name == "Rule_Id" {
+			if prop.Name == extensions.RuleIdProp {
 				ruleID = prop.Value
 			}
 		}
@@ -333,9 +333,9 @@ func extractRuleDetails(props []oscalTypes.Property) rule {
 	info := rule{}
 	for _, prop := range props {
 		switch prop.Name {
-		case "Rule_Description":
+		case extensions.RuleDescriptionProp:
 			info.Description = prop.Value
-		case "Parameter_Id":
+		case extensions.ParameterIdProp:
 			param := parameter{
 				ID: prop.Value,
 			}
