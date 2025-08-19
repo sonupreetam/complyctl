@@ -1,7 +1,9 @@
 name: e2e
 
 on:
-  # Triggers the workflow on pull request events for the main branch
+  push:
+    branches:
+      - main
   pull_request:
     types:
       - opened
@@ -10,51 +12,26 @@ on:
 permissions:
   contents: read
 
-jobs:
-  run-e2e-on-fedora-vm:
-    runs-on: ubuntu-latest
+env:
+  COMPLYTIME_DEV_MODE: 1
 
+jobs:
+  run-e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
     steps:
       # Checkout the code from the repository
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       
-      # Set up Lima, the tool that will create our fedora VM.
-      - name: Set up Lima
-        uses: lima-vm/lima-actions/setup@03b96d61959e83b2c737e44162c3088e81de0886 # v1.0.1
-        id: lima
+      - name: Install the dependences
+        run: dnf install git wget make scap-security-guide go tree -y
 
-      # Use a cache for Lima to speed up subsequent runs.
-      # This is a recommended best practice to make your workflows faster.
-      - name: Cache Lima downloads
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: ~/.cache/lima
-          key: lima-${{ runner.os }}-${{ steps.lima.outputs.version }}
-
-      # Start the Fedora VM.
-      # 'limactl start' downloads the Fedora cloud image and boots it as a VM.
-      # The template://fedora shorthand makes it easy to specify.
-      - name: Start Fedora VM
-        run: limactl start --name=fedora template://fedora 
-
-      - name: Install the dependences on fedora VM
+      - name: Build complyctl and init complyctl
         run: |
-          limactl shell fedora bash -c '
-            sudo dnf install git wget make scap-security-guide go tree -y
-          '
-      - name: Build complyctl and Init complyctl
-        run: |
-          limactl shell fedora bash -c '
-            cp -R ../complyctl /tmp && cd /tmp/complyctl
-            sudo chown -R runner:runner /usr/local/
-            export COMPLYTIME_DEV_MODE=1
-            sh tests/build_init_env.sh
-            '
+          git config --global --add safe.directory /__w/complyctl/complyctl
+          sh tests/build_init_env.sh
+
       - name: Run e2e tests
-        run: |
-          limactl shell fedora bash -c '
-            cd /tmp/complyctl
-            export COMPLYTIME_DEV_MODE=1
-            go test tests/e2e/e2e_test.go -v
-            '
+        run: go test tests/e2e/e2e_test.go -v
