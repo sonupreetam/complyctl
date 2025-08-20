@@ -1,4 +1,4 @@
-name: e2e
+name: e2e-test
 
 on:
   push:
@@ -16,7 +16,7 @@ env:
   COMPLYTIME_DEV_MODE: 1
 
 jobs:
-  run-e2e:
+  e2e-test:
     runs-on: ubuntu-latest
     container:
       image: fedora:latest
@@ -25,13 +25,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       
-      - name: Install the dependences
-        run: dnf install git wget make scap-security-guide go tree -y
+      # Build and setup complyctl
+      - name: Setup compyctl
+        uses: ./.github/actions/setup-complyctl
+        # This is the test data for a specific product, and it may be updated in the future if necessary.
+        with:
+          product: 'fedora'
+          catalog: 'cusp_fedora'
+          profile: 'fedora-cusp_fedora-default'
 
-      - name: Build complyctl and init complyctl
-        run: |
-          git config --global --add safe.directory /__w/complyctl/complyctl
-          sh tests/build_init_env.sh
-
+      # Run e2e tests
       - name: Run e2e tests
         run: go test tests/e2e/e2e_test.go -v

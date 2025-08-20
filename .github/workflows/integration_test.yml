@@ -1,10 +1,13 @@
-name: integration_test.yml
+name: integration-test
 
 on:
   push:
     branches:
       - main
   pull_request:
+    types:
+      - opened
+      - synchronize
 
 env:
   COMPLYTIME_DEV_MODE: 1
@@ -25,10 +28,11 @@ jobs:
       # Setup complyctl for further testing
       - name: Setup compyctl
         uses: ./.github/actions/setup-complyctl
+        # This is the test data for a specific product, and it may be updated in the future if necessary.
         with:
-          catalog_path: 'catalogs/cusp_fedora/catalog.json'
-          profile_path: 'profiles/fedora-cusp_fedora-default/profile.json'
-          component_definition_path: 'component-definitions/fedora/fedora-cusp_fedora-default/component-definition.json'
+          product: 'fedora'
+          catalog: 'cusp_fedora'
+          profile: 'fedora-cusp_fedora-default'
 
       # Test complyctl
       - name: Test complyctl
