@@ -96,11 +96,14 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 					continue
 				}
 
-				// Load control titles from source if needed
+				// Load control titles from source on control implementation if needed
 				if validator != nil {
+					// Check if source was already loaded
 					if _, sourceLoaded := controlTitlesBySource[ci.Source]; !sourceLoaded {
+						// Load all titles from this source
 						loadedTitles, err := loadControlTitlesFromSource(ci.Source, appDir, validator)
 						if err != nil {
+							// Empty map if source can't be loaded
 							controlTitlesBySource[ci.Source] = make(map[string]string)
 						} else {
 							controlTitlesBySource[ci.Source] = loadedTitles
@@ -116,12 +119,15 @@ func NewAssessmentScopeFromCDs(frameworkId string, appDir ApplicationDirectory, 
 						// Set control title if not already set
 						if _, exists := result.controlTitles[ir.ControlId]; !exists {
 							if validator != nil {
+								// Get the title from the loaded source
 								if title, found := controlTitlesBySource[ci.Source][ir.ControlId]; found {
 									result.controlTitles[ir.ControlId] = title
 								} else {
+									// Empty string if title isn't available
 									result.controlTitles[ir.ControlId] = ""
 								}
 							} else {
+								// Empty string if the title isn't available
 								result.controlTitles[ir.ControlId] = ""
 							}
 						}
@@ -170,7 +176,7 @@ func processSetParameters(ci oscalTypes.ControlImplementationSet, result *compon
 					if prop.Name == extensions.RuleIdProp {
 						ruleID = prop.Value
 					}
-					if prop.Name == extensions.ParameterIdProp || strings.HasPrefix(prop.Name, extensions.ParameterIdProp+"_") {
+					if isParameterIdProperty(prop.Name) {
 						parametersInGroup = append(parametersInGroup, prop.Value)
 					}
 				}
@@ -480,8 +486,7 @@ func (a AssessmentScope) getRelatedControlIDs(activity *oscalTypes.Activity) []s
 	return controlIDs
 }
 
-// findParameterValueForControls finds the appropriate parameter value for the given parameter name
-// from the related controls.
+// findParameterValueForControls finds the parameter value from related controls.
 func (a AssessmentScope) findParameterValueForControls(paramName string, relatedControlIDs []string, controlParams map[string]map[string]string) string {
 	// Check each related control in order for the parameter
 	for _, controlID := range relatedControlIDs {
