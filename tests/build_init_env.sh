@@ -40,6 +40,6 @@ sed -i "s|trestle://profiles/$3/profile.json|trestle://controls/profile.json|" $
 # Setup plugin
 cp -rp bin/openscap-plugin $HOME/$WDIR/plugins
 checksum=$(sha256sum $HOME/$WDIR/plugins/openscap-plugin| cut -d " " -f 1 )
-sed -i "s/checksum_placeholder/$checksum/" docs/samples/c2p-openscap-manifest.json
-cp docs/samples/c2p-openscap-manifest.json $HOME/$WDIR/plugins
+jq --arg new_sum "$checksum" '.sha256 = $new_sum' "docs/samples/c2p-openscap-manifest.json" > "docs/samples/c2p-openscap-manifest.json.tmp"
+mv docs/samples/c2p-openscap-manifest.json.tmp $HOME/$WDIR/plugins/c2p-openscap-manifest.json
 echo "Build and init finished."
