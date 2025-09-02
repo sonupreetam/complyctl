@@ -7,6 +7,7 @@ specfile_path: complyctl.spec
 
 files_to_sync:
     - complyctl.spec
+    - .packit.yaml
 
 jobs:
 # For testing before merging PRs
