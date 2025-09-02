@@ -7,14 +7,16 @@ specfile_path: complyctl.spec
 
 files_to_sync:
     - complyctl.spec
+    - .packit.yaml
 
 jobs:
 # For testing before merging PRs
 - job: copr_build
   trigger: pull_request
   targets:
-    - fedora-42-x86_64
     - fedora-rawhide-x86_64
+    - fedora-43-x86_64
+    - fedora-42-x86_64
     - centos-stream-9-x86_64
     - centos-stream-10-x86_64
 
@@ -24,6 +26,7 @@ jobs:
   trigger: release
   dist_git_branches:
     - rawhide
+    - f43
     - f42
 
 # Automatically submit builds to Koji after PR is merged into dist-git
@@ -31,10 +34,12 @@ jobs:
   trigger: commit
   dist_git_branches:
     - rawhide
+    - f43
     - f42
 
 # Trigger Bodhi update for released Fedora versions
 - job: bodhi_update
   trigger: commit
   dist_git_branches:
+    - f43
     - f42
