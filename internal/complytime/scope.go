@@ -25,6 +25,7 @@ type ControlEntry struct {
 	ControlTitle     string           `yaml:"controlTitle"`
 	IncludeRules     []string         `yaml:"includeRules"`
 	ExcludeRules     []string         `yaml:"excludeRules,omitempty"`
+	WaiveRules       []string         `yaml:"waiveRules,omitempty"`
 	SelectParameters []ParameterEntry `yaml:"selectParameters,omitempty"`
 }
 
@@ -38,6 +39,7 @@ type AssessmentScope struct {
 	// of an assessment.
 	IncludeControls    []ControlEntry `yaml:"includeControls"`
 	GlobalExcludeRules []string       `yaml:"globalExcludeRules,omitempty"`
+	GlobalWaiveRules   []string       `yaml:"globalWaiveRules,omitempty"`
 }
 
 // NewAssessmentScope creates an AssessmentScope struct for a given framework id.
@@ -301,18 +303,29 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 	}
 }
 
-// applyRuleScope alters the AssessedControls of activities based on IncludeRules and ExcludeRules configuration
+// applyRuleScope alters the AssessedControls of activities based on IncludeRules, ExcludeRules and WaiveRules configuration
 func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPlan, logger hclog.Logger) {
 	// Convert global exclude rules to a map for fast lookup
 	globalExcludeRules := make(map[string]struct{})
 	for _, rule := range a.GlobalExcludeRules {
 		globalExcludeRules[rule] = struct{}{}
 	}
-
 	// Check if globalExcludeRules contains "*" (exclude all rules globally)
-	_, hasGlobalWildcard := globalExcludeRules["*"]
-	if hasGlobalWildcard {
+	_, hasGlobalExcludeWildcard := globalExcludeRules["*"]
+	if hasGlobalExcludeWildcard {
+		a.GlobalWaiveRules = []string{}
 		logger.Warn("Global exclude rules contains '*' - all rules will be excluded from all controls")
+	}
+
+	// Convert global waive rules to a map for fast lookup
+	globalWaiveRules := make(map[string]struct{})
+	for _, rule := range a.GlobalWaiveRules {
+		globalWaiveRules[rule] = struct{}{}
+	}
+	// Check if globalWaiveRules contains "*" (waive all rules globally)
+	_, hasGlobalWaiveWildcard := globalWaiveRules["*"]
+	if hasGlobalWaiveWildcard {
+		logger.Warn("Global waive rules contains '*' - all rules except excluded ones will be waived from all controls")
 	}
 
 	// Build a map of control ID to ControlEntry for quick lookup
@@ -322,12 +335,14 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 		normalizedEntry := entry
 
 		// If globalExcludeRules contains "*", all rules are globally excluded
-		if hasGlobalWildcard {
+		if hasGlobalExcludeWildcard {
 			normalizedEntry.IncludeRules = []string{} // Clear includeRules since all rules are globally excluded
 			normalizedEntry.ExcludeRules = []string{} // Clear excludeRules since global takes precedence
+			normalizedEntry.WaiveRules = []string{}   // Clear waiveRules since all rules are globally excluded
 		} else if a.isRuleInList("*", normalizedEntry.ExcludeRules) {
-			// If excludeRules contains "*", includeRules doesn't matter
+			// If excludeRules contains "*", includeRules and waiveRules don't matter
 			normalizedEntry.IncludeRules = []string{} // Clear includeRules since they don't matter
+			normalizedEntry.WaiveRules = []string{}   // Clear waiveRules since they don't matter
 		} else if len(normalizedEntry.IncludeRules) == 0 {
 			normalizedEntry.IncludeRules = []string{"*"}
 		}
@@ -362,6 +377,20 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 								Ns:    extensions.TrestleNameSpace,
 							}
 							*activity.Props = append(*activity.Props, skippedActivity)
+						} else {
+							// If the rule is waived in one control, add a waivedActivity prop to activity
+							shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
+							if shouldWaive {
+								if activity.Props == nil {
+									activity.Props = &[]oscalTypes.Property{}
+								}
+								waivedActivity := oscalTypes.Property{
+									Name:  "waived",
+									Value: "true",
+									Ns:    extensions.TrestleNameSpace,
+								}
+								*activity.Props = append(*activity.Props, waivedActivity)
+							}
 						}
 					}
 				}
@@ -391,7 +420,21 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 									Ns:    extensions.TrestleNameSpace,
 								}
 								*step.Props = append(*step.Props, skipped)
+							} else {
+								shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
+								if shouldWaive {
+									if step.Props == nil {
+										step.Props = &[]oscalTypes.Property{}
+									}
+									waivedActivity := oscalTypes.Property{
+										Name:  "waived",
+										Value: "true",
+										Ns:    extensions.TrestleNameSpace,
+									}
+									*step.Props = append(*activity.Props, waivedActivity)
+								}
 							}
+
 						}
 					}
 				}
@@ -650,6 +693,30 @@ func (a AssessmentScope) isRuleInList(ruleID string, ruleList []string) bool {
 		}
 	}
 	return false
+}
+
+func (a AssessmentScope) checkWaive(controlSelection *oscalTypes.AssessedControls, activityRuleID string, controlRuleConfig map[string]ControlEntry, globalWaiveRules map[string]struct{}) bool {
+	// If the rule is waived in a control, add a waivedActivity prop
+	shouldWaive := false
+	for _, control := range *controlSelection.IncludeControls {
+		controlEntry, exists := controlRuleConfig[control.ControlId]
+		if !exists {
+			continue
+		}
+		if _, isGloballyWaived := globalWaiveRules[activityRuleID]; isGloballyWaived {
+			shouldWaive = true
+			break
+		} else if _, isAllGloballyWaived := globalWaiveRules["*"]; isAllGloballyWaived {
+			shouldWaive = true
+			break
+		} else if a.isRuleInList(activityRuleID, controlEntry.WaiveRules) {
+			shouldWaive = true
+		} else if a.isRuleInList("*", controlEntry.WaiveRules) {
+			shouldWaive = true
+			break
+		}
+	}
+	return shouldWaive
 }
 
 // filterParameterSelection validates a parameter selection against alternatives
