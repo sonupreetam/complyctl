@@ -158,24 +158,33 @@ globalWaiveRules:
 .EE
 .SS Assessment Plan Scope Inheritance
 When excluding a \f[CR]controlId\f[R] from the \f[CR]config.yml\f[R],
-the initial \[lq]*\[rq] \f[CR]includeRules\f[R] values will be skipped
-and not assessed for the \f[CR]controlId\f[R] in the assessment plan.
+all rules associated with the \f[CR]controlId\f[R] will be skipped and
+not assessed in the assessment plan.
+If a rule is associated with multiple controls, they should be
+explicitly excluded for all related controls or via
+\f[CR]globalExcludeRules\f[R].
+Otherwise the rule will still be executed by the scanner if any control
+includes it.
 .PP
 The activities of the assessment plan will be indicated as
 \[lq]skipped\[rq] for rules that are globally excluded.
 Therefore, all parameters associated with a globally excluded rule will
 not be used in the generated \f[CR]assessment\-plan.json\f[R].
 .PP
-When waiving a rule, the initial \[lq]*\[rq] \f[CR]includeRules\f[R]
-values will be checked for the rule indicated in \f[CR]waiveRules\f[R].
-If the rule is included, it will be marked as \[lq]waived\[rq] in the
+When waiving a rule, the values of \f[CR]includeRules\f[R] will first be
+checked to ensure the rule was not skipped.
+If the rule is not skipped, it will be marked as \[lq]waived\[rq] in the
 Assessment Plan.
-The rule will be expected to fail due to any known exception related to
+Waived rules are expected to fail due to any known exception related to
 the environment being scanned.
+Waiving rules with \f[CR]waiveRules\f[R] has the same functionality of
+\f[CR]globalWaiveRules\f[R].
+All rules marked as \[lq]waived\[rq] will be propogated across
+\f[CR]controlIds\f[R].
 .PP
 The output in \f[CR]assessment\-results.md\f[R] will reflect the
 \f[CR]Waived Rules\f[R] within the \f[CR]Failed Rules\f[R] section.
-In the case of a rule unexpectedly passing, it will be included in the
+In the case of a rule passing, it will be included in the
 \f[CR]Passed Rules\f[R] section.
 .PP
 The activities of the assessment plan will be indicated as

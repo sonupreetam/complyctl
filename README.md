@@ -99,7 +99,7 @@ includeControls:
   excludeRules:
   - "rule-03" # exclude rule-03 specific rule from control-03
 globalExcludeRules:
-  - "rule-99" # will be excluded for all controls, this takes priority over any includeRules clauses above
+  - "rule-99" # will be excluded for all controls, this takes priority over any includeRules, waiveRules, and globalWaiveRules clauses above
 globalWaiveRules:
   - "rule-50" # will be waived for all controls, this takes priority over any includeRules clauses above
 ```
