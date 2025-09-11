@@ -1433,6 +1433,431 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Success/WaiveRulesForControl",
+			basePlan: &oscalTypes.AssessmentPlan{
+				LocalDefinitions: &oscalTypes.LocalDefinitions{
+					Activities: &[]oscalTypes.Activity{
+						{
+							Title: "rule-1",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+											{
+												ControlId: "control-2",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Title: "rule-2",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			scope: AssessmentScope{
+				FrameworkID: "test",
+				IncludeControls: []ControlEntry{
+					{ControlID: "control-1", IncludeRules: []string{"*"}, WaiveRules: []string{"rule-1"}},
+					{ControlID: "control-2", IncludeRules: []string{"*"}},
+				},
+			},
+			wantActivities: &[]oscalTypes.Activity{
+				{
+					Title: "rule-1",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "waived",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+									{
+										ControlId: "control-2",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Title: "rule-2",
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Success/WaiveRulesForControlWithGlobalExclude",
+			basePlan: &oscalTypes.AssessmentPlan{
+				LocalDefinitions: &oscalTypes.LocalDefinitions{
+					Activities: &[]oscalTypes.Activity{
+						{
+							Title: "rule-1",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+											{
+												ControlId: "control-2",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Title: "rule-2",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			scope: AssessmentScope{
+				FrameworkID:        "test",
+				GlobalExcludeRules: []string{"rule-1"},
+				IncludeControls: []ControlEntry{
+					{ControlID: "control-1", IncludeRules: []string{"*"}, WaiveRules: []string{"rule-2"}},
+					{ControlID: "control-2", IncludeRules: []string{"*"}},
+				},
+			},
+			wantActivities: &[]oscalTypes.Activity{
+				{
+					Title: "rule-1",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "skipped",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: nil,
+				},
+				{
+					Title: "rule-2",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "waived",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Success/GlobalWaiveSpecificRules",
+			basePlan: &oscalTypes.AssessmentPlan{
+				LocalDefinitions: &oscalTypes.LocalDefinitions{
+					Activities: &[]oscalTypes.Activity{
+						{
+							Title: "rule-1",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+											{
+												ControlId: "control-2",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Title: "rule-2",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			scope: AssessmentScope{
+				FrameworkID:      "test",
+				GlobalWaiveRules: []string{"rule-1"},
+				IncludeControls: []ControlEntry{
+					{ControlID: "control-1", IncludeRules: []string{"*"}},
+					{ControlID: "control-2", IncludeRules: []string{"*"}},
+				},
+			},
+			wantActivities: &[]oscalTypes.Activity{
+				{
+					Title: "rule-1",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "waived",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+									{
+										ControlId: "control-2",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Title: "rule-2",
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Success/GlobalWaiveAllRules",
+			basePlan: &oscalTypes.AssessmentPlan{
+				LocalDefinitions: &oscalTypes.LocalDefinitions{
+					Activities: &[]oscalTypes.Activity{
+						{
+							Title: "rule-1",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+											{
+												ControlId: "control-2",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Title: "rule-2",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			scope: AssessmentScope{
+				FrameworkID:      "test",
+				GlobalWaiveRules: []string{"*"},
+				IncludeControls: []ControlEntry{
+					{ControlID: "control-1", IncludeRules: []string{"*"}},
+					{ControlID: "control-2", IncludeRules: []string{"*"}},
+				},
+			},
+			wantActivities: &[]oscalTypes.Activity{
+				{
+					Title: "rule-1",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "waived",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+									{
+										ControlId: "control-2",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Title: "rule-2",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "waived",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: &oscalTypes.ReviewedControls{
+						ControlSelections: []oscalTypes.AssessedControls{
+							{
+								IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+									{
+										ControlId: "control-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Success/GlobalExcludeOverridesWaive",
+			basePlan: &oscalTypes.AssessmentPlan{
+				LocalDefinitions: &oscalTypes.LocalDefinitions{
+					Activities: &[]oscalTypes.Activity{
+						{
+							Title: "rule-1",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+											{
+												ControlId: "control-2",
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Title: "rule-2",
+							RelatedControls: &oscalTypes.ReviewedControls{
+								ControlSelections: []oscalTypes.AssessedControls{
+									{
+										IncludeControls: &[]oscalTypes.AssessedControlsSelectControlById{
+											{
+												ControlId: "control-1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			scope: AssessmentScope{
+				FrameworkID:        "test",
+				GlobalExcludeRules: []string{"*"},
+				GlobalWaiveRules:   []string{"rule-1"},
+				IncludeControls: []ControlEntry{
+					{ControlID: "control-1", IncludeRules: []string{"*"}},
+					{ControlID: "control-2", IncludeRules: []string{"*"}},
+				},
+			},
+			wantActivities: &[]oscalTypes.Activity{
+				{
+					Title: "rule-1",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "skipped",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: nil,
+				},
+				{
+					Title: "rule-2",
+					Props: &[]oscalTypes.Property{
+						{
+							Name:  "skipped",
+							Value: "true",
+							Ns:    extensions.TrestleNameSpace,
+						},
+					},
+					RelatedControls: nil,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
