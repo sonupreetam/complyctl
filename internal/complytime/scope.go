@@ -280,15 +280,7 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 						filterControlSelection(controlSelection, includedControls)
 						if controlSelection.IncludeControls == nil {
 							activity.RelatedControls = nil
-							if activity.Props == nil {
-								activity.Props = &[]oscalTypes.Property{}
-							}
-							skippedActivity := oscalTypes.Property{
-								Name:  "skipped",
-								Value: "true",
-								Ns:    extensions.TrestleNameSpace,
-							}
-							*activity.Props = append(*activity.Props, skippedActivity)
+							a.addActivityProperty(activity, "skipped", "true")
 						}
 					}
 				}
@@ -368,28 +360,12 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 						a.filterControlSelectionByRule(controlSelection, activity.Title, controlRuleConfig, globalExcludeRules, logger, activity.Title)
 						if controlSelection.IncludeControls == nil {
 							activity.RelatedControls = nil
-							if activity.Props == nil {
-								activity.Props = &[]oscalTypes.Property{}
-							}
-							skippedActivity := oscalTypes.Property{
-								Name:  "skipped",
-								Value: "true",
-								Ns:    extensions.TrestleNameSpace,
-							}
-							*activity.Props = append(*activity.Props, skippedActivity)
+							a.addActivityProperty(activity, "skipped", "true")
 						} else {
 							// If the rule is waived in one control, add a waivedActivity prop to activity
 							shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
 							if shouldWaive {
-								if activity.Props == nil {
-									activity.Props = &[]oscalTypes.Property{}
-								}
-								waivedActivity := oscalTypes.Property{
-									Name:  "waived",
-									Value: "true",
-									Ns:    extensions.TrestleNameSpace,
-								}
-								*activity.Props = append(*activity.Props, waivedActivity)
+								a.addActivityProperty(activity, "waived", "true")
 							}
 						}
 					}
@@ -411,30 +387,13 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 							if controlSelection.IncludeControls == nil {
 								activity.RelatedControls.ControlSelections = nil
 								step.ReviewedControls = nil
-								if step.Props == nil {
-									step.Props = &[]oscalTypes.Property{}
-								}
-								skipped := oscalTypes.Property{
-									Name:  "skipped",
-									Value: "true",
-									Ns:    extensions.TrestleNameSpace,
-								}
-								*step.Props = append(*step.Props, skipped)
+								a.addStepProperty(step, "skipped", "true")
 							} else {
 								shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
 								if shouldWaive {
-									if step.Props == nil {
-										step.Props = &[]oscalTypes.Property{}
-									}
-									waivedActivity := oscalTypes.Property{
-										Name:  "waived",
-										Value: "true",
-										Ns:    extensions.TrestleNameSpace,
-									}
-									*step.Props = append(*activity.Props, waivedActivity)
+									a.addStepProperty(step, "waived", "true")
 								}
 							}
-
 						}
 					}
 				}
@@ -717,6 +676,30 @@ func (a AssessmentScope) checkWaive(controlSelection *oscalTypes.AssessedControl
 		}
 	}
 	return shouldWaive
+}
+
+func (a AssessmentScope) addActivityProperty(activity *oscalTypes.Activity, propertyName string, propertyValue string) {
+	if activity.Props == nil {
+		activity.Props = &[]oscalTypes.Property{}
+	}
+	property := oscalTypes.Property{
+		Name:  propertyName,
+		Value: propertyValue,
+		Ns:    extensions.TrestleNameSpace,
+	}
+	*activity.Props = append(*activity.Props, property)
+}
+
+func (a AssessmentScope) addStepProperty(step *oscalTypes.Step, propertyName string, propertyValue string) {
+	if step.Props == nil {
+		step.Props = &[]oscalTypes.Property{}
+	}
+	property := oscalTypes.Property{
+		Name:  propertyName,
+		Value: propertyValue,
+		Ns:    extensions.TrestleNameSpace,
+	}
+	*step.Props = append(*step.Props, property)
 }
 
 // filterParameterSelection validates a parameter selection against alternatives
