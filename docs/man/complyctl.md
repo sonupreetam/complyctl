@@ -121,6 +121,8 @@ includeControls:
   - "*"
   excludeRules: # Use to exclude a rule specific to the controlId
   - "accounts_password_set_max_life_root"
+  waiveRules: # Use to waive a rule specific to the controlId
+  - "accounts_password_pam_minlen"
   selectParameters:
   - name: var_password_pam_ucredit # Initial value = "1"
     value: "365" # Update parameter value to a valid alternative ("365")
@@ -128,13 +130,21 @@ includeControls:
     value: "11" # Initial value = "11"
 globalExcludeRules:
 - "*" # This will exclude all rules for all controlIds
+globalWaiveRules:
+- "*" # This will waive all rules for all controlIds
 ```
 
 ## Assessment Plan Scope Inheritance
 
-When excluding a `controlId` from the `config.yml`, the initial "*" `includeRules` values will be skipped and not assessed for the `controlId` in the assessment plan.
+When excluding a `controlId` from the `config.yml`, the initial "*" `includeRules` values will be skipped and not assessed for the `controlId` in the assessment plan. 
 
 The activities of the assessment plan will be indicated as "skipped" for rules that are globally excluded. Therefore, all parameters associated with a globally excluded rule will not be used in the generated `assessment-plan.json`.
+
+When waiving a rule, the initial "*" `includeRules` values will be checked for the rule indicated in `waiveRules`. If the rule is included, it will be marked as "waived" in the Assessment Plan. The rule will be expected to fail due to any known exception related to the environment being scanned. 
+
+The output in `assessment-results.md` will reflect the `Waived Rules` within the `Failed Rules` section. In the case of a rule unexpectedly passing, it will be included in the `Passed Rules` section. 
+
+The activities of the assessment plan will be indicated as "waived" for rules that are globally waived. Therefore, all parameters associated with a globally waived rule will not be altered in the generated `assessment-plan.json`.
 
 After configuring the `assessment-plan.json` the activities of the assessment plan and their selected parameter values will be updated.
 
