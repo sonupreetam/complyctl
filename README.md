@@ -85,6 +85,8 @@ includeControls:
   controlTitle: Title of Control 02
   includeRules:
   - "rule-02" # only rule-02 will be included for this control
+  waiveRules:
+    - "rule-01" # rule-01 will be waived for this control
 - controlId: control-03
   controlTitle: Title of Control 03
   includeRules:
@@ -98,6 +100,8 @@ includeControls:
   - "rule-03" # exclude rule-03 specific rule from control-03
 globalExcludeRules:
   - "rule-99" # will be excluded for all controls, this takes priority over any includeRules clauses above
+globalWaiveRules:
+  - "rule-50" # will be waived for all controls, this takes priority over any includeRules clauses above
 ```
 
 The edited `config.yml` can then be used with the `plan` command to customize the assessment plan.
