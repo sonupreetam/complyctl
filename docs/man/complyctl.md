@@ -121,6 +121,8 @@ includeControls:
   - "*"
   excludeRules: # Use to exclude a rule specific to the controlId
   - "accounts_password_set_max_life_root"
+  waiveRules: # Use to waive a rule specific to the controlId
+  - "accounts_password_pam_minlen"
   selectParameters:
   - name: var_password_pam_ucredit # Initial value = "1"
     value: "365" # Update parameter value to a valid alternative ("365")
@@ -128,13 +130,21 @@ includeControls:
     value: "11" # Initial value = "11"
 globalExcludeRules:
 - "*" # This will exclude all rules for all controlIds
+globalWaiveRules:
+- "*" # This will waive all rules for all controlIds
 ```
 
 ## Assessment Plan Scope Inheritance
 
-When excluding a `controlId` from the `config.yml`, the initial "*" `includeRules` values will be skipped and not assessed for the `controlId` in the assessment plan.
+When excluding a `controlId` from the `config.yml`, all rules associated with the `controlId` will be skipped and not assessed in the assessment plan. If a rule is associated with multiple controls, they should be explicitly excluded for all related controls or via `globalExcludeRules`. Otherwise the rule will still be executed by the scanner if any control includes it.
 
 The activities of the assessment plan will be indicated as "skipped" for rules that are globally excluded. Therefore, all parameters associated with a globally excluded rule will not be used in the generated `assessment-plan.json`.
+
+When waiving a rule, the values of `includeRules` will first be checked to ensure the rule was not skipped. If the rule is not skipped, it will be marked as "waived" in the Assessment Plan. Waived rules are expected to fail due to any known exception related to the environment being scanned. Waiving rules with `waiveRules` has the same functionality of `globalWaiveRules`. All rules marked as "waived" will be propogated across `controlIds`.
+
+The output in `assessment-results.md` will reflect the `Waived Rules` within the `Failed Rules` section. In the case of a rule passing, it will be included in the `Passed Rules` section. 
+
+The activities of the assessment plan will be indicated as "waived" for rules that are globally waived. Therefore, all parameters associated with a globally waived rule will not be altered in the generated `assessment-plan.json`.
 
 After configuring the `assessment-plan.json` the activities of the assessment plan and their selected parameter values will be updated.
 

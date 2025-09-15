@@ -144,6 +144,8 @@ includeControls:
   \- \[dq]*\[dq]
   excludeRules: # Use to exclude a rule specific to the controlId
   \- \[dq]accounts_password_set_max_life_root\[dq]
+  waiveRules: # Use to waive a rule specific to the controlId
+  \- \[dq]accounts_password_pam_minlen\[dq]
   selectParameters:
   \- name: var_password_pam_ucredit # Initial value = \[dq]1\[dq]
     value: \[dq]365\[dq] # Update parameter value to a valid alternative (\[dq]365\[dq])
@@ -151,16 +153,44 @@ includeControls:
     value: \[dq]11\[dq] # Initial value = \[dq]11\[dq]
 globalExcludeRules:
 \- \[dq]*\[dq] # This will exclude all rules for all controlIds
+globalWaiveRules:
+\- \[dq]*\[dq] # This will waive all rules for all controlIds
 .EE
 .SS Assessment Plan Scope Inheritance
 When excluding a \f[CR]controlId\f[R] from the \f[CR]config.yml\f[R],
-the initial \[lq]*\[rq] \f[CR]includeRules\f[R] values will be skipped
-and not assessed for the \f[CR]controlId\f[R] in the assessment plan.
+all rules associated with the \f[CR]controlId\f[R] will be skipped and
+not assessed in the assessment plan.
+If a rule is associated with multiple controls, they should be
+explicitly excluded for all related controls or via
+\f[CR]globalExcludeRules\f[R].
+Otherwise the rule will still be executed by the scanner if any control
+includes it.
 .PP
 The activities of the assessment plan will be indicated as
 \[lq]skipped\[rq] for rules that are globally excluded.
 Therefore, all parameters associated with a globally excluded rule will
 not be used in the generated \f[CR]assessment\-plan.json\f[R].
+.PP
+When waiving a rule, the values of \f[CR]includeRules\f[R] will first be
+checked to ensure the rule was not skipped.
+If the rule is not skipped, it will be marked as \[lq]waived\[rq] in the
+Assessment Plan.
+Waived rules are expected to fail due to any known exception related to
+the environment being scanned.
+Waiving rules with \f[CR]waiveRules\f[R] has the same functionality of
+\f[CR]globalWaiveRules\f[R].
+All rules marked as \[lq]waived\[rq] will be propogated across
+\f[CR]controlIds\f[R].
+.PP
+The output in \f[CR]assessment\-results.md\f[R] will reflect the
+\f[CR]Waived Rules\f[R] within the \f[CR]Failed Rules\f[R] section.
+In the case of a rule passing, it will be included in the
+\f[CR]Passed Rules\f[R] section.
+.PP
+The activities of the assessment plan will be indicated as
+\[lq]waived\[rq] for rules that are globally waived.
+Therefore, all parameters associated with a globally waived rule will
+not be altered in the generated \f[CR]assessment\-plan.json\f[R].
 .PP
 After configuring the \f[CR]assessment\-plan.json\f[R] the activities of
 the assessment plan and their selected parameter values will be updated.
