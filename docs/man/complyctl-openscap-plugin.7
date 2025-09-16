@@ -10,16 +10,23 @@ complyctl via gRPC.
 It has configurable options that can be configured via a manifest file,
 complyctl processes the manifest file and sends the configuration values
 to the plugin.
+Plugin execution occurs when running the complyctl \f[B]generate\f[R]
+and \f[B]scan\f[R] commands.
 .PP
 When the plugin receives the \f[B]generate\f[R] command from complyctl,
-it will generate a tailing policy file and remediation files for bash,
+it will generate a tailoring policy file and remediation files for bash,
 ansible, and imagebuilder.
+The generated tailoring policy file extends the Datastream profile by
+overriding rules and variables defined in the assessment\-plan.json.
 The generated files are placed in the \f[B]openscap\f[R] directory under
 user workspace.
 .PP
 When the plugin receives the \f[B]scan\f[R] command from complyctl, it
 will scan the system with \f[B]oscap\f[R] and return the observations to
 complyctl based on \f[B]oscap\f[R] results.
+The \f[B]scan\f[R] command then uses the generated tailoring file to
+validate the Datastream and Policy by scanning the system to produce
+observations as OSCAL Assessment Results.
 .PP
 The generated remediation files from complyctl are based on the whole
 policy, it\[cq]s not targeted to remediate specific findings.
@@ -44,7 +51,7 @@ $ complyctl plan anssi_bp28_minimal
 Suppose the user workspace is \[ti]/complytime, the generated assessment
 plan file would be \[ti]/complytime/assessment\-plan.json.
 .PP
-Step2: generate PVP policy from the generated assessment plan
+Step 2: generate PVP policy from the generated assessment plan
 .PP
 $ complyctl generate
 .PP

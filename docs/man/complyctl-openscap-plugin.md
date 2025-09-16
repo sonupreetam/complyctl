@@ -8,11 +8,11 @@ complyctl-openscap-plugin - a plugin which extends the complyctl capabilities to
 
 # DESCRIPTION
 
-The plugin is not meant to be executed directly, it communicates with complyctl via gRPC. It has configurable options that can be configured via a manifest file, complyctl processes the manifest file and sends the configuration values to the plugin.
+The plugin is not meant to be executed directly, it communicates with complyctl via gRPC. It has configurable options that can be configured via a manifest file, complyctl processes the manifest file and sends the configuration values to the plugin. Plugin execution occurs when running the complyctl **generate** and **scan** commands.
 
-When the plugin receives the **generate** command from complyctl, it will generate a tailing policy file and remediation files for bash, ansible, and imagebuilder. The generated files are placed in the **openscap** directory under user workspace.
+When the plugin receives the **generate** command from complyctl, it will generate a tailoring policy file and remediation files for bash, ansible, and imagebuilder. The generated tailoring policy file extends the Datastream profile by overriding rules and variables defined in the assessment-plan.json. The generated files are placed in the **openscap** directory under user workspace.
 
-When the plugin receives the **scan** command from complyctl, it will scan the system with **oscap** and return the observations to complyctl based on **oscap** results.
+When the plugin receives the **scan** command from complyctl, it will scan the system with **oscap** and return the observations to complyctl based on **oscap** results. The **scan** command then uses the generated tailoring file to validate the Datastream and Policy by scanning the system to produce observations as OSCAL Assessment Results.
 
 The generated remediation files from complyctl are based on the whole policy, it's not targeted to remediate specific findings. **oscap** could be used to manually generate remediation artifacts only for failed rules based on **oscap** scan result.
 
@@ -34,7 +34,7 @@ $ complyctl plan anssi_bp28_minimal
 
 Suppose the user workspace is ~/complytime, the generated assessment plan file would be ~/complytime/assessment-plan.json.
 
-Step2: generate PVP policy from the generated assessment plan
+Step 2: generate PVP policy from the generated assessment plan
 
 $ complyctl generate
 
@@ -61,6 +61,7 @@ $ oscap xccdf generate fix --fix-type ansible --result-id xccdf_org.open-scap_te
 complyctl(1), c2p-openscap-manifest.json(5), oscap(8)
 
 See the upstream projects at https://github.com/complytime/complyctl and https://github.com/OpenSCAP/openscap for more detailed documentation.
+
 
 # COPYRIGHT
 
