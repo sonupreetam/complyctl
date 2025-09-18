@@ -154,19 +154,17 @@ After configuring the `assessment-plan.json` the activities of the assessment pl
 
 ## Generating Policy Artifacts from the Assessment Plan
 
-Similarly to the "oscap way," the complyctl `generate` command will generate the plugin-specific tailoring policy from the OSCAL Assessment Plan. The generate command will process the validation component from the assessment-plan.json and validate with the Datastream. 
+The complyctl `generate` command will generate the **plugin-specific** tailoring policy from the OSCAL Assessment Plan. The generate command will process the validation component from the assessment-plan.json and validate with the Datastream (in the case of openscap-plugin being used). 
 
-### Tailoring Policy
-
-The tailoring policy file will extend the Datastream profile with rules and variables that are overridden by those in the assessment-plan.json.  
+The **tailoring policy** file will extend the Datastream profile with rules and variables that are overridden by those in the assessment-plan.json.  
 
 ## Scanning System Environment with the Assessment Plan and Policy Artifacts
 
-The `scan` command will scan the environment with the OSCAL Assessment Plan using the generated tailoring policy. The system will be scanned and the validation of the Datastream and tailoring policy file will be performed. Return observations to complyctl to be carried out and produced as an assessment-results.json. 
+The `scan` command will scan the environment with the OSCAL Assessment Plan using the generated tailoring policy. Observations will be returned to complyctl to be carried out and produced as an assessment-results.json. 
 
 ### Assessment Results
 
-Assessment Results will be generated in the `assessment-results.json` file and can be viewed in Markdown with the `--with-md` flag. 
+Assessment Results will be generated in the `assessment-results.json` file and can be viewed as Markdown by passing the `--with-md` flag. 
 
 # SEE ALSO
 

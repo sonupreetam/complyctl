@@ -201,25 +201,25 @@ not be altered in the generated \f[CR]assessment\-plan.json\f[R].
 After configuring the \f[CR]assessment\-plan.json\f[R] the activities of
 the assessment plan and their selected parameter values will be updated.
 .SS Generating Policy Artifacts from the Assessment Plan
-Similarly to the \[lq]oscap way,\[rq] the complyctl \f[CR]generate\f[R]
-command will generate the plugin\-specific tailoring policy from the
-OSCAL Assessment Plan.
+The complyctl \f[CR]generate\f[R] command will generate the
+\f[B]plugin\-specific\f[R] tailoring policy from the OSCAL Assessment
+Plan.
 The generate command will process the validation component from the
-assessment\-plan.json and validate with the Datastream.
-.SS Tailoring Policy
-The tailoring policy file will extend the Datastream profile with rules
-and variables that are overridden by those in the assessment\-plan.json.
+assessment\-plan.json and validate with the Datastream (in the case of
+openscap\-plugin being used).
+.PP
+The \f[B]tailoring policy\f[R] file will extend the Datastream profile
+with rules and variables that are overridden by those in the
+assessment\-plan.json.
 .SS Scanning System Environment with the Assessment Plan and Policy Artifacts
 The \f[CR]scan\f[R] command will scan the environment with the OSCAL
 Assessment Plan using the generated tailoring policy.
-The system will be scanned and the validation of the Datastream and
-tailoring policy file will be performed.
-Return observations to complyctl to be carried out and produced as an
-assessment\-results.json.
+Observations will be returned to complyctl to be carried out and
+produced as an assessment\-results.json.
 .SS Assessment Results
 Assessment Results will be generated in the
-\f[CR]assessment\-results.json\f[R] file and can be viewed in Markdown
-with the \f[CR]\-\-with\-md\f[R] flag.
+\f[CR]assessment\-results.json\f[R] file and can be viewed as Markdown
+by passing the \f[CR]\-\-with\-md\f[R] flag.
 .SH SEE ALSO
 complyctl\-openscap\-plugin(7)
 .PP
