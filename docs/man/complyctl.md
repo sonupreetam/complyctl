@@ -21,9 +21,11 @@ In addition, the plugin converts the raw results provided by the PVP into the sc
 
 Plugins communicate with complyctl via gRPC and can be authored using any preferred language. The plugin acts as the gRPC server while the complyctl CLI acts as the client. When a complyctl command is run, it invokes the appropriate method served by the plugin.
 
-See more about authoring plugins at https://github.com/complytime/complyctl/blob/main/docs/PLUGIN_GUIDE.md. 
+See more about authoring plugins at https://github.com/complytime/complyctl/blob/main/docs/PLUGIN_GUIDE.md.
 
 Review the `openscap-plugin` that is shipped with complyctl at https://github.com/complytime/complyctl/tree/main/cmd/openscap-plugin/README.md.
+
+Also check the "SEE ALSO" section for plugin specific man pages.
 
 Complyctl is built on https://github.com/oscal-compass/compliance-to-policy-go which provides a flexible plugin framework for leveraging OSCAL with various PVPs.
 
@@ -154,13 +156,11 @@ After configuring the `assessment-plan.json` the activities of the assessment pl
 
 ## Generating Policy Artifacts from the Assessment Plan
 
-The complyctl `generate` command will generate the **plugin-specific** tailoring policy from the OSCAL Assessment Plan. The generate command will process the validation component from the assessment-plan.json and validate with the Datastream (in the case of openscap-plugin being used). 
-
-The **tailoring policy** file will extend the Datastream profile with rules and variables that are overridden by those in the assessment-plan.json.  
+The complyctl `generate` command will generate the **plugin-specific** policy from the OSCAL Assessment Plan, more specifically it processes the validation component from the assessment-plan.json.
 
 ## Scanning System Environment with the Assessment Plan and Policy Artifacts
 
-The `scan` command will scan the environment with the OSCAL Assessment Plan using the generated tailoring policy. Observations will be returned to complyctl to be carried out and produced as an assessment-results.json. 
+The `scan` command will scan the environment with the OSCAL Assessment Plan using the generated policy. Observations will be returned to complyctl to be carried out and produced as an assessment-results.json. 
 
 ### Assessment Results
 
