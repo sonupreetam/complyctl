@@ -1,0 +1,6 @@
+summary: Make sure OSCAL content provided in the RPM is good to be used
+
+execute:
+    script:
+      - complyctl list --plain
+      - complyctl info cusp_fedora --plain
