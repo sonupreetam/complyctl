@@ -1202,7 +1202,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1272,7 +1272,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1342,7 +1342,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1353,7 +1353,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-2",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1410,7 +1410,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1484,7 +1484,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "waived",
+							Name:  extensions.WaivedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1572,7 +1572,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1583,7 +1583,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-2",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "waived",
+							Name:  extensions.WaivedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1654,7 +1654,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "waived",
+							Name:  extensions.WaivedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1742,7 +1742,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "waived",
+							Name:  extensions.WaivedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1766,7 +1766,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-2",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "waived",
+							Name:  extensions.WaivedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1838,7 +1838,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-1",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
@@ -1849,7 +1849,7 @@ func TestAssessmentScope_ApplyRuleScope(t *testing.T) {
 					Title: "rule-2",
 					Props: &[]oscalTypes.Property{
 						{
-							Name:  "skipped",
+							Name:  extensions.SkippedRulesProperty,
 							Value: "true",
 							Ns:    extensions.TrestleNameSpace,
 						},
