@@ -128,6 +128,10 @@ complyctl scan --with-md
 # Results can also be created in Markdown format by passing the `--with-md` flag.
 ```
 
+## Plugin Interaction
+
+<img alt="plugin-interaction" src="https://raw.githubusercontent.com/complytime/complyctl/0c38ebe6962e5c8479c18db219f37ca783108c97/graph-plugin-interaction.png" height="500" width="1000">
+
 ## Contributing
 
 :paperclip: Read the [contributing guidelines](./docs/CONTRIBUTING.md)\
