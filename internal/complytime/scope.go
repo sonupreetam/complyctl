@@ -280,7 +280,7 @@ func (a AssessmentScope) applyControlScope(assessmentPlan *oscalTypes.Assessment
 						filterControlSelection(controlSelection, includedControls)
 						if controlSelection.IncludeControls == nil {
 							activity.RelatedControls = nil
-							a.addActivityProperty(activity, "skipped", "true")
+							a.addActivityProperty(activity, extensions.SkippedRulesProperty, "true")
 						}
 					}
 				}
@@ -360,12 +360,12 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 						a.filterControlSelectionByRule(controlSelection, activity.Title, controlRuleConfig, globalExcludeRules, logger, activity.Title)
 						if controlSelection.IncludeControls == nil {
 							activity.RelatedControls = nil
-							a.addActivityProperty(activity, "skipped", "true")
+							a.addActivityProperty(activity, extensions.SkippedRulesProperty, "true")
 						} else {
 							// If the rule is waived in one control, add a waivedActivity prop to activity
 							shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
 							if shouldWaive {
-								a.addActivityProperty(activity, "waived", "true")
+								a.addActivityProperty(activity, extensions.WaivedRulesProperty, "true")
 							}
 						}
 					}
@@ -387,11 +387,11 @@ func (a AssessmentScope) applyRuleScope(assessmentPlan *oscalTypes.AssessmentPla
 							if controlSelection.IncludeControls == nil {
 								activity.RelatedControls.ControlSelections = nil
 								step.ReviewedControls = nil
-								a.addStepProperty(step, "skipped", "true")
+								a.addStepProperty(step, extensions.SkippedRulesProperty, "true")
 							} else {
 								shouldWaive := a.checkWaive(controlSelection, activity.Title, controlRuleConfig, globalWaiveRules)
 								if shouldWaive {
-									a.addStepProperty(step, "waived", "true")
+									a.addStepProperty(step, extensions.WaivedRulesProperty, "true")
 								}
 							}
 						}
