@@ -41,6 +41,10 @@ func scanCmd(common *option.Common) *cobra.Command {
 		Example:      "complyctl scan",
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Ensure user workspace exists before proceeding
+			return complytime.EnsureUserWorkspace(scanOpts.complyTimeOpts.UserWorkspace)
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runScan(cmd, scanOpts)
 		},

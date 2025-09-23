@@ -61,8 +61,10 @@ func planCmd(common *option.Common) *cobra.Command {
 		Short:   "Generate a new assessment plan for a given compliance framework id.",
 		Example: planExample,
 		Args:    cobra.ExactArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			completePlan(planOpts, args)
+			// Ensure user workspace exists before proceeding
+			return complytime.EnsureUserWorkspace(planOpts.complyTimeOpts.UserWorkspace)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validatePlan(planOpts); err != nil {

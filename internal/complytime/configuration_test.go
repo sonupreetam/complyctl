@@ -50,3 +50,17 @@ func TestFindComponentDefinitions(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoComponentDefinitionsFound)
 
 }
+
+func TestEnsureUserWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	testPlanPath := filepath.Join(tmpDir, "test_workspace")
+	defer os.RemoveAll(tmpDir) // Clean up after test
+
+	err := EnsureUserWorkspace(testPlanPath)
+	require.NoError(t, err)
+
+	info, err := os.Stat(testPlanPath)
+	require.NoError(t, err)
+	require.NotNil(t, info)
+	require.True(t, info.IsDir(), "Expected a directory, got something else")
+}
