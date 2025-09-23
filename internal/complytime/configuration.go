@@ -27,6 +27,7 @@ const (
 	DataRootDir            = "/usr/share"
 	PluginBinaryRootDir    = "/usr/libexec/"
 	DefaultPluginConfigDir = "/etc/complytime/config.d/"
+	Placeholder            = "REPLACE_ME"
 )
 
 // ErrNoComponentDefinitionsFound returns an error indicated the supplied directory
@@ -196,4 +197,51 @@ func ActionsContextFromPlan(assessmentPlan *oscalTypes.AssessmentPlan) (*actions
 	}
 	inputContext.Settings = apSettings
 	return inputContext, nil
+}
+
+// Config default value if it is a placeholder
+func replaceString(current_value string, default_value string) string {
+	if current_value == Placeholder {
+		return default_value
+	}
+	return current_value
+}
+
+// Replace the placeholders for assessment plan
+func replacePlaceholdersInPlan(plan *oscalTypes.AssessmentPlan, frameworkId string) {
+	if plan == nil {
+		return
+	}
+
+	// 1. Handle assessment-plan.metadata.title assessment-plan.assessment-assets.assessment-platforms.title
+	plan.Metadata.Title = replaceString(
+		plan.Metadata.Title,
+		fmt.Sprintf("Assessment plan for '%s'", frameworkId),
+	)
+	// 2. Handle assessment-plan.assessment-assets.import-ssp.href
+	plan.ImportSsp.Href = replaceString(
+		plan.ImportSsp.Href,
+		"ImportSsp Href has not been set.",
+	)
+
+	// 3. Handle assessment-plan.assessment-assets.assessment-platforms.title
+	if plan.AssessmentAssets != nil && plan.AssessmentAssets.AssessmentPlatforms != nil {
+		for i := range plan.AssessmentAssets.AssessmentPlatforms {
+			platforms := plan.AssessmentAssets.AssessmentPlatforms
+			platforms[i].Title = replaceString(
+				platforms[i].Title,
+				"The AssessmentPlatforms title has not been set.",
+			)
+		}
+	}
+	// 4. Handle assessment-plan.assessment-assets.back-matter.resources.description
+	if plan.BackMatter != nil && plan.BackMatter.Resources != nil {
+		resources := *plan.BackMatter.Resources
+		for i := range resources {
+			resources[i].Description = replaceString(
+				resources[i].Description,
+				"The description of BackMatter Resource has not been set.",
+			)
+		}
+	}
 }
