@@ -106,7 +106,7 @@ github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/defenseunicorns/go-oscal v0.6.3
+# github.com/defenseunicorns/go-oscal v0.7.0
 ## explicit; go 1.22.3
 github.com/defenseunicorns/go-oscal/src/internal/schemas
 github.com/defenseunicorns/go-oscal/src/pkg/files
