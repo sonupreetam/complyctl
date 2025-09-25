@@ -16,6 +16,8 @@ func WriteAssessmentResults(assessmentResults *oscalTypes.AssessmentResults, ass
 		AssessmentResults: assessmentResults,
 	}
 
+	assessmentResults.Metadata.Title = replaceString(assessmentResults.Metadata.Title, "Assessment result")
+
 	assessmentResultsJson, err := json.MarshalIndent(oscalModels, "", " ")
 	if err != nil {
 		return err

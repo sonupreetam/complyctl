@@ -35,6 +35,9 @@ func WritePlan(plan *oscalTypes.AssessmentPlan, frameworkId string, planLocation
 	}
 	*plan.Metadata.Props = append(*plan.Metadata.Props, frameworkProperty)
 
+	// Handle the placeholders before writing plan
+	replacePlaceholdersInPlan(plan, frameworkId)
+
 	// To ensure we can easily read the plan once written, include under
 	// OSCAL Model type to include the top-level "assessment-plan" key.
 	oscalModels := oscalTypes.OscalModels{
