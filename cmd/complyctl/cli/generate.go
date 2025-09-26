@@ -37,7 +37,7 @@ func generateCmd(common *option.Common) *cobra.Command {
 			return runGenerate(cmd, generateOpts)
 		},
 	}
-	cmd.Flags().StringVarP(&generateOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located.")
+	cmd.Flags().StringVarP(&generateOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located")
 	generateOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
@@ -55,7 +55,7 @@ func runGenerate(cmd *cobra.Command, opts *generateOptions) error {
 	}
 
 	// Create the application directory if it does not exist
-	appDir, err := complytime.NewApplicationDirectory(true)
+	appDir, err := complytime.NewApplicationDirectory(true, logger)
 	if err != nil {
 		return err
 	}
