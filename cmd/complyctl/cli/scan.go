@@ -45,7 +45,7 @@ func scanCmd(common *option.Common) *cobra.Command {
 			return runScan(cmd, scanOpts)
 		},
 	}
-	cmd.Flags().StringVarP(&scanOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located")
+	cmd.Flags().StringVarP(&scanOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests are located")
 	cmd.Flags().BoolP("with-md", "m", false, "If true, assessement-result markdown will be generated")
 	scanOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd

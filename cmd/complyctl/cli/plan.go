@@ -158,7 +158,6 @@ func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTy
 
 // planDryRun leverages the AssessmentScope structure to populate tailoring config.
 // The config is written to stdout.
-// func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output string, logger) error {
 func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output string, logger hclog.Logger) error {
 	// Create application directory and validator to get control titles
 	appDir, err := complytime.NewApplicationDirectory(true, logger)

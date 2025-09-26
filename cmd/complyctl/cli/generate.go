@@ -37,7 +37,7 @@ func generateCmd(common *option.Common) *cobra.Command {
 			return runGenerate(cmd, generateOpts)
 		},
 	}
-	cmd.Flags().StringVarP(&generateOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests located")
+	cmd.Flags().StringVarP(&generateOpts.withPluginConfig, "plugin-config", "c", "", "Directory where user customized plugin manifests are located")
 	generateOpts.complyTimeOpts.BindFlags(cmd.Flags())
 	return cmd
 }
