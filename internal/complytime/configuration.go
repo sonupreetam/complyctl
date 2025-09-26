@@ -11,6 +11,7 @@ import (
 
 	"github.com/adrg/xdg"
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
+	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework"
 	"github.com/oscal-compass/compliance-to-policy-go/v2/framework/actions"
 	"github.com/oscal-compass/oscal-sdk-go/models"
@@ -54,9 +55,15 @@ type ApplicationDirectory struct {
 // Creation of the directories is optional using the `create` input.
 // If the application directories exist, this will not overwrite what is
 // existing.
-func NewApplicationDirectory(create bool) (ApplicationDirectory, error) {
+func NewApplicationDirectory(create bool, logger hclog.Logger) (ApplicationDirectory, error) {
 	// When running local built complytime for development
 	if os.Getenv("COMPLYTIME_DEV_MODE") == "1" {
+		applicationDirectory := filepath.Join(xdg.DataHome, ApplicationDir)
+		if _, err := os.Stat(applicationDirectory); err != nil {
+			if os.IsNotExist(err) {
+				logger.Info(fmt.Sprintf("Application directory not found, creating directory: %s", applicationDirectory))
+			}
+		}
 		return newApplicationDirectory(xdg.DataHome, create)
 	} else {
 		return newApplicationDirectory(DataRootDir, false)

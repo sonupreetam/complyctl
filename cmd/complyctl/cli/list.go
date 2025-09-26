@@ -44,7 +44,7 @@ func listCmd(common *option.Common) *cobra.Command {
 }
 
 func runList(opts *listOptions) error {
-	appDir, err := complytime.NewApplicationDirectory(true)
+	appDir, err := complytime.NewApplicationDirectory(true, logger)
 	if err != nil {
 		return err
 	}

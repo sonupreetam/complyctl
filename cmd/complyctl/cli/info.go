@@ -140,7 +140,7 @@ func infoCmd(common *option.Common) *cobra.Command {
 // runInfo executes the info command using the provided options.
 func runInfo(opts *infoOptions) error {
 
-	appDir, err := complytime.NewApplicationDirectory(true)
+	appDir, err := complytime.NewApplicationDirectory(true, logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize application directory: %w", err)
 	}

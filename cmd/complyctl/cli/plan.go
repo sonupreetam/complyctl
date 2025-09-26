@@ -10,6 +10,7 @@ import (
 
 	oscalTypes "github.com/defenseunicorns/go-oscal/src/types/oscal-1-1-3"
 	"github.com/goccy/go-yaml"
+	"github.com/hashicorp/go-hclog"
 	"github.com/oscal-compass/oscal-sdk-go/transformers"
 	"github.com/oscal-compass/oscal-sdk-go/validation"
 	"github.com/spf13/cobra"
@@ -92,7 +93,7 @@ func validatePlan(opts *planOptions) error {
 
 func runPlan(cmd *cobra.Command, opts *planOptions) error {
 	// Create the application directory if it does not exist
-	appDir, err := complytime.NewApplicationDirectory(true)
+	appDir, err := complytime.NewApplicationDirectory(true, logger)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func runPlan(cmd *cobra.Command, opts *planOptions) error {
 
 	if opts.dryRun {
 		// Write the plan configuration to stdout
-		return planDryRun(opts.complyTimeOpts.FrameworkID, componentDefs, opts.output)
+		return planDryRun(opts.complyTimeOpts.FrameworkID, componentDefs, opts.output, logger)
 	}
 
 	logger.Debug(fmt.Sprintf("Using bundle directory: %s for component definitions.", appDir.BundleDir()))
@@ -157,9 +158,9 @@ func loadPlan(opts *option.ComplyTime, validator validation.Validator) (*oscalTy
 
 // planDryRun leverages the AssessmentScope structure to populate tailoring config.
 // The config is written to stdout.
-func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output string) error {
+func planDryRun(frameworkId string, cds []oscalTypes.ComponentDefinition, output string, logger hclog.Logger) error {
 	// Create application directory and validator to get control titles
-	appDir, err := complytime.NewApplicationDirectory(true)
+	appDir, err := complytime.NewApplicationDirectory(true, logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize application directory: %w", err)
 	}
