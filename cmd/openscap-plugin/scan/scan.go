@@ -32,7 +32,11 @@ func validateOpenSCAPFiles(cfg *config.Config) (map[string]string, error) {
 func ScanSystem(cfg *config.Config, profile string) ([]byte, error) {
 	openscapFiles, err := validateOpenSCAPFiles(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("invalid openscap files: %w", err)
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("absent openscap files: %w\n\nDid you run the generate command?", err)
+		} else {
+			return nil, fmt.Errorf("invalid openscap files: %w", err)
+		}
 	}
 
 	tailoringProfile := fmt.Sprintf("%s_%s", profile, xccdf.XCCDFTailoringSuffix)
