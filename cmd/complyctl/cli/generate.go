@@ -33,6 +33,10 @@ func generateCmd(common *option.Common) *cobra.Command {
 		Short:   "Generate PVP policy from an assessment plan",
 		Example: "complyctl generate",
 		Args:    cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Ensure user workspace exists before proceeding
+			return complytime.EnsureUserWorkspace(generateOpts.complyTimeOpts.UserWorkspace)
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runGenerate(cmd, generateOpts)
 		},

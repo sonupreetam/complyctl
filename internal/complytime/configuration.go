@@ -139,6 +139,16 @@ func (a ApplicationDirectory) Dirs() []string {
 	}
 }
 
+// EnsureUserWorkspace creates the user workspace directory if it doesn't exist.
+// This function should be called early in command execution to ensure the workspace
+// is available before any operations that depend on it.
+func EnsureUserWorkspace(userWorkspace string) error {
+	if err := os.MkdirAll(userWorkspace, 0700); err != nil {
+		return fmt.Errorf("failed to create user workspace directory %s: %w", userWorkspace, err)
+	}
+	return nil
+}
+
 // FindComponentDefinitions locates all the OSCAL Component Definitions in the
 // given `bundles` directory that meet the defined naming scheme.
 //
