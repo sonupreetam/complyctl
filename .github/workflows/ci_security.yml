@@ -20,10 +20,10 @@ jobs:
     name: OSV-Scanner
     permissions:
       contents: read
-      actions: read
-      security-events: write
-      packages: write
-      id-token: write
+      actions: read           # Needed to upload SARIF file to CodeQL. See: https://github.com/github/codeql-action/issues/2117
+      security-events: write  # Needed to upload the results to code-scanning dashboard.
+      id-token: write         # Required for OIDC token generation (trivy_image job)
+      packages: write         # Required for reusable workflow validation (trivy_image job)
     uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main
     with:
       # OSV focuses on known CVEs in dependencies; Trivy adds broader coverage
