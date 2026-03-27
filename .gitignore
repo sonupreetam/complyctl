@@ -29,14 +29,37 @@ dist
 # Dependency directories (remove the comment below to include it)
 #vendor/
 
-# testing workspace created by openscap-plugin
+# testing complytime created by openscap-plugin
 user_workspace
+complyctl.log
+.complytime
 
 # Outputs
 assessment-plan.json
 assessment-results.*
 !**/testdata/assessment-plan.json
 !**/testdata/assessment-results.*
+governance/reports/*
 
 # Go workspaces
 go.work*
+
+megalinter-reports/
+
+# Speckit
+.specify/extensions/.cache/
+.specify/extensions/.backup/
+.specify/extensions/*/local-config.yml
+.specify/scripts
+.specify/templates
+
+# Agent dirs
+.cursor
+.claude
+
+# Agents specific files
+CLAUDE.md
+
+# Ignore generated credentials from google-github-actions/auth
+# See: https://github.com/google-github-actions/auth
+gha-creds-*.json

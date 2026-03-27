@@ -17,6 +17,43 @@ MAN_OPENSCAP_PLUGIN_OUTPUT = docs/man/complyctl-openscap-plugin.7
 MAN_OPENSCAP_CONF = docs/man/c2p-openscap-manifest.md
 MAN_OPENSCAP_CONF_OUTPUT = docs/man/c2p-openscap-manifest.5
 
+##@ Proto
+
+proto: ## generate protobuf code (requires buf)
+	@command -v buf >/dev/null 2>&1 && buf generate || \
+		echo "Install buf: https://buf.build/docs/installation"
+
+lint-proto: ## lint protobuf files with buf
+	@command -v buf >/dev/null 2>&1 && buf lint || \
+		echo "Install buf: https://buf.build/docs/installation"
+.PHONY: lint-proto
+
+##@ Mock Servers (for testing)
+
+mock-registry: ## start mock OCI registry on port 8765
+	go run ./cmd/mock-oci-registry
+
+mock-registry-background: ## start mock OCI registry in background
+	@go run ./cmd/mock-oci-registry & \
+	echo "Mock registry PID: $$!"; \
+	echo "Stop with: kill $$!"
+
+test-e2e: build build-test-plugin ## run full E2E tests (in-process mock registry + test plugin)
+	go test -tags=e2e -mod=vendor ./tests/e2e/... -v -count=1 -timeout 120s
+
+test-behavioral: build build-test-plugin build-behavioral-report ## run behavioral assessment and generate EvaluationLog + SARIF
+	$(GO_BUILD_BINDIR)/behavioral-report \
+		-binary $(GO_BUILD_BINDIR)/complyctl \
+		-test-plugin $(GO_BUILD_BINDIR)/complytime-provider-test \
+		-catalog governance/controls/complytime-controls.yaml \
+		-artifact-uri governance/controls/complytime-controls.yaml \
+		-out governance/reports
+.PHONY: test-behavioral
+
+test-integration: build build-test-plugin ## run integration test (mock registry + test plugin, shell-based)
+	./tests/integration_test.sh
+.PHONY: test-integration
+
 ##@ Compilation
 
 all: clean vendor test-unit build ## compile from scratch
@@ -24,7 +61,16 @@ all: clean vendor test-unit build ## compile from scratch
 
 build: prep-build-dir ## compile
 	go build -mod=vendor -o $(GO_BUILD_BINDIR)/ -ldflags="$(GO_LD_EXTRAFLAGS)" $(GO_BUILD_PACKAGES)
+	cd cmd/openscap-plugin && go build -mod=vendor -o ../../$(GO_BUILD_BINDIR)/openscap-plugin .
 .PHONY: build
+
+build-test-plugin: prep-build-dir ## build test plugin for E2E tests
+	go build -mod=vendor -o $(GO_BUILD_BINDIR)/complyctl-provider-test ./cmd/test-plugin
+.PHONY: build-test-plugin
+
+build-behavioral-report: prep-build-dir ## build behavioral report tool (go test -json -> EvaluationLog + SARIF)
+	go build -mod=vendor -o $(GO_BUILD_BINDIR)/behavioral-report ./cmd/behavioral-report
+.PHONY: build-behavioral-report
 
 ##@ Packaging
 
@@ -51,6 +97,7 @@ vendor: ## go mod sync
 	go mod tidy
 	go mod verify
 	go mod vendor
+	cd cmd/openscap-plugin && go mod tidy && go mod verify && go mod vendor
 .PHONY: vendor
 
 clean:
@@ -75,6 +122,74 @@ format:
 vet:
 	go vet ./...
 .PHONY: vet
+
+lint: ## run linters (golangci-lint + goimports check)
+	golangci-lint run ./...
+	@command -v goimports >/dev/null 2>&1 && goimports -l ./internal/ ./cmd/ || true
+.PHONY: lint
+
+##@ CRAP Load Monitoring
+
+GAZE_VERSION ?= latest
+GAZE_BASELINE := .gaze/baseline.json
+GAZE_COVERPROFILE := coverage.out
+GAZE_NEW_FUNC_THRESHOLD ?= 30
+
+ensure-gaze: ## install gaze if not present
+	@command -v gaze >/dev/null 2>&1 || \
+		(echo "Installing gaze..." && go install github.com/unbound-force/gaze/cmd/gaze@$(GAZE_VERSION))
+.PHONY: ensure-gaze
+
+crapload: ensure-gaze test-unit ## run CRAP and GazeCRAP analysis (human-readable)
+	gaze crap --format=text --coverprofile=$(GAZE_COVERPROFILE) ./...
+.PHONY: crapload
+
+crapload-baseline: ensure-gaze test-unit ## generate baseline thresholds in .gaze/baseline.json
+	@mkdir -p .gaze
+	@REPO_ROOT=$$(pwd); \
+	gaze crap --format=json --coverprofile=$(GAZE_COVERPROFILE) ./... | \
+		jq --arg root "$$REPO_ROOT/" '(.scores[],.summary.worst_crap[]?,.summary.worst_gaze_crap[]?) |= (.file |= ltrimstr($$root))' > $(GAZE_BASELINE)
+	@echo "Baseline written to $(GAZE_BASELINE)"
+.PHONY: crapload-baseline
+
+crapload-check: ensure-gaze test-unit ## check for CRAP regressions against baseline
+	@if [ ! -f $(GAZE_BASELINE) ]; then \
+		echo "ERROR: Baseline file $(GAZE_BASELINE) not found. Run 'make crapload-baseline' first."; \
+		exit 1; \
+	fi
+	@REPO_ROOT=$$(pwd); \
+	gaze crap --format=json --coverprofile=$(GAZE_COVERPROFILE) ./... | \
+		jq --arg root "$$REPO_ROOT/" '(.scores[],.summary.worst_crap[]?,.summary.worst_gaze_crap[]?) |= (.file |= ltrimstr($$root))' > /tmp/crapload-current.json
+	@echo "Comparing against baseline..."
+	@jq -r '.scores[] | "\(.file):\(.function) \(.crap) \(.gaze_crap // 0)"' $(GAZE_BASELINE) | sort > /tmp/crapload-baseline.txt
+	@jq -r '.scores[] | "\(.file):\(.function) \(.crap) \(.gaze_crap // 0)"' /tmp/crapload-current.json | sort > /tmp/crapload-current.txt
+	@REGRESSIONS=0; \
+	while IFS=' ' read -r func crap gaze_crap; do \
+		baseline_crap=$$(grep -F "$$func " /tmp/crapload-baseline.txt | head -1 | awk '{print $$2}'); \
+		baseline_gaze=$$(grep -F "$$func " /tmp/crapload-baseline.txt | head -1 | awk '{print $$3}'); \
+		if [ -z "$$baseline_crap" ]; then \
+			if [ "$$(echo "$$crap > $(GAZE_NEW_FUNC_THRESHOLD)" | bc -l)" = "1" ]; then \
+				echo "NEW FUNCTION VIOLATION: $$func CRAP=$$crap (threshold=$(GAZE_NEW_FUNC_THRESHOLD))"; \
+				REGRESSIONS=$$((REGRESSIONS + 1)); \
+			fi; \
+		else \
+			if [ "$$(echo "$$crap > $$baseline_crap" | bc -l)" = "1" ]; then \
+				echo "REGRESSION: $$func CRAP $$baseline_crap -> $$crap"; \
+				REGRESSIONS=$$((REGRESSIONS + 1)); \
+			fi; \
+			if [ "$$(echo "$$gaze_crap > $$baseline_gaze" | bc -l)" = "1" ]; then \
+				echo "REGRESSION: $$func GazeCRAP $$baseline_gaze -> $$gaze_crap"; \
+				REGRESSIONS=$$((REGRESSIONS + 1)); \
+			fi; \
+		fi; \
+	done < /tmp/crapload-current.txt; \
+	if [ $$REGRESSIONS -gt 0 ]; then \
+		echo "FAIL: $$REGRESSIONS regression(s) detected"; \
+		exit 1; \
+	else \
+		echo "PASS: No regressions detected"; \
+	fi
+.PHONY: crapload-check
 
 ##@ Help
 
