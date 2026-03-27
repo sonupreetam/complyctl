@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	_ plugin.Plugin = (*PluginServer)(nil)
-	ovalRegex       = regexp.MustCompile(`^[^:]*?:[^-]*?-(.*?):.*?$`)
+	_         plugin.Plugin = (*PluginServer)(nil)
+	ovalRegex               = regexp.MustCompile(`^[^:]*?:[^-]*?-(.*?):.*?$`)
 )
 
 const ovalCheckType = "http://oval.mitre.org/XMLSchema/oval-definitions-5"

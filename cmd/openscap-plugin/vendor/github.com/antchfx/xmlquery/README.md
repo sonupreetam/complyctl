@@ -158,7 +158,7 @@ book := xmlquery.FindOne(doc, "//book[2]")
 book := xmlquery.FindOne(doc, "//book[last()]")
 ```
 
-#### Find all book elements and only get `id` attribute. 
+#### Find all book elements and only get `id` attribute.
 
 ```go
 list := xmlquery.Find(doc,"//book/@id")
