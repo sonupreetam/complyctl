@@ -64,7 +64,7 @@ func main() {
     if err := guidance.LoadFile("file:///path/to/guidance.yaml"); err != nil {
         panic(err)
     }
-
+    
     // Load a Control Catalog
     catalog := &gemara.ControlCatalog{}
     if err := catalog.LoadFile("file:///path/to/catalog.yaml"); err != nil {
@@ -89,18 +89,18 @@ func main() {
     if err := catalog.LoadFile("file:///path/to/catalog.yaml"); err != nil {
         panic(err)
     }
-
+    
     oscalCatalog, err := gemaraconv.ControlCatalog(catalog).ToOSCAL()
     if err != nil {
         panic(err)
     }
-
+    
     // Convert Guidance Catalog to OSCAL
     var guidance gemara.GuidanceCatalog
     if err := guidance.LoadFile("file:///path/to/guidance.yaml"); err != nil {
         panic(err)
     }
-
+    
     oscalCatalog, oscalProfile, err := gemaraconv.GuidanceCatalog(&guidance).ToOSCAL("relative/path/to/catalog.json")
     if err != nil {
         panic(err)
@@ -124,12 +124,12 @@ func main() {
     if err := catalog.LoadFile("file:///path/to/catalog.yaml"); err != nil {
         panic(err)
     }
-
+    
     // Convert EvaluationLog to SARIF
     evaluationLog := &gemara.EvaluationLog{
         // ... populate evaluation log ...
     }
-
+    
     sarifBytes, err := gemaraconv.EvaluationLog(evaluationLog).ToSARIF("file:///path/to/artifact.md", catalog)
     if err != nil {
         panic(err)
