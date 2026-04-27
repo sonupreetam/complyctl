@@ -46,8 +46,9 @@ func (m *MockPolicySource) SeedPolicy(policyID, version, digestStr string) {
 	}
 }
 
-// DefinitionVersion returns digest and version for a mock policy
-func (m *MockPolicySource) DefinitionVersion(_ context.Context, policyID string) (string, string, error) {
+// DefinitionVersion returns digest and version for a mock policy.
+// ref is ignored; test data is keyed by policyID only.
+func (m *MockPolicySource) DefinitionVersion(_ context.Context, policyID, _ string) (string, string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	p, ok := m.policies[policyID]

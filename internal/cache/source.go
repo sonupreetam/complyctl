@@ -14,8 +14,9 @@ import (
 )
 
 // PolicySource abstracts remote policy access for sync operations.
+// ref is empty or "latest" to resolve the latest tag; otherwise a specific tag or sha256:... digest.
 type PolicySource interface {
-	DefinitionVersion(ctx context.Context, policyID string) (digest string, version string, err error)
+	DefinitionVersion(ctx context.Context, policyID, ref string) (digest string, version string, err error)
 	CopyPolicy(ctx context.Context, policyID, tag string, dst *ocistore.Store) (ocispec.Descriptor, error)
 }
 
@@ -29,8 +30,8 @@ func NewRegistrySource(client *registry.Client) *RegistrySource {
 	return &RegistrySource{client: client}
 }
 
-func (s *RegistrySource) DefinitionVersion(ctx context.Context, policyID string) (string, string, error) {
-	return s.client.DefinitionVersion(ctx, policyID)
+func (s *RegistrySource) DefinitionVersion(ctx context.Context, policyID, ref string) (string, string, error) {
+	return s.client.DefinitionVersion(ctx, policyID, ref)
 }
 
 func (s *RegistrySource) CopyPolicy(ctx context.Context, policyID, tag string, dst *ocistore.Store) (ocispec.Descriptor, error) {

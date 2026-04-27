@@ -48,9 +48,9 @@ func (m *MockFetcher) AddPolicy(modulePath, version, digest string, manifest []b
 	}
 }
 
-// DefinitionVersion returns digest and version for modulePath
-func (m *MockFetcher) DefinitionVersion(ctx context.Context, modulePath string) (string, string, error) {
-	_ = ctx
+// DefinitionVersion returns digest and version for modulePath.
+// ref is empty or "latest" to use the "latest" entry; otherwise a specific version key.
+func (m *MockFetcher) DefinitionVersion(_ context.Context, modulePath, ref string) (string, string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -58,9 +58,16 @@ func (m *MockFetcher) DefinitionVersion(ctx context.Context, modulePath string) 
 	if !ok {
 		return "", "", fmt.Errorf("policy %s not found", modulePath)
 	}
-	p := versions["latest"]
+	key := "latest"
+	if ref != "" && ref != "latest" {
+		key = ref
+	}
+	p := versions[key]
+	if p == nil && (ref == "" || ref == "latest") {
+		p = versions["latest"]
+	}
 	if p == nil {
-		return "", "", fmt.Errorf("policy %s has no latest version", modulePath)
+		return "", "", fmt.Errorf("policy %s not found for ref %q", modulePath, ref)
 	}
 	return p.Digest, p.Version, nil
 }

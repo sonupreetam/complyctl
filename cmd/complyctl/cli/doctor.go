@@ -46,7 +46,7 @@ func (r *registryVersionResolver) ResolveLatestVersion(registryURL, repository s
 	client := registry.NewClient(registryURL, credFunc)
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
-	_, version, err := client.DefinitionVersion(ctx, repository)
+	_, version, err := client.DefinitionVersion(ctx, repository, "")
 	if err != nil {
 		return "", err
 	}

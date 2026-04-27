@@ -14,8 +14,10 @@ import (
 )
 
 // Fetcher abstracts registry access for testing without a live OCI registry.
+// ref is empty or "latest" to resolve the latest tag; otherwise a tag (e.g. v1) or
+// a manifest digest (sha256:...).
 type Fetcher interface {
-	DefinitionVersion(ctx context.Context, modulePath string) (string, string, error)
+	DefinitionVersion(ctx context.Context, modulePath, ref string) (string, string, error)
 }
 
 // Client provides OCI registry access with credential-based auth via oras-go.
@@ -44,22 +46,36 @@ func NewClientWithFetcher(registryURL string, credFunc auth.CredentialFunc, fetc
 	}
 }
 
-func (c *Client) DefinitionVersion(ctx context.Context, modulePath string) (string, string, error) {
+func (c *Client) DefinitionVersion(ctx context.Context, modulePath, ref string) (string, string, error) {
 	if modulePath == "" {
 		return "", "", fmt.Errorf("module path cannot be empty")
 	}
 
 	if c.fetcher != nil {
-		return c.fetcher.DefinitionVersion(ctx, modulePath)
+		return c.fetcher.DefinitionVersion(ctx, modulePath, ref)
 	}
 
-	ref := fmt.Sprintf("%s/%s:latest", c.registryHost(), modulePath)
-	digest, version, err := c.fetchVersion(ctx, ref)
+	ociRef := c.buildModuleOCIReference(modulePath, ref)
+	digest, resolved, err := c.fetchVersion(ctx, ociRef)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to fetch version for %s: %w", modulePath, err)
 	}
 
-	return digest, version, nil
+	return digest, resolved, nil
+}
+
+// buildModuleOCIReference returns a full OCI reference (host/path:tag or host/path@digest).
+// ref is empty, "latest", a tag, or a sha256:... manifest digest.
+func (c *Client) buildModuleOCIReference(modulePath, ref string) string {
+	host := c.registryHost()
+	if ref != "" && strings.HasPrefix(ref, "sha256:") {
+		return fmt.Sprintf("%s/%s@%s", host, modulePath, ref)
+	}
+	tag := "latest"
+	if ref != "" && ref != "latest" {
+		tag = ref
+	}
+	return fmt.Sprintf("%s/%s:%s", host, modulePath, tag)
 }
 
 // NewRemoteRepository creates an authenticated oras-go remote.Repository

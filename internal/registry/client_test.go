@@ -18,7 +18,7 @@ func TestClient_DefinitionVersion_WithMockFetcher(t *testing.T) {
 
 	client := registry.NewClientWithFetcher("mock-registry", nil, mock)
 
-	digest, version, err := client.DefinitionVersion(context.Background(), "test-policy")
+	digest, version, err := client.DefinitionVersion(context.Background(), "test-policy", "")
 	require.NoError(t, err)
 	assert.NotEmpty(t, digest)
 	assert.NotEmpty(t, version)
@@ -27,7 +27,7 @@ func TestClient_DefinitionVersion_WithMockFetcher(t *testing.T) {
 func TestClient_DefinitionVersion_EmptyPath(t *testing.T) {
 	client := registry.NewClientWithFetcher("mock-registry", nil, registry.NewMockFetcher())
 
-	_, _, err := client.DefinitionVersion(context.Background(), "")
+	_, _, err := client.DefinitionVersion(context.Background(), "", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "module path cannot be empty")
 }
@@ -36,7 +36,18 @@ func TestClient_DefinitionVersion_NotFound(t *testing.T) {
 	mock := registry.NewMockFetcher()
 	client := registry.NewClientWithFetcher("mock-registry", nil, mock)
 
-	_, _, err := client.DefinitionVersion(context.Background(), "nonexistent")
+	_, _, err := client.DefinitionVersion(context.Background(), "nonexistent", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestClient_DefinitionVersion_ExplicitRef(t *testing.T) {
+	mock := registry.NewMockFetcher()
+	mock.SeedTestPolicy("test-policy")
+	client := registry.NewClientWithFetcher("mock-registry", nil, mock)
+
+	digest, version, err := client.DefinitionVersion(context.Background(), "test-policy", "v1.0.0")
+	require.NoError(t, err)
+	assert.Equal(t, "v1.0.0", version)
+	assert.Equal(t, "sha256:abc123", digest)
 }

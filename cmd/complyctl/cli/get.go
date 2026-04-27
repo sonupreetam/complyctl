@@ -132,7 +132,7 @@ func syncSinglePolicy(ctx context.Context, cacheMgr *cache.Cache, state *cache.S
 
 func resolveLatestVersion(ctx context.Context, client *registry.Client, repository, policyID string) string {
 	logger.Info("Resolving latest version", "policy", policyID)
-	_, resolvedVersion, resolveErr := client.DefinitionVersion(ctx, repository)
+	_, resolvedVersion, resolveErr := client.DefinitionVersion(ctx, repository, "")
 	if resolveErr != nil {
 		logger.Warn("Version resolution failed, falling back to 'latest'",
 			"policy", policyID, "error", resolveErr)
