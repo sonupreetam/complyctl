@@ -135,3 +135,11 @@
   ensuring output displays meaningful identifiers instead of internal
   plan references. Affects EvaluationLog, OSCAL, SARIF, and Markdown
   output formats.
+- `complyctl get` now detects and rejects duplicate evaluator-ids across
+  complypack entries. Previously, multiple complypacks resolving to the
+  same evaluator-id caused non-deterministic digest selection during
+  scan, leading to unnecessary regeneration or stale artifacts (#647).
+- `complyctl get` now re-fetches complypack artifacts when the cache
+  directory is missing, even if `state.json` records a matching digest.
+  Previously, a deleted cache directory caused the sync to be permanently
+  skipped until the user manually cleared state (#649).

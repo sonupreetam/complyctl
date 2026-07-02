@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -154,7 +156,8 @@ func (o *getOptions) syncPolicies(ctx context.Context, cfg *complytime.Workspace
 }
 
 // syncComplypacks fetches complypack artifacts listed in the workspace config.
-// Skips silently when no complypacks are configured.
+// Skips silently when no complypacks are configured. After sync completes,
+// validates that no two complypack entries resolved to the same evaluator-id.
 func (o *getOptions) syncComplypacks(ctx context.Context, cfg *complytime.WorkspaceConfig, baseDir string, syncOpts []cache.SyncOption) error {
 	if len(cfg.Complypacks) == 0 {
 		return nil
@@ -172,7 +175,11 @@ func (o *getOptions) syncComplypacks(ctx context.Context, cfg *complytime.Worksp
 		return fmt.Errorf("authentication setup failed: %w", err)
 	}
 
-	return syncAllComplypacks(ctx, state, credFunc, cfg.Complypacks, o.cacheDir, baseDir, syncOpts)
+	if err := syncAllComplypacks(ctx, state, credFunc, cfg.Complypacks, o.cacheDir, baseDir, syncOpts); err != nil {
+		return err
+	}
+
+	return validateUniqueEvaluatorIDs(state, cfg.Complypacks)
 }
 
 func syncAllPolicies(ctx context.Context, cacheMgr *cache.Cache, state *cache.State, credFunc auth.CredentialFunc, policies []complytime.PolicyEntry, syncOpts []cache.SyncOption) error {
@@ -326,4 +333,54 @@ func invalidateGenerationForComplypack(state *cache.State, repository, baseDir s
 
 	fmt.Fprintf(os.Stderr, "Complypack %s updated — generation cache invalidated for %s\n", repository, evalID)
 	logger.Info("Generation cache invalidated after complypack update", "repository", repository, "evaluator", evalID)
+}
+
+// validateUniqueEvaluatorIDs checks that no two complypack entries in the
+// workspace config resolved to the same evaluator-id. Evaluator-ids are
+// only known after sync (they come from the complypack's embedded
+// config.json), so this validation runs post-sync.
+//
+// Returns a descriptive error listing all conflicting repositories when
+// duplicates are found. The error causes complyctl get to exit non-zero.
+func validateUniqueEvaluatorIDs(state *cache.State, complypacks []complytime.PolicyEntry) error {
+	// Build evaluator-id → []repository map from state, scoped to the
+	// configured complypack entries.
+	evalToRepos := make(map[string][]string)
+	for _, entry := range complypacks {
+		// ParsePolicyRef cannot fail here: syncAllComplypacks already
+		// validated all entries. Skip safely if it does — the entry
+		// has no state to contribute to conflict detection.
+		ref, err := complytime.ParsePolicyRef(entry.URL)
+		if err != nil {
+			continue
+		}
+		ps, exists := state.GetComplypackState(ref.Repository)
+		if !exists || ps.EvaluatorID == "" {
+			continue
+		}
+		evalToRepos[ps.EvaluatorID] = append(evalToRepos[ps.EvaluatorID], ref.Repository)
+	}
+
+	var conflicts []string
+	for evalID, repos := range evalToRepos {
+		if len(repos) > 1 {
+			sort.Strings(repos)
+			lines := make([]string, 0, len(repos))
+			for _, r := range repos {
+				lines = append(lines, fmt.Sprintf("  - %s", r))
+			}
+			conflicts = append(conflicts, fmt.Sprintf(
+				"duplicate evaluator-id %q found in complypack entries:\n%s",
+				evalID, strings.Join(lines, "\n")))
+		}
+	}
+
+	if len(conflicts) == 0 {
+		return nil
+	}
+
+	sort.Strings(conflicts)
+	return fmt.Errorf(
+		"%s\nremove one of the conflicting entries from complytime.yaml",
+		strings.Join(conflicts, "\n"))
 }

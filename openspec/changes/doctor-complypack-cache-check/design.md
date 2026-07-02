@@ -11,29 +11,24 @@
 ## Non-Goals
 
 - Verifying content integrity (checksums/signatures)
-- Adding a `--force` flag to `complyctl get` (separate issue)
-- Auto-healing (re-fetching missing complypacks)
+- Adding a `--force` flag to `complyctl get` (evaluated and rejected — root-cause fix in SyncComplypack is preferred)
 
 ## Decisions
 
-### D1: Check placement
+### D1: Fix the root cause in SyncComplypack
 
-Add `CheckComplypackCacheIntegrity` as a new non-blocking check in the doctor check list. It runs after `CheckComplypacks` (which validates config).
+The original design comment in `complypack_sync.go` acknowledged that sync only checked state digest, not whether the cache directory existed. The policy sync (`sync.go:85`) already gates the skip with `PolicyStoreExists()`. We added the equivalent `cacheExistsForState()` check to `SyncComplypack`, using the evaluator-id recorded in state from a previous unpack. This makes `complyctl get` self-heal when cache is deleted — no `--force` flag needed.
 
-### D2: What to verify
+A `--force` flag was evaluated and rejected because: (a) it bypasses digest comparison, which is a security-relevant integrity check; (b) it treats the symptom rather than the bug; (c) users should not need to know when to apply it.
 
-For each complypack entry in `state.json`:
-1. Resolve evaluator-id from the entry
-2. Check that `{cacheDir}/complypacks/{evaluator-id}/` exists
-3. Check that at least one version subdirectory contains `content.tar.gz`
+### D2: No new doctor check needed
 
-### D3: Non-blocking
-
-This is a WARNING-level check, not a blocking check. Missing cache doesn't prevent all operations — only scan/generate for that specific evaluator would fail.
-
-### D4: Remediation message
-
-Format: `Complypack cache missing for evaluator "{id}" — run "complyctl get" to restore`
+The existing `CheckComplypacks` already detects missing complypack caches via
+`LookupByEvaluatorID` and emits a non-blocking warning. A separate
+`CheckComplypackCacheIntegrity` was implemented and then removed during review
+because it produced duplicate warnings for the same condition. With the
+SyncComplypack root-cause fix, `complyctl get` self-heals — the existing doctor
+check is sufficient for user visibility.
 
 ## Risks / Trade-offs
 

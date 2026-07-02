@@ -1739,6 +1739,66 @@ func TestBuildReqToComplypackRef_ResolvesRequirements(t *testing.T) {
 	assert.Equal(t, "registry.example.com/complypacks/kyverno@sha256:def456", m["req-3"])
 }
 
+// --- validateUniqueEvaluatorIDs tests ---
+
+func TestValidateUniqueEvaluatorIDs_NoDuplicates(t *testing.T) {
+	state := &cache.State{
+		Complypacks: map[string]cache.PolicyState{
+			"complypacks/opa":   {EvaluatorID: "opa", Digest: "sha256:aaa"},
+			"complypacks/ampel": {EvaluatorID: "ampel", Digest: "sha256:bbb"},
+		},
+	}
+	complypacks := []complytime.PolicyEntry{
+		{URL: "reg.io/complypacks/opa:v1.0"},
+		{URL: "reg.io/complypacks/ampel:v1.0"},
+	}
+	err := validateUniqueEvaluatorIDs(state, complypacks)
+	assert.NoError(t, err)
+}
+
+func TestValidateUniqueEvaluatorIDs_DuplicateDetected(t *testing.T) {
+	state := &cache.State{
+		Complypacks: map[string]cache.PolicyState{
+			"complypacks/opa-a": {EvaluatorID: "opa", Digest: "sha256:aaa"},
+			"complypacks/opa-b": {EvaluatorID: "opa", Digest: "sha256:bbb"},
+		},
+	}
+	complypacks := []complytime.PolicyEntry{
+		{URL: "reg.io/complypacks/opa-a:v1.0"},
+		{URL: "reg.io/complypacks/opa-b:v2.0"},
+	}
+	err := validateUniqueEvaluatorIDs(state, complypacks)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `duplicate evaluator-id "opa"`)
+	assert.Contains(t, err.Error(), "complypacks/opa-a")
+	assert.Contains(t, err.Error(), "complypacks/opa-b")
+	assert.Contains(t, err.Error(), "remove one of the conflicting entries")
+}
+
+func TestValidateUniqueEvaluatorIDs_SingleEntry(t *testing.T) {
+	state := &cache.State{
+		Complypacks: map[string]cache.PolicyState{
+			"complypacks/opa": {EvaluatorID: "opa", Digest: "sha256:aaa"},
+		},
+	}
+	complypacks := []complytime.PolicyEntry{
+		{URL: "reg.io/complypacks/opa:v1.0"},
+	}
+	err := validateUniqueEvaluatorIDs(state, complypacks)
+	assert.NoError(t, err)
+}
+
+func TestValidateUniqueEvaluatorIDs_EmptyState(t *testing.T) {
+	state := &cache.State{
+		Complypacks: make(map[string]cache.PolicyState),
+	}
+	complypacks := []complytime.PolicyEntry{
+		{URL: "reg.io/complypacks/opa:v1.0"},
+	}
+	err := validateUniqueEvaluatorIDs(state, complypacks)
+	assert.NoError(t, err)
+}
+
 func TestBuildReqToComplypackRef_SkipsMissingDigest(t *testing.T) {
 	cacheDir := t.TempDir()
 	state := &cache.State{

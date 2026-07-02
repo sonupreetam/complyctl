@@ -1,19 +1,19 @@
-## 1. Add cache integrity check to doctor
+## 1. Fix root cause: SyncComplypack cache-existence check
 
-- [ ] 1.1 Add `CheckComplypackCacheIntegrity(cacheDir string, state *cache.State) []DiagnosticResult` to `internal/doctor/doctor.go`
-- [ ] 1.2 For each complypack in `state.Complypacks`: resolve evaluator-id, check directory existence, check `content.tar.gz` presence
-- [ ] 1.3 Return warning-level results for missing directories or content
-- [ ] 1.4 Wire the new check into the doctor check list (non-blocking)
+- [x] 1.1 Add `cacheExistsForState(ps PolicyState) bool` to `ComplypackSync` in `internal/cache/complypack_sync.go`
+- [x] 1.2 Update incremental skip guard: require `cacheExistsForState(localState)` alongside digest match
+- [x] 1.3 [P] `TestComplypackSync_CacheMissing_RefetchesDespiteMatchingDigest` — re-fetches when cache deleted
 
-## 2. Unit tests
+## 2. Doctor check (evaluated and removed)
 
-- [ ] 2.1 [P] `TestCheckComplypackCacheIntegrity_AllPresent` — pass case
-- [ ] 2.2 [P] `TestCheckComplypackCacheIntegrity_MissingDir` — warning emitted
-- [ ] 2.3 [P] `TestCheckComplypackCacheIntegrity_MissingContent` — warning emitted
-- [ ] 2.4 [P] `TestCheckComplypackCacheIntegrity_EmptyState` — skipped cleanly
+A separate `CheckComplypackCacheIntegrity` was implemented and then removed during
+review. The existing `CheckComplypacks` already detects missing complypack caches
+via `LookupByEvaluatorID`. Adding a second check produced duplicate warnings for
+the same condition. With the SyncComplypack root-cause fix in place, `complyctl get`
+self-heals automatically — a redundant doctor check adds noise without unique value.
 
 ## 3. Verification
 
-- [ ] 3.1 Run `go test -race ./internal/doctor/`
-- [ ] 3.2 Run `go vet ./...`
-- [ ] 3.3 E2E: manually delete a complypack dir, run `complyctl doctor`, verify warning appears
+- [x] 3.1 Run `go test -race ./internal/cache/`
+- [x] 3.2 Run `go vet ./...`
+- [x] 3.3 E2E: delete complypack dir → `complyctl doctor` warns → `complyctl get` re-fetches → `complyctl doctor` passes
