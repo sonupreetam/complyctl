@@ -35,7 +35,7 @@ prerequisites for the provider(s) you plan to use.
 
 ```bash
 go install github.com/carabiner-dev/snappy@v0.2.4
-go install github.com/carabiner-dev/ampel/cmd/ampel@v1.2.1
+go install github.com/carabiner-dev/ampel/cmd/ampel@v1.3.1
 ```
 
 **OPA:**

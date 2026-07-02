@@ -19,7 +19,7 @@ cosign verify-blob \
 
 ### Prerequisites
 
-- **Go** 1.24+
+- **Go** 1.25+
 - **Make**
 - **buf** CLI (optional, for protobuf regeneration)
 
