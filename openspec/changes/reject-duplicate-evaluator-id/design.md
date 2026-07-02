@@ -21,7 +21,7 @@ Evaluator-ids are embedded in the complypack's `config.json`, which is only avai
 
 ### D2: Validation location
 
-Add a `validateUniqueEvaluatorIDs(state *cache.State) error` function called after `syncAllComplypacks` returns successfully. On error, `complyctl get` exits non-zero.
+Add a `validateUniqueEvaluatorIDs(state *cache.State, complypacks []complytime.PolicyEntry) error` function called after `syncAllComplypacks` returns successfully. The `complypacks` parameter scopes validation to configured entries only (state may contain entries from previous configs). On error, `complyctl get` exits non-zero.
 
 ### D3: Error format
 
@@ -29,7 +29,7 @@ Add a `validateUniqueEvaluatorIDs(state *cache.State) error` function called aft
 Error: duplicate evaluator-id "opa" found in complypack entries:
   - ghcr.io/org-a/complypack-opa@v1
   - ghcr.io/org-b/complypack-opa@v2
-Remove one of the conflicting entries from complytime.yaml.
+remove one of the conflicting entries from complytime.yaml
 ```
 
 ## Risks / Trade-offs
