@@ -154,3 +154,35 @@ func (s *State) GetComplypackState(repository string) (PolicyState, bool) {
 	state, exists := s.Complypacks[repository]
 	return state, exists
 }
+
+// EvaluatorIDToVersion performs a reverse lookup on the Complypacks map,
+// returning the active version for the given evaluator-id. State is keyed
+// by repository, so this iterates all entries to find the matching
+// evaluator-id. Returns ("", false, nil) when the evaluator-id is not
+// found, or when the receiver or Complypacks map is nil/empty.
+//
+// Returns an error if multiple repositories reference the same
+// evaluator-id, since Go map iteration order is non-deterministic and
+// the result would be undefined. This invariant is currently enforced
+// upstream by complyctl get's duplicate evaluator-id rejection.
+func (s *State) EvaluatorIDToVersion(evaluatorID string) (string, bool, error) {
+	if s == nil || len(s.Complypacks) == 0 {
+		return "", false, nil
+	}
+	var found bool
+	var version string
+	for _, ps := range s.Complypacks {
+		if ps.EvaluatorID == evaluatorID {
+			if found {
+				return "", false, fmt.Errorf(
+					"duplicate evaluator-id %q in state: "+
+						"multiple repositories reference the same evaluator",
+					evaluatorID,
+				)
+			}
+			version = ps.Version
+			found = true
+		}
+	}
+	return version, found, nil
+}
