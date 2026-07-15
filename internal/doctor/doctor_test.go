@@ -101,17 +101,13 @@ func (m *mockPolicyGraphResolver) ResolvePolicyGraph(policyID, version string) (
 
 func TestCheckPolicyVersions_NilConfig(t *testing.T) {
 	results := CheckPolicyVersions(nil, "/tmp", newMockVersionResolver())
-	if results != nil {
-		t.Errorf("expected nil results for nil config, got %d", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckPolicyVersions_NoPolicies(t *testing.T) {
 	cfg := &complytime.WorkspaceConfig{}
 	results := CheckPolicyVersions(cfg, "/tmp", newMockVersionResolver())
-	if results != nil {
-		t.Errorf("expected nil results for empty policies, got %d", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckPolicyVersions_NilResolver(t *testing.T) {
@@ -119,9 +115,7 @@ func TestCheckPolicyVersions_NilResolver(t *testing.T) {
 		Policies: []complytime.PolicyEntry{{URL: "reg.io/policies/nist:v1.0.0"}},
 	}
 	results := CheckPolicyVersions(cfg, "/tmp", nil)
-	if results != nil {
-		t.Errorf("expected nil results for nil resolver, got %d", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckPolicyVersions_PolicyAtLatest(t *testing.T) {
@@ -130,9 +124,7 @@ func TestCheckPolicyVersions_PolicyAtLatest(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -144,15 +136,9 @@ func TestCheckPolicyVersions_PolicyAtLatest(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v1.0.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "(pinned)") {
-		t.Errorf("expected '(pinned)' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "(pinned)")
 }
 
 func TestCheckPolicyVersions_UnpinnedAtLatest(t *testing.T) {
@@ -161,9 +147,7 @@ func TestCheckPolicyVersions_UnpinnedAtLatest(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -175,15 +159,9 @@ func TestCheckPolicyVersions_UnpinnedAtLatest(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v1.0.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "(latest)") {
-		t.Errorf("expected '(latest)' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "(latest)")
 }
 
 func TestCheckPolicyVersions_PinnedMatchesCached_LatestDiffers(t *testing.T) {
@@ -192,9 +170,7 @@ func TestCheckPolicyVersions_PinnedMatchesCached_LatestDiffers(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -206,18 +182,10 @@ func TestCheckPolicyVersions_PinnedMatchesCached_LatestDiffers(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v1.1.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass for pinned matching cached, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "(pinned") {
-		t.Errorf("expected 'pinned' in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "latest available: v1.1.0") {
-		t.Errorf("expected 'latest available' info in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "(pinned")
+	assert.Contains(t, results[0].Message, "latest available: v1.1.0")
 }
 
 func TestCheckPolicyVersions_UnpinnedStale(t *testing.T) {
@@ -226,9 +194,7 @@ func TestCheckPolicyVersions_UnpinnedStale(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -240,18 +206,10 @@ func TestCheckPolicyVersions_UnpinnedStale(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v1.1.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "cached v1.0.0") {
-		t.Errorf("expected cached version in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "available v1.1.0") {
-		t.Errorf("expected available version in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "cached v1.0.0")
+	assert.Contains(t, results[0].Message, "available v1.1.0")
 }
 
 func TestCheckPolicyVersions_PinnedMismatchCached(t *testing.T) {
@@ -260,9 +218,7 @@ func TestCheckPolicyVersions_PinnedMismatchCached(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -274,27 +230,17 @@ func TestCheckPolicyVersions_PinnedMismatchCached(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v2.0.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn for pin mismatch, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "does not match configured pin") {
-		t.Errorf("expected pin mismatch message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "@v2.0.0") {
-		t.Errorf("expected configured version in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "does not match configured pin")
+	assert.Contains(t, results[0].Message, "@v2.0.0")
 }
 
 func TestCheckPolicyVersions_NotCached(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	state := &cache.State{Policies: map[string]cache.PolicyState{}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -306,15 +252,9 @@ func TestCheckPolicyVersions_NotCached(t *testing.T) {
 	vr.versions["reg.io|policies/nist"] = "v1.0.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s", results[0].Status)
-	}
-	if !strings.Contains(results[0].Message, "not cached") {
-		t.Errorf("expected 'not cached' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "not cached")
 }
 
 func TestCheckPolicyVersions_RegistryUnreachable(t *testing.T) {
@@ -323,9 +263,7 @@ func TestCheckPolicyVersions_RegistryUnreachable(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -338,24 +276,14 @@ func TestCheckPolicyVersions_RegistryUnreachable(t *testing.T) {
 	vr.unreachable["unreachable.io"] = true
 
 	state.UpdatePolicyStateWithVerification("policies/cis", "v2.0.0", "sha256:abc", nil)
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
 
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result (registry warn), got %d: %+v", len(results), results)
-	}
-	if results[0].Name != "registry/unreachable.io" {
-		t.Errorf("expected registry warning, got %q", results[0].Name)
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s", results[0].Status)
-	}
-	if !strings.Contains(results[0].Message, "connection refused") {
-		t.Errorf("expected actual error in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, "registry/unreachable.io", results[0].Name)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "connection refused")
 }
 
 func TestCheckPolicyVersions_LatestMissing_PinnedResolves(t *testing.T) {
@@ -364,9 +292,7 @@ func TestCheckPolicyVersions_LatestMissing_PinnedResolves(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -379,19 +305,10 @@ func TestCheckPolicyVersions_LatestMissing_PinnedResolves(t *testing.T) {
 	vr.pinnedVersions["reg.io|policies/nist|v1.0.0"] = "v1.0.0"
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d: %+v", len(results), results)
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass for reachable registry with pinned version, got %s: %s",
-			results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "pinned") {
-		t.Errorf("expected 'pinned' in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "latest tag unavailable") {
-		t.Errorf("expected 'latest tag unavailable' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "pinned")
+	assert.Contains(t, results[0].Message, "latest tag unavailable")
 }
 
 func TestCheckPolicyVersions_LatestMissing_NoPinnedVersion(t *testing.T) {
@@ -400,9 +317,7 @@ func TestCheckPolicyVersions_LatestMissing_NoPinnedVersion(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -414,18 +329,10 @@ func TestCheckPolicyVersions_LatestMissing_NoPinnedVersion(t *testing.T) {
 	vr.latestMissing["reg.io"] = true
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d: %+v", len(results), results)
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "latest tag not found") {
-		t.Errorf("expected 'latest tag not found' in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "pin a specific version") {
-		t.Errorf("expected guidance to pin version, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "latest tag not found")
+	assert.Contains(t, results[0].Message, "pin a specific version")
 }
 
 func TestCheckPolicyVersions_LatestMissing_DoesNotPoisonSameRegistry(t *testing.T) {
@@ -435,9 +342,7 @@ func TestCheckPolicyVersions_LatestMissing_DoesNotPoisonSameRegistry(t *testing.
 		"policies/alpha": {Version: "v1.0.0"},
 		"policies/beta":  {Version: "v2.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -450,16 +355,10 @@ func TestCheckPolicyVersions_LatestMissing_DoesNotPoisonSameRegistry(t *testing.
 	vr.latestMissing["reg.io"] = true
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 2 {
-		t.Fatalf("expected 2 results (404 should not skip second policy), got %d: %+v", len(results), results)
-	}
+	require.Len(t, results, 2)
 	for _, r := range results {
-		if r.Status != StatusWarn {
-			t.Errorf("expected warn for %s, got %s", r.Name, r.Status)
-		}
-		if !strings.Contains(r.Message, "latest tag not found") {
-			t.Errorf("expected 'latest tag not found' in %s message, got %q", r.Name, r.Message)
-		}
+		assert.Equal(t, StatusWarn, r.Status, "expected warn for %s", r.Name)
+		assert.Contains(t, r.Message, "latest tag not found")
 	}
 }
 
@@ -469,9 +368,7 @@ func TestCheckPolicyVersions_PinnedBoth404(t *testing.T) {
 	state := &cache.State{Policies: map[string]cache.PolicyState{
 		"policies/nist": {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -481,18 +378,11 @@ func TestCheckPolicyVersions_PinnedBoth404(t *testing.T) {
 
 	vr := newMockVersionResolver()
 	vr.latestMissing["reg.io"] = true
-	// pinnedVersions NOT populated → ResolveVersion also fails
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d: %+v", len(results), results)
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "not found in registry") {
-		t.Errorf("expected 'not found in registry' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "not found in registry")
 }
 
 func TestCheckPolicyVersions_MixedRegistries_Unreachable_And_404(t *testing.T) {
@@ -502,9 +392,7 @@ func TestCheckPolicyVersions_MixedRegistries_Unreachable_And_404(t *testing.T) {
 		"policies/alpha": {Version: "v1.0.0"},
 		"policies/beta":  {Version: "v2.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -518,18 +406,10 @@ func TestCheckPolicyVersions_MixedRegistries_Unreachable_And_404(t *testing.T) {
 	vr.latestMissing["up.io"] = true
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 2 {
-		t.Fatalf("expected 2 results (one per registry), got %d: %+v", len(results), results)
-	}
-	if results[0].Name != "registry/down.io" {
-		t.Errorf("expected registry/down.io, got %q", results[0].Name)
-	}
-	if !strings.Contains(results[0].Message, "unreachable") {
-		t.Errorf("expected 'unreachable' for down.io, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[1].Message, "latest tag not found") {
-		t.Errorf("expected '404' message for up.io, got %q", results[1].Message)
-	}
+	require.Len(t, results, 2)
+	assert.Equal(t, "registry/down.io", results[0].Name)
+	assert.Contains(t, results[0].Message, "unreachable")
+	assert.Contains(t, results[1].Message, "latest tag not found")
 }
 
 func TestCheckPolicyVersions_PinnedNetworkFailure_BothFail(t *testing.T) {
@@ -539,9 +419,7 @@ func TestCheckPolicyVersions_PinnedNetworkFailure_BothFail(t *testing.T) {
 		"policies/nist": {Version: "v1.0.0"},
 		"policies/cis":  {Version: "v1.0.0"},
 	}}
-	if err := cache.SaveState(state, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, cache.SaveState(state, tmpDir))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{
@@ -554,54 +432,36 @@ func TestCheckPolicyVersions_PinnedNetworkFailure_BothFail(t *testing.T) {
 	vr.unreachable["flaky.io"] = true
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result (second policy skipped via unreachable), got %d: %+v", len(results), results)
-	}
-	if results[0].Name != "registry/flaky.io" {
-		t.Errorf("expected registry-level warning, got %q", results[0].Name)
-	}
-	if !strings.Contains(results[0].Message, "unreachable") {
-		t.Errorf("expected 'unreachable' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, "registry/flaky.io", results[0].Name)
+	assert.Contains(t, results[0].Message, "unreachable")
 }
 
 func TestCheckPolicyVersions_BadCacheState(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, complytime.StateFileName), []byte("{bad json"), 0600); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, complytime.StateFileName), []byte("{bad json"), 0600))
 
 	cfg := &complytime.WorkspaceConfig{
 		Policies: []complytime.PolicyEntry{{URL: "reg.io/policies/nist:v1.0.0"}},
 	}
 
 	results := CheckPolicyVersions(cfg, tmpDir, newMockVersionResolver())
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn for bad cache state, got %s", results[0].Status)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
 }
 
 // --- CheckVariables Tests (refactored with summary + verbose) ---
 
 func TestCheckVariables_NoHealthData(t *testing.T) {
 	results := CheckVariables(nil, nil, nil, false)
-	if results != nil {
-		t.Errorf("expected nil, got %d results", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckVariables_NilConfig(t *testing.T) {
 	health := []ProviderHealth{{EvaluatorID: "openscap"}}
 	results := CheckVariables(nil, health, nil, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusFail {
-		t.Errorf("expected fail, got %s", results[0].Status)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusFail, results[0].Status)
 }
 
 func TestCheckVariables_AllPresent_DefaultMode(t *testing.T) {
@@ -614,15 +474,9 @@ func TestCheckVariables_AllPresent_DefaultMode(t *testing.T) {
 	}}
 
 	results := CheckVariables(cfg, health, nil, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "1/1 global vars") {
-		t.Errorf("expected count summary, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "1/1 global vars")
 }
 
 func TestCheckVariables_MissingGlobal_DefaultMode(t *testing.T) {
@@ -635,18 +489,10 @@ func TestCheckVariables_MissingGlobal_DefaultMode(t *testing.T) {
 	}}
 
 	results := CheckVariables(cfg, health, nil, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusFail {
-		t.Errorf("expected fail, got %s", results[0].Status)
-	}
-	if !strings.Contains(results[0].Message, "0/2 global vars") {
-		t.Errorf("expected count in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "output_dir") {
-		t.Errorf("expected missing var name, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusFail, results[0].Status)
+	assert.Contains(t, results[0].Message, "0/2 global vars")
+	assert.Contains(t, results[0].Message, "output_dir")
 }
 
 func TestCheckVariables_VerboseMode_ExpandsDetail(t *testing.T) {
@@ -670,12 +516,8 @@ func TestCheckVariables_VerboseMode_ExpandsDetail(t *testing.T) {
 		}
 	}
 
-	if summaryCount != 1 {
-		t.Errorf("expected 1 summary result, got %d", summaryCount)
-	}
-	if detailCount != 2 {
-		t.Errorf("expected 2 detail results (one per global var), got %d", detailCount)
-	}
+	assert.Equal(t, 1, summaryCount, "expected 1 summary result")
+	assert.Equal(t, 2, detailCount, "expected 2 detail results (one per global var)")
 
 	foundPassed := false
 	foundFailed := false
@@ -687,12 +529,8 @@ func TestCheckVariables_VerboseMode_ExpandsDetail(t *testing.T) {
 			foundFailed = true
 		}
 	}
-	if !foundPassed {
-		t.Error("expected verbose detail showing output_dir as passed")
-	}
-	if !foundFailed {
-		t.Error("expected verbose detail showing scan_target as failed")
-	}
+	assert.True(t, foundPassed, "expected verbose detail showing output_dir as passed")
+	assert.True(t, foundFailed, "expected verbose detail showing scan_target as failed")
 }
 
 func TestCheckVariables_NoVerbose_NoDetail(t *testing.T) {
@@ -706,9 +544,8 @@ func TestCheckVariables_NoVerbose_NoDetail(t *testing.T) {
 
 	results := CheckVariables(cfg, health, nil, false)
 	for _, r := range results {
-		if strings.HasSuffix(r.Name, "/detail") {
-			t.Errorf("did not expect detail results in non-verbose mode, got %q", r.Name)
-		}
+		assert.False(t, strings.HasSuffix(r.Name, "/detail"),
+			"did not expect detail results in non-verbose mode, got %q", r.Name)
 	}
 }
 
@@ -725,18 +562,10 @@ func TestCheckVariables_UnmappedTargetVars_NilResolver(t *testing.T) {
 	}}
 
 	results := CheckVariables(cfg, health, nil, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusFail {
-		t.Errorf("expected fail for unmapped target vars, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "target vars not validated") {
-		t.Errorf("expected 'target vars not validated' in message, got %q", results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "no policy resolver") {
-		t.Errorf("expected reason in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusFail, results[0].Status)
+	assert.Contains(t, results[0].Message, "target vars not validated")
+	assert.Contains(t, results[0].Message, "no policy resolver")
 }
 
 func TestCheckVariables_UnmappedTargetVars_ResolverFails(t *testing.T) {
@@ -756,33 +585,20 @@ func TestCheckVariables_UnmappedTargetVars_ResolverFails(t *testing.T) {
 	resolver := newMockPolicyGraphResolver()
 
 	results := CheckVariables(cfg, health, resolver, false)
-	// Expect 2 results: a resolve warning + the summary.
-	if len(results) < 2 {
-		t.Fatalf("expected at least 2 results, got %d: %+v", len(results), results)
-	}
+	require.GreaterOrEqual(t, len(results), 2)
 
-	// First result: resolve failure warning.
 	foundResolveWarn := false
 	for _, r := range results {
 		if r.Status == StatusWarn && strings.Contains(r.Name, "variables/resolve/") {
 			foundResolveWarn = true
 		}
 	}
-	if !foundResolveWarn {
-		t.Error("expected a resolve failure warning result")
-	}
+	assert.True(t, foundResolveWarn, "expected a resolve failure warning result")
 
-	// Last result: summary with target vars not validated.
 	last := results[len(results)-1]
-	if last.Status != StatusFail {
-		t.Errorf("expected fail, got %s: %s", last.Status, last.Message)
-	}
-	if !strings.Contains(last.Message, "target vars not validated") {
-		t.Errorf("expected 'target vars not validated' in message, got %q", last.Message)
-	}
-	if !strings.Contains(last.Message, "policy graph unresolved") {
-		t.Errorf("expected 'policy graph unresolved' in message, got %q", last.Message)
-	}
+	assert.Equal(t, StatusFail, last.Status)
+	assert.Contains(t, last.Message, "target vars not validated")
+	assert.Contains(t, last.Message, "policy graph unresolved")
 }
 
 func TestCheckVariables_UnmappedTargetVars_EvaluatorNotInGraph(t *testing.T) {
@@ -807,15 +623,9 @@ func TestCheckVariables_UnmappedTargetVars_EvaluatorNotInGraph(t *testing.T) {
 	}
 
 	results := CheckVariables(cfg, health, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass for unused evaluator, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "no target mapping") {
-		t.Errorf("expected 'no target mapping' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "no target mapping")
 }
 
 func TestCheckVariables_MappedTargetVars_MissingProfile(t *testing.T) {
@@ -841,15 +651,9 @@ func TestCheckVariables_MappedTargetVars_MissingProfile(t *testing.T) {
 	}
 
 	results := CheckVariables(cfg, health, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusFail {
-		t.Errorf("expected fail for missing profile, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "profile") {
-		t.Errorf("expected 'profile' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusFail, results[0].Status)
+	assert.Contains(t, results[0].Message, "profile")
 }
 
 func TestCheckVariables_Verbose_UnmappedTargetVars(t *testing.T) {
@@ -874,9 +678,7 @@ func TestCheckVariables_Verbose_UnmappedTargetVars(t *testing.T) {
 			foundNotValidated = true
 		}
 	}
-	if !foundNotValidated {
-		t.Error("expected verbose detail showing profile as not validated")
-	}
+	assert.True(t, foundNotValidated, "expected verbose detail showing profile as not validated")
 }
 
 func TestCheckVariables_WorkspaceAutoInjected_NotInConfig(t *testing.T) {
@@ -889,16 +691,9 @@ func TestCheckVariables_WorkspaceAutoInjected_NotInConfig(t *testing.T) {
 	}}
 
 	results := CheckVariables(cfg, health, nil, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass (workspace auto-injected), got %s: %s",
-			results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "1/1 global vars") {
-		t.Errorf("expected workspace counted as resolved, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "1/1 global vars")
 }
 
 func TestCheckVariables_WorkspaceAutoInjected_Verbose(t *testing.T) {
@@ -922,12 +717,8 @@ func TestCheckVariables_WorkspaceAutoInjected_Verbose(t *testing.T) {
 			foundOutputDirFailed = true
 		}
 	}
-	if !foundWorkspacePassed {
-		t.Error("expected verbose detail showing workspace as passed (auto-injected)")
-	}
-	if !foundOutputDirFailed {
-		t.Error("expected verbose detail showing output_dir as failed")
-	}
+	assert.True(t, foundWorkspacePassed, "expected verbose detail showing workspace as passed (auto-injected)")
+	assert.True(t, foundOutputDirFailed, "expected verbose detail showing output_dir as failed")
 }
 
 // --- CheckVariables Resolution Failure Tests ---
@@ -956,9 +747,7 @@ func TestCheckVariables_ResolveFailure_PolicyNotFound(t *testing.T) {
 			foundResolveWarn = true
 		}
 	}
-	if !foundResolveWarn {
-		t.Errorf("expected StatusWarn result for missing policy, results: %+v", results)
-	}
+	assert.True(t, foundResolveWarn, "expected StatusWarn result for missing policy")
 }
 
 func TestCheckVariables_ResolveFailure_InvalidRef(t *testing.T) {
@@ -984,9 +773,7 @@ func TestCheckVariables_ResolveFailure_InvalidRef(t *testing.T) {
 			foundResolveWarn = true
 		}
 	}
-	if !foundResolveWarn {
-		t.Errorf("expected StatusWarn result for invalid policy reference, results: %+v", results)
-	}
+	assert.True(t, foundResolveWarn, "expected StatusWarn result for invalid policy reference")
 }
 
 func TestCheckVariables_ResolveFailure_VersionNotFound(t *testing.T) {
@@ -1003,7 +790,6 @@ func TestCheckVariables_ResolveFailure_VersionNotFound(t *testing.T) {
 		RequiredGlobalVariables: []string{},
 	}}
 
-	// Resolver with no versions configured — ResolveVersion will fail.
 	resolver := newMockPolicyGraphResolver()
 	results := CheckVariables(cfg, health, resolver, false)
 
@@ -1013,9 +799,7 @@ func TestCheckVariables_ResolveFailure_VersionNotFound(t *testing.T) {
 			foundResolveWarn = true
 		}
 	}
-	if !foundResolveWarn {
-		t.Errorf("expected StatusWarn result for version resolution failure, results: %+v", results)
-	}
+	assert.True(t, foundResolveWarn, "expected StatusWarn result for version resolution failure")
 }
 
 func TestCheckVariables_ResolveFailure_GraphNotFound(t *testing.T) {
@@ -1032,7 +816,6 @@ func TestCheckVariables_ResolveFailure_GraphNotFound(t *testing.T) {
 		RequiredGlobalVariables: []string{},
 	}}
 
-	// Resolver with version but no graph — ResolvePolicyGraph will fail.
 	resolver := newMockPolicyGraphResolver()
 	resolver.versions["policies/nist@v1.0.0"] = "v1.0.0"
 
@@ -1044,18 +827,14 @@ func TestCheckVariables_ResolveFailure_GraphNotFound(t *testing.T) {
 			foundResolveWarn = true
 		}
 	}
-	if !foundResolveWarn {
-		t.Errorf("expected StatusWarn result for graph resolution failure, results: %+v", results)
-	}
+	assert.True(t, foundResolveWarn, "expected StatusWarn result for graph resolution failure")
 }
 
 // --- CheckPolicyActivePeriod Tests ---
 
 func TestCheckPolicyActivePeriod_NilConfig(t *testing.T) {
 	results := CheckPolicyActivePeriod(nil, newMockPolicyGraphResolver(), false)
-	if results != nil {
-		t.Errorf("expected nil for nil config, got %d results", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckPolicyActivePeriod_NilResolver(t *testing.T) {
@@ -1063,9 +842,7 @@ func TestCheckPolicyActivePeriod_NilResolver(t *testing.T) {
 		Policies: []complytime.PolicyEntry{{URL: "reg.io/policies/nist:v1.0.0"}},
 	}
 	results := CheckPolicyActivePeriod(cfg, nil, false)
-	if results != nil {
-		t.Errorf("expected nil for nil resolver, got %d results", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckPolicyActivePeriod_NoTimeline(t *testing.T) {
@@ -1080,15 +857,9 @@ func TestCheckPolicyActivePeriod_NoTimeline(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "no evaluation timeline") {
-		t.Errorf("expected 'no evaluation timeline' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "no evaluation timeline")
 }
 
 func TestCheckPolicyActivePeriod_Active(t *testing.T) {
@@ -1106,15 +877,9 @@ func TestCheckPolicyActivePeriod_Active(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "active") {
-		t.Errorf("expected 'active' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "active")
 }
 
 func TestCheckPolicyActivePeriod_NotYetActive(t *testing.T) {
@@ -1132,15 +897,9 @@ func TestCheckPolicyActivePeriod_NotYetActive(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "begins") {
-		t.Errorf("expected 'begins' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "begins")
 }
 
 func TestCheckPolicyActivePeriod_Expired(t *testing.T) {
@@ -1158,15 +917,9 @@ func TestCheckPolicyActivePeriod_Expired(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "ended") {
-		t.Errorf("expected 'ended' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "ended")
 }
 
 func TestCheckPolicyActivePeriod_OpenEnded(t *testing.T) {
@@ -1183,15 +936,9 @@ func TestCheckPolicyActivePeriod_OpenEnded(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "open-ended") {
-		t.Errorf("expected 'open-ended' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusPass, results[0].Status)
+	assert.Contains(t, results[0].Message, "open-ended")
 }
 
 func TestCheckPolicyActivePeriod_Verbose_ShowsEnforcement(t *testing.T) {
@@ -1220,9 +967,7 @@ func TestCheckPolicyActivePeriod_Verbose_ShowsEnforcement(t *testing.T) {
 			detailCount++
 		}
 	}
-	if detailCount < 2 {
-		t.Errorf("expected at least 2 detail results in verbose mode, got %d", detailCount)
-	}
+	assert.GreaterOrEqual(t, detailCount, 2, "expected at least 2 detail results in verbose mode")
 
 	foundEvalNotes := false
 	foundEnforcementDetail := false
@@ -1238,15 +983,9 @@ func TestCheckPolicyActivePeriod_Verbose_ShowsEnforcement(t *testing.T) {
 			foundEnfNotes = true
 		}
 	}
-	if !foundEvalNotes {
-		t.Error("expected verbose detail showing evaluation notes")
-	}
-	if !foundEnforcementDetail {
-		t.Error("expected verbose detail showing enforcement timeline status")
-	}
-	if !foundEnfNotes {
-		t.Error("expected verbose detail showing enforcement notes")
-	}
+	assert.True(t, foundEvalNotes, "expected verbose detail showing evaluation notes")
+	assert.True(t, foundEnforcementDetail, "expected verbose detail showing enforcement timeline status")
+	assert.True(t, foundEnfNotes, "expected verbose detail showing enforcement notes")
 }
 
 func TestCheckPolicyActivePeriod_UnparseableDate(t *testing.T) {
@@ -1263,15 +1002,9 @@ func TestCheckPolicyActivePeriod_UnparseableDate(t *testing.T) {
 	}
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusWarn {
-		t.Errorf("expected warn for unparseable date, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !strings.Contains(results[0].Message, "unparseable") {
-		t.Errorf("expected 'unparseable' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusWarn, results[0].Status)
+	assert.Contains(t, results[0].Message, "unparseable")
 }
 
 func TestCheckPolicyActivePeriod_InvalidPolicyRef(t *testing.T) {
@@ -1281,62 +1014,42 @@ func TestCheckPolicyActivePeriod_InvalidPolicyRef(t *testing.T) {
 	resolver := newMockPolicyGraphResolver()
 
 	results := CheckPolicyActivePeriod(cfg, resolver, false)
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if results[0].Status != StatusFail {
-		t.Errorf("expected fail for invalid ref, got %s: %s", results[0].Status, results[0].Message)
-	}
-	if !results[0].Blocking {
-		t.Error("expected blocking for invalid policy reference")
-	}
-	if !strings.Contains(results[0].Message, "invalid policy reference") {
-		t.Errorf("expected 'invalid policy reference' in message, got %q", results[0].Message)
-	}
+	require.Len(t, results, 1)
+	assert.Equal(t, StatusFail, results[0].Status)
+	assert.True(t, results[0].Blocking, "expected blocking for invalid policy reference")
+	assert.Contains(t, results[0].Message, "invalid policy reference")
 }
 
 // --- CheckCache Tests ---
 
 func TestCheckCache_EmptyPath(t *testing.T) {
 	r := CheckCache("")
-	if r.Status != StatusFail {
-		t.Errorf("expected fail for empty path, got %s", r.Status)
-	}
+	assert.Equal(t, StatusFail, r.Status)
 }
 
 func TestCheckCache_MissingDir(t *testing.T) {
 	r := CheckCache("/nonexistent/path/policies")
-	if r.Status != StatusFail {
-		t.Errorf("expected fail for missing dir, got %s", r.Status)
-	}
+	assert.Equal(t, StatusFail, r.Status)
 }
 
 func TestCheckCache_EmptyDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	r := CheckCache(tmpDir)
-	if r.Status != StatusFail {
-		t.Errorf("expected fail for empty dir, got %s", r.Status)
-	}
+	assert.Equal(t, StatusFail, r.Status)
 }
 
 func TestCheckCache_WithEntries(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.Mkdir(filepath.Join(tmpDir, "some-policy"), 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.Mkdir(filepath.Join(tmpDir, "some-policy"), 0755))
 	r := CheckCache(tmpDir)
-	if r.Status != StatusPass {
-		t.Errorf("expected pass, got %s: %s", r.Status, r.Message)
-	}
+	assert.Equal(t, StatusPass, r.Status)
 }
 
 // --- CheckConfig Tests ---
 
 func TestCheckConfig_MissingFile(t *testing.T) {
 	r := CheckConfig("/nonexistent/complytime.yaml")
-	if r.Status != StatusFail {
-		t.Errorf("expected fail, got %s", r.Status)
-	}
+	assert.Equal(t, StatusFail, r.Status)
 }
 
 // --- Helper Tests ---
@@ -1344,12 +1057,8 @@ func TestCheckConfig_MissingFile(t *testing.T) {
 func TestCountResolved(t *testing.T) {
 	vars := map[string]string{"a": "1", "b": "2"}
 	resolved, total := countResolved([]string{"a", "c"}, vars)
-	if total != 2 {
-		t.Errorf("expected total 2, got %d", total)
-	}
-	if resolved != 1 {
-		t.Errorf("expected resolved 1, got %d", resolved)
-	}
+	assert.Equal(t, 2, total)
+	assert.Equal(t, 1, resolved)
 }
 
 func TestJoinNames(t *testing.T) {
@@ -1362,10 +1071,7 @@ func TestJoinNames(t *testing.T) {
 		{[]string{"a", "b", "c"}, "a, b, c"},
 	}
 	for _, tt := range tests {
-		got := joinNames(tt.input)
-		if got != tt.expected {
-			t.Errorf("joinNames(%v) = %q, want %q", tt.input, got, tt.expected)
-		}
+		assert.Equal(t, tt.expected, joinNames(tt.input))
 	}
 }
 
@@ -1377,27 +1083,17 @@ func TestJoinNames(t *testing.T) {
 func seedComplypackCache(t *testing.T, cacheDir, evaluatorID, version string) {
 	t.Helper()
 	dir := filepath.Join(cacheDir, complytime.ComplypacksSubdir, evaluatorID, version)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(dir, 0755))
 	contentPath := filepath.Join(dir, "content.tar.gz")
-	if err := os.WriteFile(contentPath, []byte("fake-content"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	// Write config.json — LookupByEvaluatorID now parses this alongside
-	// content.tar.gz to return the complypack config.
+	require.NoError(t, os.WriteFile(contentPath, []byte("fake-content"), 0600))
 	cfg := map[string]string{
 		"evaluator-id": evaluatorID,
 		"version":      version,
 	}
 	cfgData, err := json.Marshal(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	configPath := filepath.Join(dir, "config.json")
-	if err := os.WriteFile(configPath, cfgData, 0600); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(configPath, cfgData, 0600))
 }
 
 func TestCheckComplypacks_AllPresent(t *testing.T) {
@@ -1419,14 +1115,10 @@ func TestCheckComplypacks_AllPresent(t *testing.T) {
 		EvaluatorID: "openscap",
 	}
 
-	// Seed the complypack cache so LookupByEvaluatorID finds it.
 	seedComplypackCache(t, tmpDir, "openscap", "v1.0.0")
 
 	results := CheckComplypacks(cfg, tmpDir, resolver)
-	// Expect: 1 pass (complypack cached) + 1 cache-size + orphan/untracked results.
-	if len(results) < 1 {
-		t.Fatalf("expected at least 1 result, got %d: %+v", len(results), results)
-	}
+	require.GreaterOrEqual(t, len(results), 1)
 
 	foundPass := false
 	foundCacheSize := false
@@ -1438,12 +1130,8 @@ func TestCheckComplypacks_AllPresent(t *testing.T) {
 			foundCacheSize = true
 		}
 	}
-	if !foundPass {
-		t.Errorf("expected pass result for complypacks, results: %+v", results)
-	}
-	if !foundCacheSize {
-		t.Errorf("expected cache-size result, results: %+v", results)
-	}
+	assert.True(t, foundPass, "expected pass result for complypacks")
+	assert.True(t, foundCacheSize, "expected cache-size result")
 }
 
 func TestCheckComplypacks_Missing(t *testing.T) {
@@ -1465,12 +1153,8 @@ func TestCheckComplypacks_Missing(t *testing.T) {
 		EvaluatorID: "openscap",
 	}
 
-	// Do NOT seed the cache — complypack is missing.
 	results := CheckComplypacks(cfg, tmpDir, resolver)
-	// Expect: 1 warn (missing complypack) + 1 cache-size.
-	if len(results) < 1 {
-		t.Fatalf("expected at least 1 result, got %d: %+v", len(results), results)
-	}
+	require.GreaterOrEqual(t, len(results), 1)
 
 	foundMissing := false
 	for _, r := range results {
@@ -1479,9 +1163,7 @@ func TestCheckComplypacks_Missing(t *testing.T) {
 			foundMissing = true
 		}
 	}
-	if !foundMissing {
-		t.Errorf("expected warn about missing openscap complypack, results: %+v", results)
-	}
+	assert.True(t, foundMissing, "expected warn about missing openscap complypack")
 }
 
 // --- Doctor cache health helper tests ---
@@ -1612,9 +1294,7 @@ func TestFindOrphanedVersions_UntrackedWithEmptyState(t *testing.T) {
 
 func TestCheckComplypacks_NilConfig(t *testing.T) {
 	results := CheckComplypacks(nil, "/tmp", newMockPolicyGraphResolver())
-	if results != nil {
-		t.Errorf("expected nil results for nil config, got %d", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckComplypacks_NoComplypacks(t *testing.T) {
@@ -1622,12 +1302,9 @@ func TestCheckComplypacks_NoComplypacks(t *testing.T) {
 		Policies: []complytime.PolicyEntry{
 			{URL: "reg.io/policies/nist:v1.0.0"},
 		},
-		// Complypacks is nil/empty — check should be skipped.
 	}
 	results := CheckComplypacks(cfg, "/tmp", newMockPolicyGraphResolver())
-	if results != nil {
-		t.Errorf("expected nil results for empty complypacks, got %d", len(results))
-	}
+	assert.Nil(t, results)
 }
 
 func TestCheckComplypacks_InvalidPolicyRef(t *testing.T) {
@@ -1645,22 +1322,14 @@ func TestCheckComplypacks_InvalidPolicyRef(t *testing.T) {
 	resolver := newMockPolicyGraphResolver()
 
 	results := CheckComplypacks(cfg, tmpDir, resolver)
-	// Expect fail result for invalid ref; may also include a pass result
-	// for the evaluator cache summary when no evaluators were resolved.
-	if len(results) < 1 {
-		t.Fatalf("expected at least 1 result, got %d: %+v", len(results), results)
-	}
+	require.GreaterOrEqual(t, len(results), 1)
 
 	foundFail := false
 	for _, r := range results {
 		if r.Status == StatusFail && strings.Contains(r.Message, "invalid policy reference") {
 			foundFail = true
-			if !r.Blocking {
-				t.Error("expected blocking for invalid policy reference")
-			}
+			assert.True(t, r.Blocking, "expected blocking for invalid policy reference")
 		}
 	}
-	if !foundFail {
-		t.Errorf("expected a StatusFail result for invalid policy reference, results: %+v", results)
-	}
+	assert.True(t, foundFail, "expected a StatusFail result for invalid policy reference")
 }
