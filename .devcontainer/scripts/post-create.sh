@@ -35,18 +35,20 @@ make build
 echo "    Build complete. Binaries in ./bin/"
 
 # ---------------------------------------------------------------------------
-# Step 2: Install snappy, ampel, and conftest
+# Step 2: Install snappy, ampel, conftest, and cue
 #
 # Pinned versions — update these when upgrading:
 #   snappy    v0.2.4   https://github.com/carabiner-dev/snappy
 #   ampel     v1.2.1   https://github.com/carabiner-dev/ampel
 #   conftest  v0.68.2  https://github.com/open-policy-agent/conftest
+#   cue       v0.17.1  https://github.com/cue-lang/cue
 # ---------------------------------------------------------------------------
-echo ">>> Installing snappy, ampel, and conftest..."
+echo ">>> Installing snappy, ampel, conftest, and cue..."
 go install github.com/carabiner-dev/snappy@v0.2.4
 go install github.com/carabiner-dev/ampel/cmd/ampel@v1.2.1
 go install github.com/open-policy-agent/conftest@v0.68.2
-echo "    snappy, ampel, and conftest installed."
+go install cuelang.org/go/cmd/cue@v0.17.1
+echo "    snappy, ampel, conftest, and cue installed."
 
 # ---------------------------------------------------------------------------
 # Step 3: Clone and build complytime-providers (all providers)

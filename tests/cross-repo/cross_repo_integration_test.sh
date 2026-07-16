@@ -426,6 +426,18 @@ echo "  Passed: ${PASSED}"
 echo "  Failed: ${FAILED}"
 echo "==============================="
 
+# --- Export scan output for schema validation (CI only) ---
+
+if [[ -n "${SCAN_OUTPUT_DIR:-}" ]]; then
+    mkdir -p "${SCAN_OUTPUT_DIR}"
+    SCAN_DIR="${WORK_DIR}/.complytime/scan"
+    if [[ -d "${SCAN_DIR}" ]]; then
+        cp "${SCAN_DIR}"/evaluation-log-*.yaml "${SCAN_OUTPUT_DIR}/" 2>/dev/null || true
+    fi
+    EXPORTED=$(/usr/bin/find "${SCAN_OUTPUT_DIR}" -name 'evaluation-log-*.yaml' 2>/dev/null | wc -l)
+    echo "  Exported ${EXPORTED} EvaluationLog file(s) to ${SCAN_OUTPUT_DIR}"
+fi
+
 if [[ "${FAILED}" -gt 0 ]]; then
     exit 1
 fi
