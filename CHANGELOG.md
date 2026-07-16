@@ -41,6 +41,12 @@
 
 ### Added
 
+- Cross-repo integration workflow now validates EvaluationLog YAML
+  output against the Gemara CUE schema with `cue vet`. Catches
+  schema conformance regressions (e.g. empty `steps` arrays, missing
+  required fields) before merge. CUE is also installed in the
+  devcontainer for local developer validation. (#577)
+
 - `complyctl list` now displays EVALUATOR and CONTROLS columns
   showing the evaluator type and control count for each cached
   policy. Metadata is sourced from cached state populated during

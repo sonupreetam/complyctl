@@ -1,8 +1,9 @@
 # Cross-repo integration test workflow.
 # Builds complyctl from the PR branch, checks out complytime-providers@main,
 # builds provider binaries (ampel + opa), installs snappy, ampel, and conftest,
-# and runs the cross-repo integration test script to validate the full
-# complyctl + provider pipeline end-to-end.
+# runs the cross-repo integration test script to validate the full
+# complyctl + provider pipeline end-to-end, then validates the resulting
+# EvaluationLog YAML files against the Gemara CUE schema with cue vet.
 name: Cross-Repo Integration Test
 
 on:
@@ -10,6 +11,7 @@ on:
         branches:
             - main
     pull_request:
+    workflow_dispatch:
 
 permissions:
     contents: read
@@ -81,4 +83,11 @@ jobs:
               env:
                   PROVIDERS_BIN_DIR: ${{ github.workspace }}/_providers/bin
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SCAN_OUTPUT_DIR: ${{ github.workspace }}/.ci-scan-output
               run: make test-cross-repo PROVIDERS_BIN_DIR="${PROVIDERS_BIN_DIR}"
+
+            - name: Install CUE
+              run: go install cuelang.org/go/cmd/cue@v0.17.1
+
+            - name: Validate EvaluationLog schema
+              run: ./tests/schema-validation/validate.sh .ci-scan-output

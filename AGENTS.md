@@ -82,7 +82,7 @@ make crapload-check     # check for CRAP regressions against baseline
 | Unit Test | `unit_test.yml` | Unit tests + buf lint |
 | E2E Test | `e2e_test.yml` | End-to-end tests with mock registry |
 | Integration Test | `integration_test.yml` | Shell-based integration tests |
-| Cross-Repo Integration | `ci_cross_repo_integration.yml` | Cross-repo integration tests with complytime-providers |
+| Cross-Repo Integration | `ci_cross_repo_integration.yml` | Cross-repo integration tests with complytime-providers + EvaluationLog schema validation |
 | CRAP Load | `ci_crapload.yml` | CRAP analysis on PRs (reusable from org-infra) |
 | Security | `ci_security.yml` | Security scanning |
 | Compliance | `ci_compliance.yml` | Compliance checks |
@@ -134,6 +134,7 @@ tests/
 ├── behavioral/      # behavioral test scenarios
 ├── cross-repo/      # cross-repo integration tests (complyctl + ampel + opa providers)
 ├── e2e/             # E2E tests (build-tag gated: -tags=e2e)
+├── schema-validation/  # CUE schema validation of EvaluationLog output (validate.sh)
 └── integration_test.sh  # shell-based integration test
 vendor/              # vendored dependencies
 ```
