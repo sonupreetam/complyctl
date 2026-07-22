@@ -15,8 +15,18 @@
 
 set -euo pipefail
 
+# --- Prerequisites ---
+
+if ! command -v cue >/dev/null 2>&1; then
+    echo "FATAL: 'cue' is required but not installed."
+    echo "       Install: go install cuelang.org/go/cmd/cue@v0.17.1"
+    echo "       See: https://cuelang.org/docs/install/"
+    exit 2
+fi
+
 # Gemara CUE schema module — pinned to v0.23.0 (31f58fb674fd3f3f088533af9c6cc83a2d84e17f).
 # Tracks the v0.x line matching go-gemara v0.7.0 used by complyctl.
+# Update this when go.mod's go-gemara dependency is bumped.
 GEMARA_CUE_MODULE="${GEMARA_CUE_MODULE:-github.com/gemaraproj/gemara@v0.23.0}"
 
 if [[ $# -lt 1 ]]; then
@@ -41,7 +51,11 @@ validate_file() {
         echo "    PASS"
     else
         FAILED=$((FAILED + 1))
-        echo "    FAIL: schema constraint violated"
+        if echo "${output}" | grep -qE "cannot find package|module not found|connection refused|dial tcp|no such host"; then
+            echo "    FAIL: tool/infrastructure error (exit code ${rc})"
+        else
+            echo "    FAIL: schema constraint violated (exit code ${rc})"
+        fi
         echo "    ---"
         echo "    ${output//$'\n'/$'\n'    }"
         echo "    ---"
@@ -62,7 +76,7 @@ for dir in "$@"; do
     while IFS= read -r -d '' file; do
         FILES_FOUND=$((FILES_FOUND + 1))
         validate_file "${file}"
-    done < <(/usr/bin/find "${dir}" -name 'evaluation-log-*.yaml' -print0 2>/dev/null)
+    done < <(find "${dir}" -name 'evaluation-log-*.yaml' -print0 2>/dev/null)
 done
 
 echo ""

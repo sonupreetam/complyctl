@@ -51,6 +51,10 @@ make test-behavioral
 make test-devcontainer
 # → podman build -t complyctl-devcontainer-test .devcontainer/
 
+# Schema validation (validates EvaluationLog YAML against Gemara CUE schema, requires cue)
+make test-schema-validation
+# → ./tests/schema-validation/validate.sh .complytime/scan
+
 # Acceptance tests (container-based, requires podman-compose or docker compose)
 make test-acceptance
 # → compose up --profile lifecycle (zot + seed + SUT containers)

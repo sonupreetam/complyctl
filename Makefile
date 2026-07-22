@@ -69,6 +69,10 @@ endif
 	timeout 120 ./tests/cross-repo/cross_repo_integration_test.sh
 .PHONY: test-cross-repo
 
+test-schema-validation: ## validate EvaluationLog YAML against Gemara CUE schema (requires cue + scan output)
+	./tests/schema-validation/validate.sh $(or $(SCAN_OUTPUT_DIR),.complytime/scan)
+.PHONY: test-schema-validation
+
 test-devcontainer: ## verify devcontainer Containerfile builds
 	podman build -t complyctl-devcontainer-test .devcontainer/
 	@echo "Containerfile builds successfully."

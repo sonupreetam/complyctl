@@ -10,6 +10,10 @@
 #   PROVIDERS_BIN_DIR   Directory containing complyctl-provider-ampel and complyctl-provider-opa
 #   GITHUB_TOKEN        GitHub token with read access to public repositories
 #
+# Optional environment variables:
+#   SCAN_OUTPUT_DIR     Directory to export evaluation-log-*.yaml files for downstream
+#                       schema validation (set by CI, not required for local runs)
+#
 # Run locally:  make test-cross-repo PROVIDERS_BIN_DIR=/path/to/providers/bin
 # Run directly: PROVIDERS_BIN_DIR=... GITHUB_TOKEN=... ./tests/cross-repo/cross_repo_integration_test.sh
 
@@ -434,8 +438,11 @@ if [[ -n "${SCAN_OUTPUT_DIR:-}" ]]; then
     if [[ -d "${SCAN_DIR}" ]]; then
         cp "${SCAN_DIR}"/evaluation-log-*.yaml "${SCAN_OUTPUT_DIR}/" 2>/dev/null || true
     fi
-    EXPORTED=$(/usr/bin/find "${SCAN_OUTPUT_DIR}" -name 'evaluation-log-*.yaml' 2>/dev/null | wc -l)
+    EXPORTED=$(find "${SCAN_OUTPUT_DIR}" -name 'evaluation-log-*.yaml' 2>/dev/null | wc -l)
     echo "  Exported ${EXPORTED} EvaluationLog file(s) to ${SCAN_OUTPUT_DIR}"
+    if [[ "${EXPORTED}" -eq 0 ]]; then
+        echo "  WARNING: No EvaluationLog files found to export. Scan may not have produced output."
+    fi
 fi
 
 if [[ "${FAILED}" -gt 0 ]]; then
