@@ -9,8 +9,12 @@ set -euo pipefail
 export PATH="./bin:${GOPATH:-$(go env GOPATH)}/bin:${PATH}"
 
 # ---------------------------------------------------------------------------
-# GITHUB_TOKEN least-privilege: capture and unset from environment
-# Providers clone may need the token, but nothing else should see it.
+# GITHUB_TOKEN least-privilege: capture, unset, use only for clone
+#
+# The token is saved in _GITHUB_TOKEN and removed from the environment.
+# It is passed to the providers clone (Step 3) via env-var prefix syntax
+# which scopes it to that single subprocess. _GITHUB_TOKEN is explicitly
+# unset after the clone so it does not leak to later steps.
 # ---------------------------------------------------------------------------
 _GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 unset GITHUB_TOKEN
@@ -59,7 +63,12 @@ trap 'rm -rf "${PROVIDERS_TMP}"' EXIT
 
 # D6: Intentionally unpinned — tracks main for latest provider code.
 # The commit SHA is logged below for auditability.
-if ! git clone --depth 1 \
+#
+# Export the saved token for this clone only — avoids unauthenticated
+# rate limits (60 req/hr) in shared CI or rapid devcontainer rebuilds.
+# The repo is public so auth isn't required, but authenticated requests
+# get 5,000 req/hr which prevents transient failures.
+if ! GITHUB_TOKEN="${_GITHUB_TOKEN}" git clone --depth 1 \
         https://github.com/complytime/complytime-providers.git \
         "${PROVIDERS_TMP}/complytime-providers"; then
     echo "FATAL: Failed to clone complytime-providers."
@@ -70,6 +79,9 @@ fi
 PROVIDERS_SHA="$(git -C "${PROVIDERS_TMP}/complytime-providers" \
     rev-parse HEAD)"
 echo "    Cloned complytime-providers at ${PROVIDERS_SHA}"
+
+# Token served its purpose — discard it.
+unset _GITHUB_TOKEN
 
 echo ">>> Building complytime-providers..."
 make -C "${PROVIDERS_TMP}/complytime-providers" build
@@ -240,8 +252,16 @@ fi
 
 # ---------------------------------------------------------------------------
 # Step 6: Record build commit for auto-rebuild detection
+# Non-fatal: fails gracefully when run outside a git repo (e.g. docker run
+# with a mounted worktree whose .git pointer resolves outside the container).
 # ---------------------------------------------------------------------------
-git rev-parse HEAD > ./bin/.build-commit
+if git rev-parse HEAD > ./bin/.build-commit 2>/dev/null; then
+    echo "    Recorded build commit: $(cat ./bin/.build-commit)"
+else
+    echo "unknown" > ./bin/.build-commit
+    echo "    WARNING: Not a git repo — build commit set to 'unknown'."
+    echo "             Auto-rebuild detection will trigger on first shell login."
+fi
 
 # ---------------------------------------------------------------------------
 # Step 7: Persist PATH and auto-rebuild hook for interactive shells
