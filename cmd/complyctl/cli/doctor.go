@@ -114,24 +114,51 @@ func printDiagnostics(results []doctor.CheckResult) error {
 	fmt.Println("Running workspace diagnostics...")
 	fmt.Println()
 
+	grouped := make(map[doctor.CheckGroup][]doctor.CheckResult)
+	for _, r := range results {
+		grouped[r.Group] = append(grouped[r.Group], r)
+	}
+
 	var passCount, failCount, warnCount int
 	hasBlockingFailure := false
-	for _, r := range results {
-		var emoji string
-		switch r.Status {
-		case doctor.StatusPass:
-			emoji = complytime.StatusPassed
-			passCount++
-		case doctor.StatusFail:
-			emoji = complytime.StatusFailed
-			failCount++
-		case doctor.StatusWarn:
-			emoji = complytime.StatusSkipped
-			warnCount++
+	firstSection := true
+
+	for _, group := range doctor.GroupOrder() {
+		checks, ok := grouped[group]
+		if !ok {
+			continue
 		}
-		fmt.Printf("%s %s: %s\n", emoji, r.Name, r.Message)
-		if r.Blocking && r.Status == doctor.StatusFail {
-			hasBlockingFailure = true
+
+		if !firstSection {
+			fmt.Println()
+		}
+		firstSection = false
+		fmt.Println(string(group))
+
+		for _, r := range checks {
+			emoji := statusEmoji(r.Status)
+			countStatus(r.Status, &passCount, &failCount, &warnCount)
+			fmt.Printf("  %s %s: %s\n", emoji, resultLabel(r), r.Message)
+			if r.Blocking && r.Status == doctor.StatusFail {
+				hasBlockingFailure = true
+			}
+
+			for _, child := range r.Children {
+				childEmoji := statusEmoji(child.Status)
+				countStatus(child.Status, &passCount, &failCount, &warnCount)
+				fmt.Printf("      %s %s: %s\n", childEmoji, resultLabel(child), child.Message)
+				if child.Blocking && child.Status == doctor.StatusFail {
+					hasBlockingFailure = true
+				}
+
+				// Grandchildren (verbose detail) are rendered but not
+				// counted in the summary (D5 — stable count regardless
+				// of --verbose).
+				for _, gc := range child.Children {
+					gcEmoji := statusEmoji(gc.Status)
+					fmt.Printf("          %s %s\n", gcEmoji, gc.Message)
+				}
+			}
 		}
 	}
 
@@ -142,4 +169,38 @@ func printDiagnostics(results []doctor.CheckResult) error {
 		return fmt.Errorf("one or more blocking checks failed")
 	}
 	return nil
+}
+
+// resultLabel returns the display label for a CheckResult. Uses Label
+// when set, falls back to Name when Label is empty. No string parsing
+// of Name occurs — display text is set at the source (D10).
+func resultLabel(r doctor.CheckResult) string {
+	if r.Label != "" {
+		return r.Label
+	}
+	return r.Name
+}
+
+func statusEmoji(s doctor.CheckStatus) string {
+	switch s {
+	case doctor.StatusPass:
+		return complytime.StatusPassed
+	case doctor.StatusFail:
+		return complytime.StatusFailed
+	case doctor.StatusWarn:
+		return complytime.StatusSkipped
+	default:
+		return "?"
+	}
+}
+
+func countStatus(s doctor.CheckStatus, pass, fail, warn *int) {
+	switch s {
+	case doctor.StatusPass:
+		*pass++
+	case doctor.StatusFail:
+		*fail++
+	case doctor.StatusWarn:
+		*warn++
+	}
 }

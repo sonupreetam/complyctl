@@ -280,10 +280,12 @@ func TestCheckPolicyVersions_RegistryUnreachable(t *testing.T) {
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
 
-	require.Len(t, results, 1)
-	assert.Equal(t, "registry/unreachable.io", results[0].Name)
+	require.Len(t, results, 2)
+	assert.Equal(t, "policy/nist", results[0].Name)
 	assert.Equal(t, StatusWarn, results[0].Status)
-	assert.Contains(t, results[0].Message, "connection refused")
+	assert.Contains(t, results[0].Message, "registry unreachable")
+	assert.Equal(t, "policy/cis", results[1].Name)
+	assert.Equal(t, StatusWarn, results[1].Status)
 }
 
 func TestCheckPolicyVersions_LatestMissing_PinnedResolves(t *testing.T) {
@@ -407,8 +409,8 @@ func TestCheckPolicyVersions_MixedRegistries_Unreachable_And_404(t *testing.T) {
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
 	require.Len(t, results, 2)
-	assert.Equal(t, "registry/down.io", results[0].Name)
-	assert.Contains(t, results[0].Message, "unreachable")
+	assert.Equal(t, "policy/alpha", results[0].Name)
+	assert.Contains(t, results[0].Message, "registry unreachable")
 	assert.Contains(t, results[1].Message, "latest tag not found")
 }
 
@@ -432,9 +434,11 @@ func TestCheckPolicyVersions_PinnedNetworkFailure_BothFail(t *testing.T) {
 	vr.unreachable["flaky.io"] = true
 
 	results := CheckPolicyVersions(cfg, tmpDir, vr)
-	require.Len(t, results, 1)
-	assert.Equal(t, "registry/flaky.io", results[0].Name)
-	assert.Contains(t, results[0].Message, "unreachable")
+	require.Len(t, results, 2)
+	assert.Equal(t, "policy/nist", results[0].Name)
+	assert.Contains(t, results[0].Message, "registry unreachable")
+	assert.Equal(t, "policy/cis", results[1].Name)
+	assert.Contains(t, results[1].Message, "registry unreachable")
 }
 
 func TestCheckPolicyVersions_BadCacheState(t *testing.T) {
@@ -506,31 +510,28 @@ func TestCheckVariables_VerboseMode_ExpandsDetail(t *testing.T) {
 
 	results := CheckVariables(cfg, health, nil, true)
 
-	summaryCount := 0
-	detailCount := 0
-	for _, r := range results {
-		if strings.HasSuffix(r.Name, "/detail") {
-			detailCount++
-		} else {
-			summaryCount++
-		}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 summary result, got %d", len(results))
+	}
+	summary := results[0]
+	if len(summary.Children) != 2 {
+		t.Fatalf("expected 2 detail children (one per global var), got %d", len(summary.Children))
 	}
 
-	assert.Equal(t, 1, summaryCount, "expected 1 summary result")
-	assert.Equal(t, 2, detailCount, "expected 2 detail results (one per global var)")
-
-	foundPassed := false
-	foundFailed := false
-	for _, r := range results {
-		if strings.Contains(r.Message, "output_dir") && strings.Contains(r.Message, complytime.StatusPassed) {
-			foundPassed = true
+	foundOutputDir := false
+	foundScanTarget := false
+	for _, child := range summary.Children {
+		if strings.Contains(child.Message, "output_dir") {
+			foundOutputDir = true
+			assert.Equal(t, StatusPass, child.Status, "expected StatusPass for output_dir")
 		}
-		if strings.Contains(r.Message, "scan_target") && strings.Contains(r.Message, complytime.StatusFailed) {
-			foundFailed = true
+		if strings.Contains(child.Message, "scan_target") {
+			foundScanTarget = true
+			assert.Equal(t, StatusFail, child.Status, "expected StatusFail for scan_target")
 		}
 	}
-	assert.True(t, foundPassed, "expected verbose detail showing output_dir as passed")
-	assert.True(t, foundFailed, "expected verbose detail showing scan_target as failed")
+	assert.True(t, foundOutputDir, "expected verbose detail showing output_dir")
+	assert.True(t, foundScanTarget, "expected verbose detail showing scan_target")
 }
 
 func TestCheckVariables_NoVerbose_NoDetail(t *testing.T) {
@@ -546,6 +547,8 @@ func TestCheckVariables_NoVerbose_NoDetail(t *testing.T) {
 	for _, r := range results {
 		assert.False(t, strings.HasSuffix(r.Name, "/detail"),
 			"did not expect detail results in non-verbose mode, got %q", r.Name)
+		assert.Empty(t, r.Children,
+			"did not expect Children in non-verbose mode for %q", r.Name)
 	}
 }
 
@@ -672,10 +675,17 @@ func TestCheckVariables_Verbose_UnmappedTargetVars(t *testing.T) {
 
 	results := CheckVariables(cfg, health, nil, true)
 
+	if len(results) < 1 {
+		t.Fatalf("expected at least 1 result, got %d", len(results))
+	}
+
+	// Find the summary result and check its children for the "not validated" detail.
 	foundNotValidated := false
 	for _, r := range results {
-		if strings.Contains(r.Message, "profile") && strings.Contains(r.Message, "not validated") {
-			foundNotValidated = true
+		for _, child := range r.Children {
+			if strings.Contains(child.Message, "profile") && strings.Contains(child.Message, "not validated") {
+				foundNotValidated = true
+			}
 		}
 	}
 	assert.True(t, foundNotValidated, "expected verbose detail showing profile as not validated")
@@ -707,14 +717,21 @@ func TestCheckVariables_WorkspaceAutoInjected_Verbose(t *testing.T) {
 
 	results := CheckVariables(cfg, health, nil, true)
 
+	if len(results) < 1 {
+		t.Fatalf("expected at least 1 result, got %d", len(results))
+	}
+
+	// D9: detail is now nested as Children with Status reflecting presence.
 	foundWorkspacePassed := false
 	foundOutputDirFailed := false
 	for _, r := range results {
-		if strings.Contains(r.Message, complytime.WorkspaceVarKey) && strings.Contains(r.Message, complytime.StatusPassed) {
-			foundWorkspacePassed = true
-		}
-		if strings.Contains(r.Message, "output_dir") && strings.Contains(r.Message, complytime.StatusFailed) {
-			foundOutputDirFailed = true
+		for _, child := range r.Children {
+			if strings.Contains(child.Message, complytime.WorkspaceVarKey) && child.Status == StatusPass {
+				foundWorkspacePassed = true
+			}
+			if strings.Contains(child.Message, "output_dir") && child.Status == StatusFail {
+				foundOutputDirFailed = true
+			}
 		}
 	}
 	assert.True(t, foundWorkspacePassed, "expected verbose detail showing workspace as passed (auto-injected)")
@@ -961,25 +978,23 @@ func TestCheckPolicyActivePeriod_Verbose_ShowsEnforcement(t *testing.T) {
 
 	results := CheckPolicyActivePeriod(cfg, resolver, true)
 
-	detailCount := 0
-	for _, r := range results {
-		if strings.HasSuffix(r.Name, "/detail") {
-			detailCount++
-		}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 active-period result, got %d", len(results))
 	}
-	assert.GreaterOrEqual(t, detailCount, 2, "expected at least 2 detail results in verbose mode")
+	activePeriod := results[0]
+	require.GreaterOrEqual(t, len(activePeriod.Children), 2, "expected at least 2 detail children in verbose mode")
 
 	foundEvalNotes := false
 	foundEnforcementDetail := false
 	foundEnfNotes := false
-	for _, r := range results {
-		if strings.Contains(r.Message, "Annual review") {
+	for _, child := range activePeriod.Children {
+		if strings.Contains(child.Message, "Annual review") {
 			foundEvalNotes = true
 		}
-		if strings.Contains(r.Message, "enforcement") && strings.Contains(r.Message, "active") {
+		if strings.Contains(child.Message, "enforcement") && strings.Contains(child.Message, "active") {
 			foundEnforcementDetail = true
 		}
-		if strings.Contains(r.Message, "Quarterly enforcement") {
+		if strings.Contains(child.Message, "Quarterly enforcement") {
 			foundEnfNotes = true
 		}
 	}
@@ -1120,18 +1135,20 @@ func TestCheckComplypacks_AllPresent(t *testing.T) {
 	results := CheckComplypacks(cfg, tmpDir, tmpDir, resolver)
 	require.GreaterOrEqual(t, len(results), 1)
 
-	foundPass := false
+	foundComplypack := false
 	foundCacheSize := false
 	for _, r := range results {
-		if r.Name == "complypacks" && r.Status == StatusPass {
-			foundPass = true
+		if r.Name == "complypacks/openscap" && r.Status == StatusPass {
+			foundComplypack = true
 		}
 		if r.Name == "complypacks/cache-size" && r.Status == StatusPass {
 			foundCacheSize = true
 		}
 	}
-	assert.True(t, foundPass, "expected pass result for complypacks")
+	assert.True(t, foundComplypack, "expected pass result for complypacks/openscap")
 	assert.True(t, foundCacheSize, "expected cache-size result")
+	assert.Equal(t, "complypacks/openscap", results[0].Name, "expected named complypack result")
+	assert.Equal(t, GroupComplypacks, results[0].Group, "expected GroupComplypacks")
 }
 
 func TestCheckComplypacks_Missing(t *testing.T) {
@@ -1159,12 +1176,15 @@ func TestCheckComplypacks_Missing(t *testing.T) {
 
 	foundMissing := false
 	for _, r := range results {
-		if r.Status == StatusWarn && strings.Contains(r.Message, "openscap") &&
-			strings.Contains(r.Message, "complyctl get") {
+		if r.Name == "complypacks/openscap" && r.Status == StatusWarn {
 			foundMissing = true
+			if !strings.Contains(r.Message, "complyctl get") {
+				t.Errorf("expected 'complyctl get' suggestion in message, got %q", r.Message)
+			}
 		}
 	}
 	assert.True(t, foundMissing, "expected warn about missing openscap complypack")
+	assert.Equal(t, "complypacks/openscap", results[0].Name, "expected evaluator-id in name")
 }
 
 // --- Doctor cache health helper tests ---
@@ -1413,4 +1433,161 @@ func TestCheckDirectoryLayout_StateOnlyInDataDir(t *testing.T) {
 	result := CheckDirectoryLayout(cacheDir, dataDir)
 	assert.Equal(t, StatusPass, result.Status)
 	assert.Contains(t, result.Message, "XDG directory layout valid")
+}
+
+// --- attachByEvaluatorID Tests ---
+
+func TestAttachByEvaluatorID_MatchesCorrectly(t *testing.T) {
+	providers := []CheckResult{
+		{Name: "provider/ampel", Group: GroupProviders, Status: StatusPass, Message: "healthy"},
+		{Name: "provider/opa", Group: GroupProviders, Status: StatusPass, Message: "healthy"},
+	}
+	vars := []CheckResult{
+		{Name: "variables/ampel", Group: GroupVariables, Status: StatusPass, Message: "1/1 global vars"},
+		{Name: "variables/opa", Group: GroupVariables, Status: StatusFail, Message: "0/1 global vars"},
+		{Name: "variables/ampel/detail", Group: GroupVariables, Status: StatusPass, Message: "detail"},
+	}
+
+	result, unmatched := attachByEvaluatorID(providers, vars)
+
+	assert.Empty(t, unmatched)
+	require.Len(t, result[0].Children, 2)
+	require.Len(t, result[1].Children, 1)
+	assert.Equal(t, "variables/ampel", result[0].Children[0].Name)
+}
+
+func TestAttachByEvaluatorID_UnmatchedPromoted(t *testing.T) {
+	providers := []CheckResult{
+		{Name: "provider/ampel", Group: GroupProviders, Status: StatusPass},
+	}
+	vars := []CheckResult{
+		{Name: "variables/ampel", Group: GroupVariables, Status: StatusPass, Message: "matched"},
+		{Name: "variables/orphan", Group: GroupVariables, Status: StatusWarn, Message: "orphaned"},
+	}
+
+	result, unmatched := attachByEvaluatorID(providers, vars)
+
+	require.Len(t, unmatched, 1)
+	assert.Equal(t, "variables/orphan", unmatched[0].Name)
+	require.Len(t, result[0].Children, 1)
+}
+
+func TestAttachByEvaluatorID_NoProviders(t *testing.T) {
+	vars := []CheckResult{
+		{Name: "variables/ampel", Group: GroupVariables, Status: StatusPass},
+	}
+
+	result, unmatched := attachByEvaluatorID(nil, vars)
+
+	assert.Empty(t, result)
+	require.Len(t, unmatched, 1)
+	assert.Equal(t, "variables/ampel", unmatched[0].Name)
+}
+
+// --- attachByPolicyID Tests ---
+
+func TestAttachByPolicyID_MatchesCorrectly(t *testing.T) {
+	policies := []CheckResult{
+		{Name: "policy/cis", Group: GroupPolicies, Status: StatusPass, Message: "v1.0.0 (latest)"},
+		{Name: "policy/nist", Group: GroupPolicies, Status: StatusWarn, Message: "stale"},
+	}
+	active := []CheckResult{
+		{Name: "policy/cis/active-period", Group: GroupPolicies, Status: StatusPass, Message: "active"},
+		{Name: "policy/nist/active-period", Group: GroupPolicies, Status: StatusWarn, Message: "expired"},
+		{Name: "policy/cis/active-period/detail", Group: GroupPolicies, Status: StatusPass, Message: "notes"},
+	}
+
+	result, unmatched := attachByPolicyID(policies, active)
+
+	assert.Empty(t, unmatched)
+	require.Len(t, result[0].Children, 2)
+	require.Len(t, result[1].Children, 1)
+}
+
+func TestAttachByPolicyID_UnmatchedPromoted(t *testing.T) {
+	policies := []CheckResult{
+		{Name: "policy/cis", Group: GroupPolicies, Status: StatusPass},
+	}
+	active := []CheckResult{
+		{Name: "policy/cis/active-period", Group: GroupPolicies, Status: StatusPass, Message: "matched"},
+		{Name: "policy/orphan/active-period", Group: GroupPolicies, Status: StatusWarn, Message: "orphaned"},
+	}
+
+	result, unmatched := attachByPolicyID(policies, active)
+
+	require.Len(t, unmatched, 1)
+	assert.Equal(t, "policy/orphan/active-period", unmatched[0].Name)
+	require.Len(t, result[0].Children, 1)
+}
+
+func TestAttachByPolicyID_NoPolicies(t *testing.T) {
+	active := []CheckResult{
+		{Name: "policy/cis/active-period", Group: GroupPolicies, Status: StatusPass},
+	}
+
+	result, unmatched := attachByPolicyID(nil, active)
+
+	assert.Empty(t, result)
+	require.Len(t, unmatched, 1)
+	assert.Equal(t, "policy/cis/active-period", unmatched[0].Name)
+}
+
+// --- GroupOrder Tests ---
+
+func TestGroupOrder_ContainsExpectedGroups(t *testing.T) {
+	order := GroupOrder()
+
+	assert.Equal(t, []CheckGroup{
+		GroupProviders,
+		GroupPolicies,
+		GroupCache,
+		GroupComplypacks,
+		GroupWorkspace,
+		GroupVerify,
+	}, order)
+	// GroupVariables is intentionally excluded — variables are nested
+	// under providers, not rendered as a standalone section.
+	assert.NotContains(t, order, GroupVariables)
+}
+
+// --- extractID Tests ---
+
+func TestExtractID(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "two segments", input: "provider/ampel", expected: "ampel"},
+		{name: "three segments", input: "policy/cis/active-period", expected: "cis"},
+		{name: "single segment", input: "cache", expected: "cache"},
+		{name: "empty string", input: "", expected: ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, extractID(tc.input))
+		})
+	}
+}
+
+// --- formatBytes Tests ---
+
+func TestFormatBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    int64
+		expected string
+	}{
+		{name: "zero bytes", input: 0, expected: "0 B"},
+		{name: "sub-KB", input: 1023, expected: "1023 B"},
+		{name: "exactly 1 KB", input: 1024, expected: "1.0 KB"},
+		{name: "fractional KB", input: 3400, expected: "3.3 KB"},
+		{name: "exactly 1 MB", input: 1048576, expected: "1.0 MB"},
+		{name: "exactly 1 GB", input: 1073741824, expected: "1.0 GB"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, formatBytes(tc.input))
+		})
+	}
 }

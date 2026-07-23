@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -24,17 +25,67 @@ import (
 type CheckStatus string
 
 const (
+	// StatusPass indicates the check succeeded.
 	StatusPass CheckStatus = "pass"
+	// StatusFail indicates the check failed.
 	StatusFail CheckStatus = "fail"
+	// StatusWarn indicates a non-blocking warning.
 	StatusWarn CheckStatus = "warn"
 )
 
+// CheckGroup identifies the logical section a check belongs to for
+// grouped output rendering.
+type CheckGroup string
+
+const (
+	// GroupProviders is the section for provider discovery and health checks.
+	GroupProviders CheckGroup = "Providers"
+	// GroupVariables identifies variable validation checks. Variables are
+	// nested under their parent provider rather than rendered as a
+	// standalone section, so GroupVariables is not included in GroupOrder().
+	GroupVariables CheckGroup = "Variables"
+	// GroupPolicies is the section for policy version and timeline checks.
+	GroupPolicies CheckGroup = "Policies"
+	// GroupCache is the section for policy cache integrity checks.
+	GroupCache CheckGroup = "Cache"
+	// GroupComplypacks is the section for complypack availability checks.
+	GroupComplypacks CheckGroup = "Complypacks"
+	// GroupWorkspace is the section for workspace configuration checks.
+	GroupWorkspace CheckGroup = "Workspace"
+	// GroupVerify is the section for signature verification checks.
+	GroupVerify CheckGroup = "Verification"
+)
+
+// GroupOrder returns the display order for grouped doctor output,
+// sequenced by scan prerequisites: providers first, workspace last.
+// Returns a fresh slice on each call to avoid mutable package-level
+// state (CS-007).
+func GroupOrder() []CheckGroup {
+	return []CheckGroup{
+		GroupProviders,
+		GroupPolicies,
+		GroupCache,
+		GroupComplypacks,
+		GroupWorkspace,
+		GroupVerify,
+	}
+}
+
 // CheckResult holds the outcome of a single diagnostic check.
+// Group assigns the result to a logical section for grouped rendering.
+// Label provides a display-ready name for output; when empty, Name is
+// used as fallback. Children contains nested sub-results (e.g.,
+// variable checks under their provider, active-period under their
+// policy). The tree is assembled in Run() after individual Check*
+// functions return flat results.
 type CheckResult struct {
 	Name     string
+	Label    string
+	Group    CheckGroup
 	Status   CheckStatus
 	Message  string
 	Blocking bool
+	Children []CheckResult
 }
 
 // ProviderHealth holds Describe-declared variable requirements for a
@@ -80,17 +131,37 @@ const registryTimeout = 5 * time.Second
 // See FR-039, R44, R51, R52, R55: specs/001-gemara-native-workflow/spec.md
 func Run(cfg *complytime.WorkspaceConfig, configPath, providerDir, cacheDir, dataDir string, resolver PolicyGraphResolver, versionResolver VersionResolver, verbose bool, providerLogger hclog.Logger) []CheckResult {
 	policiesCacheDir := filepath.Join(cacheDir, complytime.PoliciesSubdir)
-	var results []CheckResult
-	results = append(results, CheckConfig(configPath))
+
+	// Collect flat results from each Check* function.
 	providerResults, healthData := CheckProviders(providerDir, providerLogger)
+	varResults := CheckVariables(cfg, healthData, resolver, verbose)
+	policyResults := CheckPolicyVersions(cfg, dataDir, versionResolver)
+	activeResults := CheckPolicyActivePeriod(cfg, resolver, verbose)
+
+	// Assemble tree: nest variables under providers, active-period under policies.
+	providerResults, unmatchedVars := attachByEvaluatorID(providerResults, varResults)
+	policyResults, unmatchedActive := attachByPolicyID(policyResults, activeResults)
+
+	// Promote unmatched variable results to the Providers group so they
+	// render in the Providers section. Without this, results with
+	// Group: GroupVariables would be invisible since GroupVariables is
+	// not in GroupOrder() (variables are nested, not a section).
+	for i := range unmatchedVars {
+		unmatchedVars[i].Group = GroupProviders
+	}
+
+	// Build final results: tree-assembled groups + flat groups.
+	var results []CheckResult
 	results = append(results, providerResults...)
+	results = append(results, unmatchedVars...)
+	results = append(results, policyResults...)
+	results = append(results, unmatchedActive...)
 	results = append(results, CheckCache(policiesCacheDir))
-	results = append(results, CheckPolicyVersions(cfg, dataDir, versionResolver)...)
-	results = append(results, CheckPolicyActivePeriod(cfg, resolver, verbose)...)
-	results = append(results, CheckVariables(cfg, healthData, resolver, verbose)...)
 	results = append(results, CheckComplypacks(cfg, cacheDir, dataDir, resolver)...)
+	results = append(results, CheckConfig(configPath))
 	results = append(results, CheckVerification(dataDir))
 	results = append(results, CheckDirectoryLayout(cacheDir, dataDir))
+
 	return results
 }
 
@@ -101,6 +172,7 @@ func CheckVerification(dataDir string) CheckResult {
 	if err != nil {
 		return CheckResult{
 			Name:    "verification",
+			Group:   GroupVerify,
 			Status:  StatusWarn,
 			Message: fmt.Sprintf("cannot load cache state: %v", err),
 		}
@@ -126,6 +198,7 @@ func CheckVerification(dataDir string) CheckResult {
 	if total == 0 {
 		return CheckResult{
 			Name:    "verification",
+			Group:   GroupVerify,
 			Status:  StatusPass,
 			Message: "no cached artifacts to verify",
 		}
@@ -133,12 +206,14 @@ func CheckVerification(dataDir string) CheckResult {
 	if unverified == 0 {
 		return CheckResult{
 			Name:    "verification",
+			Group:   GroupVerify,
 			Status:  StatusPass,
 			Message: fmt.Sprintf("all %d cached artifacts verified", verified),
 		}
 	}
 	return CheckResult{
 		Name:    "verification",
+		Group:   GroupVerify,
 		Status:  StatusWarn,
 		Message: fmt.Sprintf("%d/%d cached artifacts unverified (configure verification: in complytime.yaml)", unverified, total),
 	}
@@ -152,14 +227,16 @@ func CheckDirectoryLayout(cacheDir, dataDir string) CheckResult {
 	// Verify the cache directory is accessible.
 	if _, err := os.Stat(cacheDir); err != nil {
 		if os.IsNotExist(err) {
-			return CheckResult{
-				Name:    "directory-layout",
-				Status:  StatusWarn,
-				Message: fmt.Sprintf("cache directory does not exist: %s", cacheDir),
-			}
+		return CheckResult{
+			Name:    "directory-layout",
+			Group:   GroupWorkspace,
+			Status:  StatusWarn,
+			Message: fmt.Sprintf("cache directory does not exist: %s", cacheDir),
+		}
 		}
 		return CheckResult{
 			Name:    "directory-layout",
+			Group:   GroupWorkspace,
 			Status:  StatusWarn,
 			Message: fmt.Sprintf("cache directory not accessible: %v", err),
 		}
@@ -170,12 +247,14 @@ func CheckDirectoryLayout(cacheDir, dataDir string) CheckResult {
 		if os.IsNotExist(err) {
 			return CheckResult{
 				Name:    "directory-layout",
+				Group:   GroupWorkspace,
 				Status:  StatusWarn,
 				Message: fmt.Sprintf("data directory does not exist: %s — run complyctl get to initialize", dataDir),
 			}
 		}
 		return CheckResult{
 			Name:    "directory-layout",
+			Group:   GroupWorkspace,
 			Status:  StatusWarn,
 			Message: fmt.Sprintf("data directory not accessible: %v", err),
 		}
@@ -188,18 +267,20 @@ func CheckDirectoryLayout(cacheDir, dataDir string) CheckResult {
 	_, dataErr := os.Stat(dataStatePath)
 
 	if cacheErr == nil && os.IsNotExist(dataErr) {
-		return CheckResult{
-			Name:   "directory-layout",
-			Status: StatusWarn,
-			Message: fmt.Sprintf(
-				"state.json found in cache directory (%s) but not in data directory (%s) — move it with: mv %s %s",
-				cacheDir, dataDir, cacheStatePath, dataStatePath,
-			),
-		}
+	return CheckResult{
+		Name:   "directory-layout",
+		Group:  GroupWorkspace,
+		Status: StatusWarn,
+		Message: fmt.Sprintf(
+			"state.json found in cache directory (%s) but not in data directory (%s) — move it with: mv %s %s",
+			cacheDir, dataDir, cacheStatePath, dataStatePath,
+		),
+	}
 	}
 
 	return CheckResult{
 		Name:    "directory-layout",
+		Group:   GroupWorkspace,
 		Status:  StatusPass,
 		Message: "XDG directory layout valid",
 	}
@@ -211,6 +292,7 @@ func CheckConfig(configPath string) CheckResult {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return CheckResult{
 			Name:     "config",
+			Group:    GroupWorkspace,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("%s not found", configPath),
 			Blocking: true,
@@ -221,6 +303,7 @@ func CheckConfig(configPath string) CheckResult {
 	if err != nil {
 		return CheckResult{
 			Name:     "config",
+			Group:    GroupWorkspace,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("config load failed: %v", err),
 			Blocking: true,
@@ -230,6 +313,7 @@ func CheckConfig(configPath string) CheckResult {
 	if err := complytime.Validate(cfg); err != nil {
 		return CheckResult{
 			Name:     "config",
+			Group:    GroupWorkspace,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("config validation failed: %v", err),
 			Blocking: true,
@@ -238,6 +322,7 @@ func CheckConfig(configPath string) CheckResult {
 
 	return CheckResult{
 		Name:     "config",
+		Group:    GroupWorkspace,
 		Status:   StatusPass,
 		Message:  fmt.Sprintf("%s valid", configPath),
 		Blocking: true,
@@ -251,6 +336,7 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 	if _, err := os.Stat(providerDir); os.IsNotExist(err) {
 		return []CheckResult{{
 			Name:     "providers",
+			Group:    GroupProviders,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("provider directory %s not found", providerDir),
 			Blocking: true,
@@ -261,6 +347,7 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 	if err != nil {
 		return []CheckResult{{
 			Name:     "providers",
+			Group:    GroupProviders,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("provider manager init failed: %v", err),
 			Blocking: true,
@@ -271,6 +358,7 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 	if err := mgr.LoadProviders(); err != nil {
 		return []CheckResult{{
 			Name:     "providers",
+			Group:    GroupProviders,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("provider discovery failed: %v", err),
 			Blocking: true,
@@ -281,6 +369,7 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 	if len(providers) == 0 {
 		return []CheckResult{{
 			Name:     "providers",
+			Group:    GroupProviders,
 			Status:   StatusWarn,
 			Message:  fmt.Sprintf("no providers found in %s", providerDir),
 			Blocking: false,
@@ -297,6 +386,8 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 		if descErr != nil {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("provider/%s", lp.Info.EvaluatorID),
+				Label:    lp.Info.EvaluatorID,
+				Group:    GroupProviders,
 				Status:   StatusFail,
 				Message:  fmt.Sprintf("Describe failed: %v", descErr),
 				Blocking: true,
@@ -306,6 +397,8 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 		if !resp.Healthy {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("provider/%s", lp.Info.EvaluatorID),
+				Label:    lp.Info.EvaluatorID,
+				Group:    GroupProviders,
 				Status:   StatusFail,
 				Message:  fmt.Sprintf("unhealthy: %s", resp.ErrorMessage),
 				Blocking: true,
@@ -314,6 +407,8 @@ func CheckProviders(providerDir string, providerLogger hclog.Logger) ([]CheckRes
 		}
 		results = append(results, CheckResult{
 			Name:     fmt.Sprintf("provider/%s", lp.Info.EvaluatorID),
+			Label:    lp.Info.EvaluatorID,
+			Group:    GroupProviders,
 			Status:   StatusPass,
 			Message:  fmt.Sprintf("healthy (v%s)", resp.Version),
 			Blocking: true,
@@ -345,13 +440,17 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 	if err != nil {
 		return []CheckResult{{
 			Name:     "policy",
+			Group:    GroupPolicies,
 			Status:   StatusWarn,
 			Message:  fmt.Sprintf("cannot load cache state for version comparison: %v", err),
 			Blocking: false,
 		}}
 	}
 
-	unreachable := make(map[string]bool)
+	// registryErrors caches network errors per registry to avoid redundant
+	// timeout waits. Each policy still gets its own per-policy result, but
+	// only the first policy per registry triggers a network call.
+	registryErrors := make(map[string]error)
 	var results []CheckResult
 
 	for _, p := range cfg.Policies {
@@ -359,6 +458,8 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 		if err != nil {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("policy/%s", p.EffectiveID()),
+				Label:    p.EffectiveID(),
+				Group:    GroupPolicies,
 				Status:   StatusFail,
 				Message:  fmt.Sprintf("invalid policy reference: %v", err),
 				Blocking: true,
@@ -367,14 +468,12 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 		}
 		eid := p.EffectiveID()
 
-		if unreachable[ref.Registry] {
-			continue
-		}
-
 		cachedState, exists := state.GetPolicyState(ref.Repository)
 		if !exists {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("policy/%s", eid),
+				Label:    eid,
+				Group:    GroupPolicies,
 				Status:   StatusWarn,
 				Message:  "not cached — run complyctl get first",
 				Blocking: false,
@@ -382,13 +481,19 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 			continue
 		}
 
+		// Use cached registry error if available to avoid redundant timeouts.
+		if cachedErr, ok := registryErrors[ref.Registry]; ok {
+			results = append(results, resolvePinnedFallback(versionResolver, ref, eid, cachedState.Version, cachedErr))
+			continue
+		}
+
 		latestVersion, err := versionResolver.ResolveLatestVersion(ref.Registry, ref.Repository)
 		if err != nil {
-			result := resolvePinnedFallback(versionResolver, ref, eid, cachedState.Version, err)
-			if result.Status == StatusWarn && !errors.Is(err, registry.ErrVersionNotFound) {
-				unreachable[ref.Registry] = true
+			// Cache network errors (not 404s) to avoid redundant timeout waits.
+			if !errors.Is(err, registry.ErrVersionNotFound) {
+				registryErrors[ref.Registry] = err
 			}
-			results = append(results, result)
+			results = append(results, resolvePinnedFallback(versionResolver, ref, eid, cachedState.Version, err))
 			continue
 		}
 
@@ -403,6 +508,8 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 				}
 				results = append(results, CheckResult{
 					Name:     fmt.Sprintf("policy/%s", eid),
+					Label:    eid,
+					Group:    GroupPolicies,
 					Status:   StatusPass,
 					Message:  msg,
 					Blocking: false,
@@ -410,6 +517,8 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 			} else {
 				results = append(results, CheckResult{
 					Name:     fmt.Sprintf("policy/%s", eid),
+					Label:    eid,
+					Group:    GroupPolicies,
 					Status:   StatusWarn,
 					Message:  fmt.Sprintf("cached %s does not match configured pin @%s — run complyctl get", cachedVersion, pinnedVersion),
 					Blocking: false,
@@ -418,6 +527,8 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 		} else if cachedVersion == latestVersion {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("policy/%s", eid),
+				Label:    eid,
+				Group:    GroupPolicies,
 				Status:   StatusPass,
 				Message:  fmt.Sprintf("%s (latest)", cachedVersion),
 				Blocking: false,
@@ -425,6 +536,8 @@ func CheckPolicyVersions(cfg *complytime.WorkspaceConfig, dataDir string, versio
 		} else {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("policy/%s", eid),
+				Label:    eid,
+				Group:    GroupPolicies,
 				Status:   StatusWarn,
 				Message:  fmt.Sprintf("cached %s, available %s — run complyctl get to update", cachedVersion, latestVersion),
 				Blocking: false,
@@ -450,6 +563,8 @@ func resolvePinnedFallback(
 		if pinnedErr == nil {
 			return CheckResult{
 				Name:     fmt.Sprintf("policy/%s", eid),
+				Label:    eid,
+				Group:    GroupPolicies,
 				Status:   StatusPass,
 				Message:  fmt.Sprintf("%s (pinned — latest tag unavailable for staleness check)", cachedVersion),
 				Blocking: false,
@@ -464,6 +579,8 @@ func resolvePinnedFallback(
 		}
 		return CheckResult{
 			Name:     fmt.Sprintf("policy/%s", eid),
+			Label:    eid,
+			Group:    GroupPolicies,
 			Status:   StatusWarn,
 			Message:  msg,
 			Blocking: false,
@@ -471,9 +588,11 @@ func resolvePinnedFallback(
 	}
 
 	return CheckResult{
-		Name:     fmt.Sprintf("registry/%s", ref.Registry),
+		Name:     fmt.Sprintf("policy/%s", eid),
+		Label:    eid,
+		Group:    GroupPolicies,
 		Status:   StatusWarn,
-		Message:  fmt.Sprintf("unreachable: %v", latestErr),
+		Message:  fmt.Sprintf("version check skipped (registry unreachable: %s)", ref.Registry),
 		Blocking: false,
 	}
 }
@@ -486,6 +605,7 @@ func CheckCache(cacheDir string) CheckResult {
 	if policiesDir == "" {
 		return CheckResult{
 			Name:     "cache",
+			Group:    GroupCache,
 			Status:   StatusFail,
 			Message:  "policy cache path not resolved",
 			Blocking: true,
@@ -495,6 +615,7 @@ func CheckCache(cacheDir string) CheckResult {
 	if _, err := os.Stat(policiesDir); os.IsNotExist(err) {
 		return CheckResult{
 			Name:     "cache",
+			Group:    GroupCache,
 			Status:   StatusFail,
 			Message:  "policy cache not found — run complyctl get first",
 			Blocking: true,
@@ -505,6 +626,7 @@ func CheckCache(cacheDir string) CheckResult {
 	if err != nil {
 		return CheckResult{
 			Name:     "cache",
+			Group:    GroupCache,
 			Status:   StatusFail,
 			Message:  fmt.Sprintf("cannot read cache directory: %v", err),
 			Blocking: true,
@@ -514,6 +636,7 @@ func CheckCache(cacheDir string) CheckResult {
 	if len(entries) == 0 {
 		return CheckResult{
 			Name:     "cache",
+			Group:    GroupCache,
 			Status:   StatusFail,
 			Message:  "policy cache is empty — run complyctl get first",
 			Blocking: true,
@@ -522,6 +645,7 @@ func CheckCache(cacheDir string) CheckResult {
 
 	return CheckResult{
 		Name:     "cache",
+		Group:    GroupCache,
 		Status:   StatusPass,
 		Message:  fmt.Sprintf("%d cached policy store(s)", len(entries)),
 		Blocking: true,
@@ -544,6 +668,7 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 	if cfg == nil {
 		return []CheckResult{{
 			Name:     "variables",
+			Group:    GroupProviders,
 			Status:   StatusFail,
 			Message:  "cannot validate variables — config not loaded",
 			Blocking: true,
@@ -561,6 +686,8 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 					resolveFailures++
 					resolveResults = append(resolveResults, CheckResult{
 						Name:     fmt.Sprintf("variables/resolve/%s", pid),
+						Label:    pid,
+						Group:    GroupProviders,
 						Status:   StatusWarn,
 						Message:  fmt.Sprintf("policy %q referenced by target %q not found in config", pid, target.ID),
 						Blocking: false,
@@ -572,6 +699,8 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 					resolveFailures++
 					resolveResults = append(resolveResults, CheckResult{
 						Name:     fmt.Sprintf("variables/resolve/%s", entry.EffectiveID()),
+						Label:    entry.EffectiveID(),
+						Group:    GroupProviders,
 						Status:   StatusWarn,
 						Message:  fmt.Sprintf("invalid policy reference for %q: %v", entry.EffectiveID(), refErr),
 						Blocking: false,
@@ -583,6 +712,8 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 					resolveFailures++
 					resolveResults = append(resolveResults, CheckResult{
 						Name:     fmt.Sprintf("variables/resolve/%s", entry.EffectiveID()),
+						Label:    entry.EffectiveID(),
+						Group:    GroupProviders,
 						Status:   StatusWarn,
 						Message:  fmt.Sprintf("cannot resolve version for policy %q: %v", entry.EffectiveID(), err),
 						Blocking: false,
@@ -594,6 +725,8 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 					resolveFailures++
 					resolveResults = append(resolveResults, CheckResult{
 						Name:     fmt.Sprintf("variables/resolve/%s", entry.EffectiveID()),
+						Label:    entry.EffectiveID(),
+						Group:    GroupProviders,
 						Status:   StatusWarn,
 						Message:  fmt.Sprintf("cannot resolve policy graph for %q: %v", entry.EffectiveID(), err),
 						Blocking: false,
@@ -615,6 +748,14 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 	results = append(results, resolveResults...)
 
 	for _, ph := range healthData {
+		targets := evaluatorTargets[ph.EvaluatorID]
+
+		// Skip providers with no required variables and no policy mapping —
+		// there is nothing to validate and the result would be pure noise.
+		if len(ph.RequiredGlobalVariables) == 0 && len(ph.RequiredTargetVariables) == 0 && len(targets) == 0 {
+			continue
+		}
+
 		globalResolved, globalTotal := countResolved(ph.RequiredGlobalVariables, effectiveGlobalVars)
 		var missingGlobals []string
 		for _, v := range ph.RequiredGlobalVariables {
@@ -623,7 +764,6 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 			}
 		}
 
-		targets := evaluatorTargets[ph.EvaluatorID]
 		unmappedTargetVars := len(ph.RequiredTargetVariables) > 0 && len(targets) == 0
 
 		targetTotal := 0
@@ -648,6 +788,7 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 		}
 		name := fmt.Sprintf("variables/%s", ph.EvaluatorID)
 
+		var summary CheckResult
 		if allGlobalPresent && allTargetPresent {
 			var msg string
 			if unmappedTargetVars {
@@ -657,9 +798,9 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 				msg = fmt.Sprintf("%d/%d global vars, %d/%d target vars",
 					globalResolved, globalTotal, targetResolved, targetTotal)
 			}
-			results = append(results, CheckResult{
-				Name: name, Status: StatusPass, Message: msg, Blocking: true,
-			})
+			summary = CheckResult{
+				Name: name, Label: "variables", Group: GroupVariables, Status: StatusPass, Message: msg, Blocking: true,
+			}
 		} else {
 			var globalPart, targetPart string
 			if allGlobalPresent {
@@ -677,52 +818,56 @@ func CheckVariables(cfg *complytime.WorkspaceConfig, healthData []ProviderHealth
 				targetPart = fmt.Sprintf("%d/%d target vars — missing %s",
 					targetResolved, targetTotal, joinNames(missingTargetVars))
 			}
-			results = append(results, CheckResult{
-				Name: name, Status: StatusFail,
+			summary = CheckResult{
+				Name: name, Label: "variables", Group: GroupVariables, Status: StatusFail,
 				Message:  globalPart + ", " + targetPart,
 				Blocking: true,
-			})
+			}
 		}
 
 		if verbose {
+			var details []CheckResult
 			for _, v := range ph.RequiredGlobalVariables {
-				status := complytime.StatusPassed
+				detailStatus := StatusPass
 				if _, ok := effectiveGlobalVars[v]; !ok {
-					status = complytime.StatusFailed
+					detailStatus = StatusFail
 				}
-				results = append(results, CheckResult{
-					Name:     fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
-					Status:   StatusPass,
-					Message:  fmt.Sprintf("   global: %s %s", v, status),
-					Blocking: false,
+				details = append(details, CheckResult{
+					Name:    fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
+					Group:   GroupVariables,
+					Status:  detailStatus,
+					Message: fmt.Sprintf("global: %s", v),
 				})
 			}
 			if unmappedTargetVars {
 				for _, reqVar := range ph.RequiredTargetVariables {
-					results = append(results, CheckResult{
-						Name:     fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
-						Status:   StatusPass,
-						Message:  fmt.Sprintf("   target: %s (not validated)", reqVar),
-						Blocking: false,
+					details = append(details, CheckResult{
+						Name:    fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
+						Group:   GroupVariables,
+						Status:  StatusWarn,
+						Message: fmt.Sprintf("target: %s (not validated)", reqVar),
 					})
 				}
 			} else {
 				for _, target := range targets {
 					for _, reqVar := range ph.RequiredTargetVariables {
-						status := complytime.StatusPassed
+						detailStatus := StatusPass
 						if _, ok := target.Variables[reqVar]; !ok {
-							status = complytime.StatusFailed
+							detailStatus = StatusFail
 						}
-						results = append(results, CheckResult{
-							Name:     fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
-							Status:   StatusPass,
-							Message:  fmt.Sprintf("   target[%s]: %s %s", target.ID, reqVar, status),
-							Blocking: false,
+						details = append(details, CheckResult{
+							Name:    fmt.Sprintf("variables/%s/detail", ph.EvaluatorID),
+							Group:   GroupVariables,
+							Status:  detailStatus,
+							Message: fmt.Sprintf("target[%s]: %s", target.ID, reqVar),
 						})
 					}
 				}
 			}
+			summary.Children = details
 		}
+
+		results = append(results, summary)
 	}
 
 	return results
@@ -747,6 +892,8 @@ func CheckPolicyActivePeriod(cfg *complytime.WorkspaceConfig, resolver PolicyGra
 		if refErr != nil {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("policy/%s/active-period", p.EffectiveID()),
+				Label:    "active-period",
+				Group:    GroupPolicies,
 				Status:   StatusFail,
 				Message:  fmt.Sprintf("invalid policy reference: %v", refErr),
 				Blocking: true,
@@ -768,7 +915,7 @@ func CheckPolicyActivePeriod(cfg *complytime.WorkspaceConfig, resolver PolicyGra
 
 		if graph.Timeline == nil {
 			results = append(results, CheckResult{
-				Name: name, Status: StatusPass,
+				Name: name, Label: "active-period", Group: GroupPolicies, Status: StatusPass,
 				Message: "no evaluation timeline defined", Blocking: false,
 			})
 			continue
@@ -778,46 +925,45 @@ func CheckPolicyActivePeriod(cfg *complytime.WorkspaceConfig, resolver PolicyGra
 		evalStatus, evalMsg := evaluateTimeline(
 			tl.EvaluationStart, tl.EvaluationEnd, "evaluation", now)
 
-		results = append(results, CheckResult{
-			Name: name, Status: evalStatus, Message: evalMsg, Blocking: false,
-		})
+		activePeriod := CheckResult{
+			Name: name, Label: "active-period", Group: GroupPolicies, Status: evalStatus, Message: evalMsg, Blocking: false,
+		}
 
 		if verbose {
+			var details []CheckResult
 			if tl.EvaluationNotes != "" {
-				results = append(results, CheckResult{
-					Name: name + "/detail", Status: StatusPass,
-					Message:  fmt.Sprintf("   evaluation notes: %s", tl.EvaluationNotes),
-					Blocking: false,
+				details = append(details, CheckResult{
+					Name: name + "/detail", Group: GroupPolicies, Status: StatusPass,
+					Message: fmt.Sprintf("evaluation notes: %s", tl.EvaluationNotes),
 				})
 			}
 			enfStatus, enfMsg := evaluateTimeline(
 				tl.EnforcementStart, tl.EnforcementEnd, "enforcement", now)
-			results = append(results, CheckResult{
-				Name: name + "/detail", Status: enfStatus,
-				Message:  fmt.Sprintf("   %s", enfMsg),
-				Blocking: false,
+			details = append(details, CheckResult{
+				Name: name + "/detail", Group: GroupPolicies, Status: enfStatus,
+				Message: enfMsg,
 			})
 			if tl.EnforcementNotes != "" {
-				results = append(results, CheckResult{
-					Name: name + "/detail", Status: StatusPass,
-					Message:  fmt.Sprintf("   enforcement notes: %s", tl.EnforcementNotes),
-					Blocking: false,
+				details = append(details, CheckResult{
+					Name: name + "/detail", Group: GroupPolicies, Status: StatusPass,
+					Message: fmt.Sprintf("enforcement notes: %s", tl.EnforcementNotes),
 				})
 			}
+			activePeriod.Children = details
 		}
+
+		results = append(results, activePeriod)
 	}
 
 	return results
 }
 
-var datetimeLayouts = []string{
-	time.RFC3339,
-	"2006-01-02T15:04:05",
-	"2006-01-02",
-}
-
 func parseDatetime(s string) (time.Time, error) {
-	for _, layout := range datetimeLayouts {
+	for _, layout := range []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02",
+	} {
 		if t, err := time.Parse(layout, s); err == nil {
 			return t, nil
 		}
@@ -1052,6 +1198,8 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 	if cacheStateErr != nil {
 		results = append(results, CheckResult{
 			Name:     "complypacks/state",
+			Label:    "state",
+			Group:    GroupComplypacks,
 			Status:   StatusWarn,
 			Message:  fmt.Sprintf("cannot load state: %v", cacheStateErr),
 			Blocking: false,
@@ -1060,14 +1208,14 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 	}
 	cpCache := cache.NewComplypackCache(cacheDir, cacheState)
 
-	// Collect unique evaluator-ids from all policies via the dependency graph,
-	// following the same resolution pattern as CheckVariables.
 	evaluatorIDs := make(map[string]bool)
 	for _, p := range cfg.Policies {
 		ref, refErr := complytime.ParsePolicyRef(p.URL)
 		if refErr != nil {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("complypacks/%s", p.EffectiveID()),
+				Label:    p.EffectiveID(),
+				Group:    GroupComplypacks,
 				Status:   StatusFail,
 				Message:  fmt.Sprintf("invalid policy reference: %v", refErr),
 				Blocking: true,
@@ -1089,35 +1237,36 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 		}
 	}
 
-	allPresent := true
 	for evalID := range evaluatorIDs {
 		contentPath, _, err := cpCache.LookupByEvaluatorID(evalID)
 		if err != nil {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("complypacks/%s", evalID),
+				Label:    evalID,
+				Group:    GroupComplypacks,
 				Status:   StatusWarn,
 				Message:  fmt.Sprintf("error checking complypack cache for %s: %v", evalID, err),
 				Blocking: false,
 			})
-			allPresent = false
 			continue
 		}
 		if contentPath == "" {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("complypacks/%s", evalID),
+				Label:    evalID,
+				Group:    GroupComplypacks,
 				Status:   StatusWarn,
-				Message:  fmt.Sprintf("complypack not cached for evaluator %s — run complyctl get to download", evalID),
+				Message:  "not cached — run complyctl get to download",
 				Blocking: false,
 			})
-			allPresent = false
+			continue
 		}
-	}
-
-	if allPresent {
 		results = append(results, CheckResult{
-			Name:     "complypacks",
+			Name:     fmt.Sprintf("complypacks/%s", evalID),
+			Label:    evalID,
+			Group:    GroupComplypacks,
 			Status:   StatusPass,
-			Message:  fmt.Sprintf("%d complypack(s) cached", len(evaluatorIDs)),
+			Message:  "cached",
 			Blocking: false,
 		})
 	}
@@ -1127,6 +1276,8 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 	if sizeErr != nil {
 		results = append(results, CheckResult{
 			Name:     "complypacks/cache-size",
+			Label:    "cache-size",
+			Group:    GroupComplypacks,
 			Status:   StatusWarn,
 			Message:  fmt.Sprintf("unable to calculate cache size: %v", sizeErr),
 			Blocking: false,
@@ -1134,6 +1285,8 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 	} else {
 		results = append(results, CheckResult{
 			Name:     "complypacks/cache-size",
+			Label:    "cache-size",
+			Group:    GroupComplypacks,
 			Status:   StatusPass,
 			Message:  formatBytes(cacheBytes),
 			Blocking: false,
@@ -1146,9 +1299,12 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 	// reports versions as "untracked" rather than "orphaned".
 	orphans := findOrphanedVersions(cacheDir, cacheState)
 	for _, o := range orphans {
+		orphanLabel := fmt.Sprintf("%s/%s", o.EvaluatorID, o.Version)
 		if o.Untracked {
 			results = append(results, CheckResult{
 				Name:     fmt.Sprintf("complypacks/%s/%s", o.EvaluatorID, o.Version),
+				Label:    orphanLabel,
+				Group:    GroupComplypacks,
 				Status:   StatusWarn,
 				Message:  "complypack not tracked in state — run complyctl get to rebuild state",
 				Blocking: false,
@@ -1156,6 +1312,8 @@ func CheckComplypacks(cfg *complytime.WorkspaceConfig, cacheDir, dataDir string,
 		} else {
 			results = append(results, CheckResult{
 				Name:   fmt.Sprintf("complypacks/%s/%s", o.EvaluatorID, o.Version),
+				Label:  orphanLabel,
+				Group:  GroupComplypacks,
 				Status: StatusWarn,
 				Message: fmt.Sprintf(
 					"orphaned complypack version %s for evaluator %s — not referenced in state.json",
@@ -1193,4 +1351,63 @@ func joinNames(names []string) string {
 		result += ", " + n
 	}
 	return result
+}
+
+// attachByEvaluatorID matches variable results to provider results by
+// evaluator-id. Variable results with names like "variables/<eid>" or
+// "variables/<eid>/detail" are attached as Children to the provider
+// result with name "provider/<eid>". Unmatched variable results are
+// returned separately for top-level rendering.
+func attachByEvaluatorID(providers, vars []CheckResult) ([]CheckResult, []CheckResult) {
+	providerIndex := make(map[string]int, len(providers))
+	for i, p := range providers {
+		eid := extractID(p.Name)
+		providerIndex[eid] = i
+	}
+
+	var unmatched []CheckResult
+	for _, v := range vars {
+		eid := extractID(v.Name)
+		if idx, ok := providerIndex[eid]; ok {
+			providers[idx].Children = append(providers[idx].Children, v)
+		} else {
+			unmatched = append(unmatched, v)
+		}
+	}
+	return providers, unmatched
+}
+
+// attachByPolicyID matches active-period results to policy version
+// results by policy-id. Active-period results with names like
+// "policy/<pid>/active-period" are attached as Children to the policy
+// result with name "policy/<pid>". Unmatched results are returned
+// separately for top-level rendering.
+func attachByPolicyID(policies, active []CheckResult) ([]CheckResult, []CheckResult) {
+	policyIndex := make(map[string]int, len(policies))
+	for i, p := range policies {
+		pid := extractID(p.Name)
+		policyIndex[pid] = i
+	}
+
+	var unmatched []CheckResult
+	for _, a := range active {
+		pid := extractID(a.Name)
+		if idx, ok := policyIndex[pid]; ok {
+			policies[idx].Children = append(policies[idx].Children, a)
+		} else {
+			unmatched = append(unmatched, a)
+		}
+	}
+	return policies, unmatched
+}
+
+// extractID returns the second segment from a slash-delimited check
+// name. For "provider/ampel" it returns "ampel"; for
+// "policy/cis/active-period" it returns "cis".
+func extractID(name string) string {
+	parts := strings.SplitN(name, "/", 3)
+	if len(parts) >= 2 {
+		return parts[1]
+	}
+	return name
 }
