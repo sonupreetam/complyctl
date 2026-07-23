@@ -79,6 +79,17 @@
 
 ### Changed
 
+- `complyctl doctor` output redesigned with grouped sections, nested
+  sub-results, and per-policy registry warnings. Check results are
+  organized under labeled section headers (Providers, Policies, Cache,
+  Complypacks, Workspace, Verification) following the scan prerequisite
+  sequence. Variable checks nest under their parent provider, and
+  active-period checks nest under their parent policy. Unreachable
+  registries now emit per-policy warnings instead of silently skipping
+  affected policies. Complypacks are listed individually by evaluator-id.
+  Summary counts top-level results and their direct children;
+  verbose detail (grandchildren) is excluded for stable counts
+  regardless of `--verbose`. (#692)
 - Release workflow gains preflight validation gate: tag format and
   uniqueness check, semver ordering verification, CI status query
   via GitHub Checks API, unreleased commits guard, and idempotent

@@ -227,12 +227,12 @@ func CheckDirectoryLayout(cacheDir, dataDir string) CheckResult {
 	// Verify the cache directory is accessible.
 	if _, err := os.Stat(cacheDir); err != nil {
 		if os.IsNotExist(err) {
-		return CheckResult{
-			Name:    "directory-layout",
-			Group:   GroupWorkspace,
-			Status:  StatusWarn,
-			Message: fmt.Sprintf("cache directory does not exist: %s", cacheDir),
-		}
+			return CheckResult{
+				Name:    "directory-layout",
+				Group:   GroupWorkspace,
+				Status:  StatusWarn,
+				Message: fmt.Sprintf("cache directory does not exist: %s", cacheDir),
+			}
 		}
 		return CheckResult{
 			Name:    "directory-layout",
@@ -267,15 +267,15 @@ func CheckDirectoryLayout(cacheDir, dataDir string) CheckResult {
 	_, dataErr := os.Stat(dataStatePath)
 
 	if cacheErr == nil && os.IsNotExist(dataErr) {
-	return CheckResult{
-		Name:   "directory-layout",
-		Group:  GroupWorkspace,
-		Status: StatusWarn,
-		Message: fmt.Sprintf(
-			"state.json found in cache directory (%s) but not in data directory (%s) — move it with: mv %s %s",
-			cacheDir, dataDir, cacheStatePath, dataStatePath,
-		),
-	}
+		return CheckResult{
+			Name:   "directory-layout",
+			Group:  GroupWorkspace,
+			Status: StatusWarn,
+			Message: fmt.Sprintf(
+				"state.json found in cache directory (%s) but not in data directory (%s) — move it with: mv %s %s",
+				cacheDir, dataDir, cacheStatePath, dataStatePath,
+			),
+		}
 	}
 
 	return CheckResult{
